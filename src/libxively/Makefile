@@ -17,7 +17,7 @@ XI_CFLAGS += -I./ \
 	$(foreach layerdir,$(XI_LAYER_DIRS),-I./$(layerdir))
 
 XI_SOURCES += $(foreach layerdir,$(XI_LAYER_DIRS),\
-	$(wildcard $(layerdir)/*.c $(layerdir)/.*cpp))
+	$(wildcard $(layerdir)/*.c $(layerdir)/*.cpp))
 
 all: $(XI)
 
