@@ -11,6 +11,8 @@ endif
 
 ifeq ($(XI_MQTT_ENABLED),true)
     XI_LAYER_DIRS += mqtt mqtt/codec
+else
+    XI_LAYER_DIRS += http csv
 endif
 
 XI_CFLAGS += -I./ \
