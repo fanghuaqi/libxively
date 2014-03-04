@@ -25,9 +25,6 @@
 #include "xi_layer_factory.h"
 #include "xi_layer_factory_conf.h"
 #include "xi_layer_default_allocators.h"
-#include "xi_http_layer.h"
-#include "xi_http_layer_data.h"
-#include "xi_csv_layer.h"
 #include "xi_connection_data.h"
 
 #ifdef __cplusplus
@@ -41,6 +38,11 @@ extern "C" {
 //-----------------------------------------------------------------------
 // HELPER FUNCTIONS
 //-----------------------------------------------------------------------
+#ifndef XI_MQTT_ENABLED
+
+#include "xi_http_layer.h"
+#include "xi_http_layer_data.h"
+#include "xi_csv_layer.h"
 
 xi_value_type_t xi_get_value_type( xi_datapoint_t* p )
 {
@@ -159,6 +161,7 @@ char* xi_value_pointer_str( xi_datapoint_t* p )
       return NULL;
     }
 }
+#endif // XI_MQTT_ENABLED
 
 void xi_set_network_timeout( uint32_t timeout )
 {
@@ -185,14 +188,28 @@ uint32_t xi_get_network_timeout( void )
 enum LAYERS_ID
 {
       IO_LAYER = 0
+#ifndef XI_MQTT_ENABLED
     , HTTP_LAYER
     , CSV_LAYER
+#else // XI_MQTT_ENABLED
+    , MQTT_LAYER
+#endif // XI_MQTT_ENABLED
+
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#ifndef XI_MQTT_ENABLED
 #define CONNECTION_SCHEME_1_DATA IO_LAYER, HTTP_LAYER, CSV_LAYER
+#else // XI_MQTT_ENABLED
+#define CONNECTION_SCHEME_2_DATA IO_LAYER, MQTT_LAYER
+#endif // XI_MQTT_ENABLED
+
+#ifndef XI_MQTT_ENABLED
 DEFINE_CONNECTION_SCHEME( CONNECTION_SCHEME_1, CONNECTION_SCHEME_1_DATA );
+#else // XI_MQTT_ENABLED
+DEFINE_CONNECTION_SCHEME( CONNECTION_SCHEME_2, CONNECTION_SCHEME_2_DATA );
+#endif // XI_MQTT_ENABLED
 
 #if XI_IO_LAYER == XI_IO_POSIX
 
@@ -200,7 +217,19 @@ DEFINE_CONNECTION_SCHEME( CONNECTION_SCHEME_1, CONNECTION_SCHEME_1_DATA );
     #include "posix_io_layer.h"
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    #ifdef XI_MQTT_ENABLED
 
+    #include "xi_mqtt_layer.h"
+    #include "xi_mqtt_layer_data.h"
+
+    BEGIN_LAYER_TYPES_CONF()
+          LAYER_TYPE( IO_LAYER, &posix_io_layer_data_ready, &posix_io_layer_on_data_ready
+                                , &posix_io_layer_close, &posix_io_layer_on_close
+                                , &posix_io_layer_init, &posix_io_layer_connect )
+        , LAYER_TYPE( MQTT_LAYER, &xi_mqtt_layer_data_ready, &xi_mqtt_layer_on_data_ready
+                                , &xi_mqtt_layer_close, &xi_mqtt_layer_on_close, 0, 0 )
+    END_LAYER_TYPES_CONF()
+    #else
     BEGIN_LAYER_TYPES_CONF()
           LAYER_TYPE( IO_LAYER, &posix_io_layer_data_ready, &posix_io_layer_on_data_ready
                                 , &posix_io_layer_close, &posix_io_layer_on_close
@@ -210,6 +239,7 @@ DEFINE_CONNECTION_SCHEME( CONNECTION_SCHEME_1, CONNECTION_SCHEME_1_DATA );
         , LAYER_TYPE( CSV_LAYER, &csv_layer_data_ready, &csv_layer_on_data_ready
                             , &csv_layer_close, &csv_layer_on_close, 0, 0 )
     END_LAYER_TYPES_CONF()
+    #endif
 
 #elif XI_IO_LAYER == XI_IO_DUMMY
     // dummy io layer
@@ -232,7 +262,19 @@ DEFINE_CONNECTION_SCHEME( CONNECTION_SCHEME_1, CONNECTION_SCHEME_1_DATA );
     #include "mbed_io_layer.h"
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    #ifdef XI_MQTT_ENABLED
 
+    #include "xi_mqtt_layer.h"
+    #include "xi_mqtt_layer_data.h"
+
+    BEGIN_LAYER_TYPES_CONF()
+          LAYER_TYPE( IO_LAYER, &mbed_io_layer_data_ready, &mbed_io_layer_on_data_ready
+                                , &mbed_io_layer_close, &mbed_io_layer_on_close
+                                , &mbed_io_layer_init, &mbed_io_layer_connect )
+        , LAYER_TYPE( MQTT_LAYER, &xi_mqtt_layer_data_ready, &xi_mqtt_layer_on_data_ready
+                                , &xi_mqtt_layer_close, &xi_mqtt_layer_on_close, 0, 0 )
+    END_LAYER_TYPES_CONF()
+    #else
     BEGIN_LAYER_TYPES_CONF()
           LAYER_TYPE( IO_LAYER, &mbed_io_layer_data_ready, &mbed_io_layer_on_data_ready
                               , &mbed_io_layer_close, &mbed_io_layer_on_close
@@ -242,6 +284,7 @@ DEFINE_CONNECTION_SCHEME( CONNECTION_SCHEME_1, CONNECTION_SCHEME_1_DATA );
         , LAYER_TYPE( CSV_LAYER, &csv_layer_data_ready, &csv_layer_on_data_ready
                             , &csv_layer_close, &csv_layer_on_close, 0, 0 )
     END_LAYER_TYPES_CONF()
+    #endif
 
 #elif XI_IO_LAYER == XI_IO_POSIX_ASYNCH
     // mbed io layer
@@ -265,10 +308,15 @@ DEFINE_CONNECTION_SCHEME( CONNECTION_SCHEME_1, CONNECTION_SCHEME_1_DATA );
 BEGIN_FACTORY_CONF()
       FACTORY_ENTRY( IO_LAYER, &placement_layer_pass_create, &placement_layer_pass_delete
                              , &default_layer_heap_alloc, &default_layer_heap_free )
+#ifndef XI_MQTT_ENABLED
     , FACTORY_ENTRY( HTTP_LAYER, &placement_layer_pass_create, &placement_layer_pass_delete
                                , &default_layer_heap_alloc, &default_layer_heap_free )
     , FACTORY_ENTRY( CSV_LAYER, &placement_layer_pass_create, &placement_layer_pass_delete
                            , &default_layer_heap_alloc, &default_layer_heap_free )
+#else // XI_MQTT_ENABLED
+    , FACTORY_ENTRY( MQTT_LAYER, &placement_layer_pass_create, &placement_layer_pass_delete
+                           , &default_layer_heap_alloc, &default_layer_heap_free )
+#endif // XI_MQTT_ENABLED
 END_FACTORY_CONF()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -279,7 +327,8 @@ END_FACTORY_CONF()
 //-----------------------------------------------------------------------
 
 xi_context_t* xi_create_context(
-      xi_protocol_t protocol, const char* api_key
+      xi_protocol_t protocol
+    , const char* api_key
     , xi_feed_id_t feed_id )
 {
     // allocate the structure to store new context
@@ -306,6 +355,7 @@ xi_context_t* xi_create_context(
 
     switch( protocol )
     {
+        #ifndef XI_MQTT_ENABLED
         case XI_HTTP:
             {
                 // @TODO make a configurable pool of these
@@ -331,10 +381,23 @@ xi_context_t* xi_create_context(
                 ret->layer_chain = create_and_connect_layers( CONNECTION_SCHEME_1, user_datas, CONNECTION_SCHEME_LENGTH( CONNECTION_SCHEME_1 ) );
             }
             break;
+        #else  // XI_MQTT_ENABLED
+        case XI_MQTT:
+            {
+                // allocate staticly
+                static xi_mqtt_layer_data_t    mqtt_layer_data;
+
+                // clean the structures
+                memset( &mqtt_layer_data, 0, sizeof( xi_mqtt_layer_data_t ) );
+
+                void* user_datas[] = { 0, ( void* ) &mqtt_layer_data };
+                ret->layer_chain = create_and_connect_layers( CONNECTION_SCHEME_2, user_datas, CONNECTION_SCHEME_LENGTH( CONNECTION_SCHEME_2 ) );
+            }
+            break;
+        #endif // XI_MQTT_ENABLED
         default:
             goto err_handling;
     }
-
 
     return ret;
 
@@ -358,9 +421,15 @@ void xi_delete_context( xi_context_t* context )
 
     switch( context->protocol )
     {
+        #ifndef XI_MQTT_ENABLED
         case XI_HTTP:
             destroy_and_disconnect_layers( &( context->layer_chain ), CONNECTION_SCHEME_LENGTH( CONNECTION_SCHEME_1 ) );
             break;
+        #else // XI_MQTT_ENABLED
+        case XI_MQTT:
+            destroy_and_disconnect_layers( &( context->layer_chain ), CONNECTION_SCHEME_LENGTH( CONNECTION_SCHEME_2 ) );
+            break;
+        #endif // XI_MQTT_ENABLED
         default:
             assert( 0 && "not yet implemented!" );
             break;
@@ -370,6 +439,7 @@ void xi_delete_context( xi_context_t* context )
     XI_SAFE_FREE( context );
 }
 
+#ifndef XI_MQTT_ENABLED
 #ifndef XI_NOB_ENABLED
 const xi_response_t* xi_feed_get(
           xi_context_t* xi
@@ -410,7 +480,7 @@ const xi_response_t* xi_feed_get(
     {
         CALL_ON_SELF_ON_DATA_READY( io_layer, ( void *) 0, LAYER_HINT_NONE );
     }
-    
+
     CALL_ON_SELF_CLOSE( input_layer );
 
     return ( ( csv_layer_data_t* ) input_layer->user_data )->response;
@@ -455,7 +525,7 @@ const xi_response_t* xi_feed_get_all(
     {
         CALL_ON_SELF_ON_DATA_READY( io_layer, ( void *) 0, LAYER_HINT_NONE );
     }
-    
+
     CALL_ON_SELF_CLOSE( input_layer );
 
     return ( ( csv_layer_data_t* ) input_layer->user_data )->response;
@@ -501,7 +571,7 @@ const xi_response_t* xi_feed_update(
     {
         CALL_ON_SELF_ON_DATA_READY( io_layer, ( void *) 0, LAYER_HINT_NONE );
     }
-    
+
     CALL_ON_SELF_CLOSE( input_layer );
 
     return ( ( csv_layer_data_t* ) input_layer->user_data )->response;
@@ -548,7 +618,7 @@ const xi_response_t* xi_datastream_get(
     {
         CALL_ON_SELF_ON_DATA_READY( io_layer, ( void *) 0, LAYER_HINT_NONE );
     }
-    
+
     CALL_ON_SELF_CLOSE( input_layer );
 
     return ( ( csv_layer_data_t* ) input_layer->user_data )->response;
@@ -597,7 +667,7 @@ const xi_response_t* xi_datastream_create(
     {
         CALL_ON_SELF_ON_DATA_READY( io_layer, ( void *) 0, LAYER_HINT_NONE );
     }
-    
+
     CALL_ON_SELF_CLOSE( input_layer );
 
     return ( ( csv_layer_data_t* ) input_layer->user_data )->response;
@@ -645,7 +715,7 @@ const xi_response_t* xi_datastream_update(
     {
         CALL_ON_SELF_ON_DATA_READY( io_layer, ( void *) 0, LAYER_HINT_NONE );
     }
-    
+
     CALL_ON_SELF_CLOSE( input_layer );
 
     return ( ( csv_layer_data_t* ) input_layer->user_data )->response;
@@ -692,7 +762,7 @@ const xi_response_t* xi_datastream_delete(
     {
         CALL_ON_SELF_ON_DATA_READY( io_layer, ( void *) 0, LAYER_HINT_NONE );
     }
-    
+
     CALL_ON_SELF_CLOSE( input_layer );
 
     return ( ( csv_layer_data_t* ) input_layer->user_data )->response;
@@ -740,7 +810,7 @@ const xi_response_t* xi_datapoint_delete(
     {
         CALL_ON_SELF_ON_DATA_READY( io_layer, ( void *) 0, LAYER_HINT_NONE );
     }
-    
+
     CALL_ON_SELF_CLOSE( input_layer );
 
     return ( ( csv_layer_data_t* ) input_layer->user_data )->response;
@@ -789,7 +859,7 @@ extern const xi_response_t* xi_datapoint_delete_range(
     {
         CALL_ON_SELF_ON_DATA_READY( io_layer, ( void *) 0, LAYER_HINT_NONE );
     }
-    
+
     CALL_ON_SELF_CLOSE( input_layer );
 
     return ( ( csv_layer_data_t* ) input_layer->user_data )->response;
@@ -885,7 +955,7 @@ extern const xi_context_t* xi_nob_feed_get_all(
     // assign the input parameter so that can be used via the runner
     xi->input = &http_layer_input;
 
-    return xi;    
+    return xi;
 }
 
 
@@ -1096,6 +1166,101 @@ const xi_context_t* xi_nob_datapoint_delete_range(
     return xi;
 }
 #endif // XI_NOB_ENABLED
+#else  // XI_MQTT_ENABLED
+
+#include "message.h"
+
+#ifndef XI_NOB_ENABLED // blocking version
+
+extern const xi_response_t* xi_nob_mqtt_publish(
+      xi_context_t* xi
+    , const char* topic
+    , const char* msg )
+{
+   // we shall need it later
+    layer_state_t state = LAYER_STATE_OK;
+
+    // extract the input layer
+    layer_t* input_layer    = xi->layer_chain.top;
+    layer_t* io_layer       = xi->layer_chain.bottom;
+
+    { // init & connect
+        state = CALL_ON_SELF_INIT( io_layer, 0, LAYER_HINT_NONE );
+        if( state != LAYER_STATE_OK ) { return 0; }
+
+        xi_connection_data_t conn_data = { XI_HOST, XI_PORT };
+
+        state = CALL_ON_SELF_CONNECT( io_layer, ( void *) &conn_data, LAYER_HINT_NONE );
+        if( state != LAYER_STATE_OK ) { return 0; }
+    }
+
+    // first connect
+    mqtt_message_t message;
+    memset( &message, 0, sizeof( mqtt_message_t ) );
+
+    message.common.common_u.common_bits.retain     = MQTT_RETAIN_FALSE;
+    message.common.common_u.common_bits.qos        = MQTT_QOS_AT_MOST_ONCE;
+    message.common.common_u.common_bits.dup        = MQTT_DUP_FALSE;
+    message.common.common_u.common_bits.type       = MQTT_TYPE_CONNECT;
+    message.common.remaining_length                = 0; // ?????????
+
+    memcpy( message.connect.protocol_name.data, "MQIsdp", 6 );
+    message.connect.protocol_name.length                    = 6;
+    message.connect.protocol_version                        = 3;
+
+    message.connect.flags_u.flags_bits.username_follows     = 0;
+    message.connect.flags_u.flags_bits.password_follows     = 0;
+    message.connect.flags_u.flags_bits.will_retain          = 0;
+    message.connect.flags_u.flags_bits.will_qos             = 0;
+    message.connect.flags_u.flags_bits.will                 = 0;
+    message.connect.flags_u.flags_bits.clean_session        = 0;
+
+    message.connect.keep_alive                              = 0;
+
+    {
+        const char client_id[] = "xi_test_client";
+        message.connect.client_id.length = sizeof( client_id ) - 1;
+        memcpy( message.connect.client_id.data, client_id, sizeof( client_id ) - 1 );
+    }
+
+    state = CALL_ON_SELF_DATA_READY( input_layer, ( void *) &message, LAYER_HINT_NONE );
+
+    if( state == LAYER_STATE_OK )
+    {
+        state = CALL_ON_SELF_ON_DATA_READY( io_layer, ( void *) 0, LAYER_HINT_NONE );
+    }
+
+    xi_mqtt_layer_data_t* test = ( xi_mqtt_layer_data_t* ) input_layer->user_data;
+    mqtt_message_dump( &test->msg );
+
+    message.common.common_u.common_bits.type    = MQTT_TYPE_PUBLISH;
+    message.publish.topic_name.length           = strlen( topic );
+    message.publish.content.length              = strlen( msg );
+
+    memcpy(
+          message.publish.topic_name.data
+        , topic
+        , message.publish.topic_name.length );
+
+    memcpy(
+          message.publish.content.data
+        , msg
+        , message.publish.content.length );
+
+    if( state == LAYER_STATE_OK )
+    {
+        state = CALL_ON_SELF_DATA_READY( input_layer, ( void* )&message, LAYER_HINT_NONE );
+    }
+
+    CALL_ON_SELF_CLOSE( input_layer );
+
+    return 0;
+}
+
+#else // XI_NOB_ENABLED
+
+#endif // XI_NOB_ENABLED
+#endif // XI_MQTT_ENABLED
 
 #ifdef __cplusplus
 }
