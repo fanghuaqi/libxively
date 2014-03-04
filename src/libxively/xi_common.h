@@ -5,6 +5,7 @@
 #define __XI_COMMON_H__
 
 #include <stdlib.h>
+#include <stdint.h>
 #include <inttypes.h>
 
 #include "xi_debug.h"
