@@ -20,6 +20,14 @@
 extern "C" {
 #endif
 
+#if 0
+#define XI_NOB_ENABLED 1
+#endif
+
+#if 0
+#define XI_MQTT_ENABLED 1
+#endif
+
 //-----------------------------------------------------------------------
 // TYPES AND STRUCTURES
 //-----------------------------------------------------------------------
@@ -41,6 +49,7 @@ typedef enum {
     XI_WS,
     /** `wss://api.xively.com:8090` */
     XI_WSS,
+    XI_MQTT
 } xi_protocol_t;
 
 typedef uint32_t xi_feed_id_t;
@@ -57,6 +66,8 @@ typedef struct {
     void*         input;        /** Xively ptr to the input data */
 } xi_context_t;
 
+
+#ifndef XI_MQTT_ENABLED
 /**
  * \brief HTTP headers
  */
@@ -113,14 +124,27 @@ typedef struct {
     size_t          http_headers_size;
 } http_response_t;
 
+#else   // XI_MQTT_ENABLED
+#include "message.h"
+#include "xi_mqtt_layer_data.h"
+typedef struct {
+    mqtt_message_t mqtt_message;
+} mqtt_response_t;
+
+#endif  // XI_MQTT_ENABLED
 /**
  * \brief   _The response structure_ - it's the return type for all functions
  *          that communicate with Xively API (_i.e. not helpers or utilities_)
  */
 typedef struct {
+#ifndef XI_MQTT_ENABLED
     http_response_t http;
+#else   // XI_MQTT_ENABLED
+    mqtt_response_t mqtt;
+#endif  // XI_MQTT_ENABLED
 } xi_response_t;
 
+#ifndef XI_MQTT_ENABLED
 /**
  * \brief   The datapoint value union
  */
@@ -267,6 +291,7 @@ extern xi_datapoint_t* xi_set_value_str( xi_datapoint_t* dp, const char* v );
   } \endcode
  */
 extern char* xi_value_pointer_str( xi_datapoint_t* p );
+#endif // XI_MQTT_ENABLED
 
 /**
  * \brief   Sets the timeout for network operations
@@ -311,10 +336,7 @@ extern xi_context_t* xi_create_context(
  */
 extern void xi_delete_context( xi_context_t* context );
 
-#if 0
-#define XI_NOB_ENABLED 1
-#endif
-
+#ifndef XI_MQTT_ENABLED
 #ifndef XI_NOB_ENABLED
 /**
  * \brief   Update Xively feed
@@ -465,7 +487,25 @@ extern const xi_context_t* xi_nob_datapoint_delete(
 extern const xi_context_t* xi_nob_datapoint_delete_range(
           xi_context_t* xi, xi_feed_id_t feed_id, const char * datastream_id
         , const xi_timestamp_t* start, const xi_timestamp_t* end );
+#endif  // XI_NOB_ENABLED
+#else   // XI_MQTT_ENABLED
+
+#ifndef XI_NOB_ENABLED // blocking version
+
+/**
+ * \brief   Connects to the given server and publishes the msg under choosed topic
+ * \note    This version disconnects immidiately
+ */
+extern const xi_response_t* xi_nob_mqtt_publish(
+      xi_context_t* xi
+    , const char* topic
+    , const char* msg );
+
+#else // XI_NOB_ENABLED
+
 #endif // XI_NOB_ENABLED
+
+#endif  // XI_MQTT_ENABLED
 
 #ifdef __cplusplus
 }
