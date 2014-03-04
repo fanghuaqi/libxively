@@ -16,6 +16,7 @@
 #include "xi_globals.h"
 #include "xi_layer_api.h"
 #include "xi_common.h"
+#include "xi_connection_data.h"
 
 extern "C" {
 
@@ -208,4 +209,6 @@ err_handling:
     if( mbed_data ) { XI_SAFE_FREE( mbed_data ); }
 
     return LAYER_STATE_ERROR;
+}
+
 }
