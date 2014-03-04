@@ -203,7 +203,7 @@ static inline void xi_heap_fix_order_down( xi_heap_t* xi_heap, XI_HEAP_INDEX_TYP
     } while( index != li && index != ri );
 }
 
-static inline xi_heap_element_t* xi_heap_element_add( xi_heap_t* xi_heap, XI_HEAP_KEY_TYPE key, void* value )
+static inline const xi_heap_element_t* xi_heap_element_add( xi_heap_t* xi_heap, XI_HEAP_KEY_TYPE key, void* value )
 {
     // PRECONDITIONS
     assert( xi_heap != 0 );
