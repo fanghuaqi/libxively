@@ -14,7 +14,7 @@
 
 //
 #ifndef XI_HEAP_KEY_TYPE
-#define XI_HEAP_KEY_TYPE int8_t
+#define XI_HEAP_KEY_TYPE uint32_t
 #endif // XI_HEAP_KEY_TYPE
 
 //
@@ -261,6 +261,11 @@ static inline const xi_heap_element_t* xi_heap_get_top( xi_heap_t* xi_heap )
 static inline const xi_heap_element_t* xi_heap_peek_top( xi_heap_t* xi_heap )
 {
     return xi_heap->elements[ 0 ];
+}
+
+static inline uint8_t xi_heap_is_empty( xi_heap_t* xi_heap )
+{
+    return xi_heap->first_free == 0 ? 1 : 0;
 }
 
 #endif // __XI_HEAP_H__
