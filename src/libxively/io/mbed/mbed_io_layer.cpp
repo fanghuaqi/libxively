@@ -198,6 +198,8 @@ layer_state_t mbed_io_layer_connect (
         goto err_handling;
     }
 
+    return LAYER_STATE_OK;
+
 err_handling:
     // safely destroy the object
     if ( mbed_data && mbed_data->socket_ptr )
