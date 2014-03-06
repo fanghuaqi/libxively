@@ -13,16 +13,19 @@
 // |
 // ED
 
-#define XI_DIS_EVENTS_BEGIN typedef enum evts{
-#define XI_DIS_EVENTS_FIRST_EVENT(x) x = 0
-#define XI_DIS_EVENTS_EVENT(x) ,x
-#define XI_DIS_EVENTS_LAST_EVENT ,XI_DIS_EVENTS_COUNT
-#define XI_DIS_EVENTS_END }xi_event_type_t;
+#define XI_DIS_EVENTS_BEGIN() typedef enum evts{
+#define XI_DIS_EVENTS_END() }xi_event_type_t;
 
-/*#define XI_DIS_EVENT_1( e1 ) e1 = 1
-#define XI_DIS_EVENT_2( e2, )
-#devine XI_DIS_EVENT_5( e5,  )
-#define XI_DIS_EVENT_6( e6, XI_DIS_EVENT_5( e5, XI_DIS_EVENT_4( e4, XI_DIS_EVENT_3( e3, XI_DIS_EVENT_2( e2, XI_DIS_EVENT_1( e1 ) ) ) ) ) )*/
+#define XI_DIS_EVENTS_1( e1 ) \
+    e1 = 1 << 0
+#define XI_DIS_EVENTS_2( e1, e2 ) \
+    XI_DIS_EVENTS_1( e1 ), e2 = 1 << 1
+#define XI_DIS_EVENTS_3( e1, e2, e3 ) \
+    XI_DIS_EVENTS_2( e1, e2 ), e3 = 1 << 2
+#define XI_DIS_EVENTS_4( e1, e2, e3, e4 ) \
+    XI_DIS_EVENTS_3( e1, e2, e3 ), e4 = 1 << 3
+#define XI_DIS_EVENTS_5( e1, e2, e3, e4, e5 ) \
+    XI_DIS_EVENTS_4( e1, e2, e3, e4 ), e5 = 1 << 4
 
 #define XI_DIS_RET( ret )       typedef ret RET;
 #define XI_DIS_HANDLE_1( T1 )   typedef T1 xi_dis_handle_1_t;

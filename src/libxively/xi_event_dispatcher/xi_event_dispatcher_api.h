@@ -82,7 +82,11 @@ static inline void xi_dis_destroy_instance( xi_dis_instance_t* instance )
     XI_SAFE_FREE( instance );
 }
 
-static inline void xi_dis_update_events( xi_dis_instance_t* dis_instance, xi_dis_evt_desc_t events )
+/**
+ * \brief update events triggers registration of continuations assigned to the given event on given device
+ * \note events_mask is the mask that's created using | operator
+ */
+static inline void xi_dis_update_events( xi_dis_instance_t* dis_instance, uint32_t events_mask )
 {
 
 }
