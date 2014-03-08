@@ -47,33 +47,43 @@ typedef struct
 {
     XI_HEAP_KEY_TYPE    current_step;
     xi_heap_t*          call_heap;
-
+    xi_evtd_handle_t    events_queue[ XI_EVTD_COUNT ];
 } xi_evtd_instance_t;
 
-static inline void xi_evtd_continue_when_evt( xi_event_type_t event_type, xi_evtd_handle_t handle )
+static inline void xi_evtd_continue_when_evt(
+      xi_evtd_instance_t* instance
+    , xi_event_type_t event_type
+    , xi_evtd_handle_t* handle )
 {
 
 }
 
-static inline void xi_evtd_continue( xi_evtd_handle_t handle )
+static inline void xi_evtd_continue(
+      xi_evtd_instance_t* instance
+    , xi_evtd_handle_t* handle )
 {
-
+    xi_heap_element_add(
+          instance->call_heap
+        , instance->current_step + 1
+        , handle );
 }
 
 static inline xi_evtd_instance_t* xi_evtd_create_instance()
 {
-    xi_evtd_instance_t* dis_instance = ( xi_evtd_instance_t* ) xi_alloc( sizeof( xi_evtd_instance_t ) );
+    xi_evtd_instance_t* evtd_instance = ( xi_evtd_instance_t* ) xi_alloc( sizeof( xi_evtd_instance_t ) );
 
-    XI_CHECK_MEMORY( dis_instance );
+    XI_CHECK_MEMORY( evtd_instance );
 
-    memset( dis_instance, 0, sizeof( xi_evtd_instance_t ) );
+    memset( evtd_instance, 0, sizeof( xi_evtd_instance_t ) );
 
-    dis_instance->call_heap = xi_heap_create( 16 );
+    evtd_instance->call_heap = xi_heap_create( 16 );
 
-    XI_CHECK_MEMORY( dis_instance->call_heap );
+    XI_CHECK_MEMORY( evtd_instance->call_heap );
+
+    return evtd_instance;
 
 err_handling:
-    XI_SAFE_FREE( dis_instance );
+    XI_SAFE_FREE( evtd_instance );
     return 0;
 }
 
@@ -87,20 +97,39 @@ static inline void xi_evtd_destroy_instance( xi_evtd_instance_t* instance )
  * \brief update events triggers registration of continuations assigned to the given event on given device
  * \note events_mask is the mask that's created using | operator
  */
-static inline void xi_evtd_update_events( xi_evtd_instance_t* dis_instance, uint32_t events_mask )
+static inline void xi_evtd_update_events(
+      xi_evtd_instance_t* evtd_instance
+    , uint32_t events_mask )
 {
 
 }
 
-static inline void xi_evtd_step( xi_evtd_instance_t* dis_instance )
+static inline void xi_evtd_execute_handle( xi_evtd_handle_t* handle )
 {
-    dis_instance->current_step  += 1;
+    switch( handle->handle_type )
+    {
+        case XI_EVTD_HANDLE_0_ID:
+            ( *handle->handlers.h0.phandle_0 )();
+        break;
+        case XI_EVTD_HANDLE_1_ID:
+            ( *handle->handlers.h1.phandle_1 )( handle->handlers.h1.a1 );
+        break;
+        case XI_EVTD_HANDLE_2_ID:
+        break;
+        case XI_EVTD_HANDLE_3_ID:
+        break;
+    }
+}
+
+static inline void xi_evtd_step( xi_evtd_instance_t* evtd_instance )
+{
+    evtd_instance->current_step  += 1;
     const xi_heap_element_t* tmp = 0;
 
-    while( !xi_heap_is_empty( dis_instance->call_heap ) )
+    while( !xi_heap_is_empty( evtd_instance->call_heap ) )
     {
-        tmp = xi_heap_peek_top( dis_instance->call_heap );
-        if( tmp->key <= dis_instance->current_step )
+        tmp = xi_heap_peek_top( evtd_instance->call_heap );
+        if( tmp->key <= evtd_instance->current_step )
         {
 
         }
