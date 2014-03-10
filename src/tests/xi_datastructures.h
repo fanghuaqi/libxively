@@ -149,7 +149,6 @@ void test_heap_random_add( void* data )
 
     test_heap( heap, 0 );
 
- end:
     xi_heap_destroy( heap );
 }
 
@@ -191,30 +190,3 @@ struct testcase_t datastructures_tests[] = {
     /* The array has to end with END_OF_TESTCASES. */
     END_OF_TESTCASES
 };
-
-/* Next, we make an array of testgroups.  This is mandatory.  Unlike more
-   heavy-duty testing frameworks, groups can't nest. */
-struct testgroup_t groups[] = {
-
-    /* Every group has a 'prefix', and an array of tests.  That's it. */
-    { "heap/", datastructures_tests },
-
-    END_OF_GROUPS
-};
-
-#if XI_UNIT_TEST_NATIVE
-int main( int argc, char const *argv[] )
-{
-  int r = tinytest_main( argc, argv, groups );
-  printf( "status: %i\n", r );
-  return r;
-}
-#else
-int main()
-{
-  const char a[] = {"sim"};
-  int r = tinytest_main( 1, (const char **) a, groups );
-  printf( "status: %i\n", r);
-  return r;
-}
-#endif
