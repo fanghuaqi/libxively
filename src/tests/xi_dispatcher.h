@@ -19,7 +19,7 @@ XI_EVTD_EVENTS_4( XI_EVENT_WANT_READ, XI_EVENT_WANT_WRITE, XI_EVENT_ERROR, XI_EV
 XI_EVTD_EVENTS_END()
 
 XI_EVTD_RET( void );
-XI_EVTD_HANDLE_1( int );
+XI_EVTD_HANDLE_1( uint32_t* );
 XI_EVTD_HANDLE_2( void* );
 XI_EVTD_HANDLE_3( char* );
 XI_EVTD_HANDLE_PTRS();
@@ -28,14 +28,16 @@ typedef uint8_t xi_evtd_evt_desc_t;
 
 #include "xi_event_dispatcher_api.h"
 
+static uint32_t g_cont0_test = 0;
+
 void continuation( void )
 {
-    printf( "test\n" );
+    g_cont0_test = 127;
 }
 
-void continuation1( int a )
+void continuation1( uint32_t* a )
 {
-    printf( "test %d\n", a );
+    *a = 127;
 }
 
 void continuation2( int a, void* b )
@@ -51,36 +53,48 @@ void continuation3( int a, void* b, char* c )
 ///////////////////////////////////////////////////////////////////////////////
 // DISPATCHER TESTS
 ///////////////////////////////////////////////////////////////////////////////
-
-
-
-int main( )
+void test_continuation0( void* data )
 {
+    (void) data;
+
     xi_evtd_instance_t* evtd_i  = xi_evtd_create_instance();
 
-    //xi_evtd_continue( evtd_i, &evtd_handle );
     {
         xi_evtd_handle_t evtd_handle = { XI_EVTD_HANDLE_0_ID, { &continuation } };
         xi_evtd_execute_handle( &evtd_handle );
     }
-    {
-        xi_evtd_handle_t evtd_handle = { XI_EVTD_HANDLE_1_ID, .handlers.h1 = { &continuation1, 4 } };
-        xi_evtd_execute_handle( &evtd_handle );
-    }
-    {
-        void* pv = ( void* ) evtd_i;
-        xi_evtd_handle_t evtd_handle = { XI_EVTD_HANDLE_2_ID, .handlers.h2 = { &continuation2, 16, pv } };
-        xi_evtd_execute_handle( &evtd_handle );
-    }
-    {
-        void* pv    = ( void* ) evtd_i;
-        char pv1[]  = "test of the string\n";
-        xi_evtd_handle_t evtd_handle = { XI_EVTD_HANDLE_3_ID, .handlers.h3 = { &continuation3, 32, pv, ( char* ) pv1 } };
-        xi_evtd_execute_handle( &evtd_handle );
-    }
 
+    tt_assert( g_cont0_test == 127 );
 
+end:
     xi_evtd_destroy_instance( evtd_i );
-
-    return 0;
 }
+
+void test_continuation1( void* data )
+{
+    (void) data;
+
+    xi_evtd_instance_t* evtd_i  = xi_evtd_create_instance();
+
+    uint32_t counter = 0;
+
+    {
+        xi_evtd_handle_t evtd_handle = { XI_EVTD_HANDLE_1_ID, .handlers.h1 = { &continuation1, &counter } };
+        xi_evtd_execute_handle( &evtd_handle );
+    }
+
+    tt_assert( counter == 127 );
+
+end:
+    xi_evtd_destroy_instance( evtd_i );
+}
+
+
+struct testcase_t dispatcher_tests[] = {
+    /* Here's a really simple test: it has a name you can refer to it
+       with, and a function to invoke it. */
+    { "test_dispatcher_continuation0", test_continuation0, TT_ENABLED_, 0, 0 },
+    { "test_dispatcher_continuation1", test_continuation1, TT_ENABLED_, 0, 0 },
+    /* The array has to end with END_OF_TESTCASES. */
+    END_OF_TESTCASES
+};
