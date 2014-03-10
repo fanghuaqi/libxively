@@ -37,7 +37,7 @@
 typedef RET (handle_0)(void); typedef handle_0* handle_0_ptr; \
 typedef RET (handle_1)(xi_evtd_handle_1_t); typedef handle_1* handle_1_ptr; \
 typedef RET (handle_2)(xi_evtd_handle_1_t, xi_evtd_handle_2_t); typedef handle_2* handle_2_ptr; \
-typedef RET (handle_3)(xi_evtd_handle_1_t, xi_evtd_handle_2_t,xi_evtd_handle_3_t); typedef handle_3* handle_3_ptr;
+typedef RET (handle_3)(xi_evtd_handle_1_t, xi_evtd_handle_2_t, xi_evtd_handle_3_t); typedef handle_3* handle_3_ptr;
 
 typedef enum
 {

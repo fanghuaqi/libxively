@@ -115,8 +115,10 @@ static inline void xi_evtd_execute_handle( xi_evtd_handle_t* handle )
             ( *handle->handlers.h1.phandle_1 )( handle->handlers.h1.a1 );
         break;
         case XI_EVTD_HANDLE_2_ID:
+            ( *handle->handlers.h2.phandle_2 )( handle->handlers.h2.a1, handle->handlers.h2.a2 );
         break;
         case XI_EVTD_HANDLE_3_ID:
+            ( *handle->handlers.h3.phandle_3 )( handle->handlers.h3.a1, handle->handlers.h3.a2, handle->handlers.h3.a3 );
         break;
     }
 }
