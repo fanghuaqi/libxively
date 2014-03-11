@@ -60,7 +60,7 @@ void test_continuation0( void* data )
     xi_evtd_instance_t* evtd_i  = xi_evtd_create_instance();
 
     {
-        xi_evtd_handle_t evtd_handle = { XI_EVTD_HANDLE_0_ID, { &continuation } };
+        xi_evtd_handle_t evtd_handle = { XI_EVTD_HANDLE_0_ID, .handlers.h0 = { &continuation } };
         xi_evtd_execute_handle( &evtd_handle );
     }
 
