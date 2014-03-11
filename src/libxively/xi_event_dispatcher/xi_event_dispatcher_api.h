@@ -133,7 +133,9 @@ static inline void xi_evtd_step( xi_evtd_instance_t* evtd_instance )
         tmp = xi_heap_peek_top( evtd_instance->call_heap );
         if( tmp->key <= evtd_instance->current_step )
         {
-
+            tmp = xi_heap_get_top( evtd_instance->call_heap );
+            xi_evtd_handle_t* handle = ( xi_evtd_handle_t* ) tmp->value;
+            xi_evtd_execute_handle( handle );
         }
         else
         {
