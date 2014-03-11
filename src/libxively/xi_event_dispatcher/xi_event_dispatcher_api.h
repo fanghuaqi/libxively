@@ -45,17 +45,25 @@ typedef struct
 
 typedef struct
 {
+    xi_evtd_handle_t*   handle;
+    void*               io_data;
+} xi_evtd_io_pair_t;
+
+typedef struct
+{
     XI_HEAP_KEY_TYPE    current_step;
     xi_heap_t*          call_heap;
-    xi_evtd_handle_t    events_queue[ XI_EVTD_COUNT ];
+    xi_evtd_io_pair_t   events_queue[ XI_EVTD_COUNT ][ 1 ];
+    uint8_t             events_queue_sizes[ XI_EVTD_COUNT ];
 } xi_evtd_instance_t;
 
 static inline void xi_evtd_continue_when_evt(
       xi_evtd_instance_t* instance
     , xi_event_type_t event_type
-    , xi_evtd_handle_t* handle )
+    , xi_evtd_handle_t* handle
+    , void* io_data )
 {
-
+    //events_queue[ event_type ]
 }
 
 static inline void xi_evtd_continue(
