@@ -24,7 +24,7 @@ typedef struct
 
 // declaration of the comparition function type
 // suppose to return -1 if e0 < e1, 0 if e0 == e1 and 1 if e0 > e1
-typedef uint8_t ( xi_static_vector_cmp_t )( void* e0, void* e1 );
+typedef int8_t ( xi_static_vector_cmp_t )( void* e0, void* e1 );
 
 static inline xi_static_vector_t* xi_static_vector_create(
     xi_static_vector_index_type_t capacity )
