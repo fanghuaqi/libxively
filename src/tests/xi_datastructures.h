@@ -245,6 +245,74 @@ end:
     xi_static_vector_destroy( sv );
 }
 
+void test_static_vector_del( void* data )
+{
+    (void)(data);
+
+    xi_static_vector_t* sv = xi_static_vector_create( 4 );
+
+    for( int64_t i = 0; i < 4; ++i )
+    {
+        xi_static_vector_push( sv, ( void* ) i );
+    }
+
+    xi_static_vector_del( sv, 0 );
+
+    tt_assert( sv->array[ 0 ].value == ( void* ) 3 );
+    tt_assert( sv->array[ 1 ].value == ( void* ) 1 );
+    tt_assert( sv->array[ 2 ].value == ( void* ) 2 );
+    tt_assert( sv->elem_no == 3 );
+
+    xi_static_vector_del( sv, 1 );
+
+    tt_assert( sv->array[ 0 ].value == ( void* ) 3 );
+    tt_assert( sv->array[ 1 ].value == ( void* ) 2 );
+    tt_assert( sv->elem_no == 2 );
+
+    tt_assert( sv != 0 );
+    tt_assert( sv->array != 0 );
+
+end:
+;
+    xi_static_vector_destroy( sv );
+}
+
+int8_t cmp( void* e0, void* e1 )
+{
+    if( e0 < e1 )
+    {
+        return -1;
+    }
+    else if( e0 > e1 )
+    {
+        return 1;
+    }
+
+    return 0;
+}
+
+void test_static_vector_find( void* data )
+{
+    (void)(data);
+
+    xi_static_vector_t* sv = xi_static_vector_create( 4 );
+
+
+    for( int64_t i = 0; i < 4; ++i )
+    {
+        xi_static_vector_push( sv, ( void* ) i );
+    }
+
+    for( int64_t i = 3; i >= 0; --i )
+    {
+        tt_assert( i == xi_static_vector_find( sv, ( void* ) i, &cmp ) );
+    }
+
+end:
+;
+    xi_static_vector_destroy( sv );
+}
+
 struct testcase_t datastructures_tests[] = {
     /* Here's a really simple test: it has a name you can refer to it
        with, and a function to invoke it. */
@@ -257,6 +325,9 @@ struct testcase_t datastructures_tests[] = {
     { "test_static_vector_create", test_static_vector_create, TT_ENABLED_, 0, 0 },
     { "test_static_vector_add", test_static_vector_push, TT_ENABLED_, 0, 0 },
     { "test_static_vector_push_all", test_static_vector_push_all, TT_ENABLED_, 0, 0 },
+    { "test_static_vector_push_del", test_static_vector_del, TT_ENABLED_, 0, 0 },
+    { "test_static_vector_push_find", test_static_vector_find, TT_ENABLED_, 0, 0 },
+
     /* The array has to end with END_OF_TESTCASES. */
     END_OF_TESTCASES
 };
