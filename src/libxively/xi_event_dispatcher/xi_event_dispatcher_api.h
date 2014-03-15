@@ -43,18 +43,28 @@ typedef struct
     }handlers;
 } xi_evtd_handle_t;
 
-typedef struct
-{
-    xi_evtd_handle_t*   handle;
-    void*               io_data;
-} xi_evtd_io_pair_t;
+
+#define SIMULTENIOUS_CONNECTIONS 1
+
+// [ fd -> ( handle ) ]
+// [ EVENT -> fd ]
+
+// fd_s get read, fd_s write, fd_s error
+//
+// set_read( fd_s )
+// set_write( fd_s )
+// set_error( fd_s )
+
+//
+
+typedef int32_t xi_fd_t;
 
 typedef struct
 {
-    XI_HEAP_KEY_TYPE    current_step;
-    xi_heap_t*          call_heap;
-    xi_evtd_io_pair_t   events_queue[ XI_EVTD_COUNT ][ 1 ];
-    uint8_t             events_queue_sizes[ XI_EVTD_COUNT ];
+    XI_HEAP_KEY_TYPE        current_step;
+    xi_heap_t*              call_heap;
+    xi_static_vector_t*     events_queue[ XI_EVTD_COUNT ];
+    xi_static_vector_t*     handles_and_fd;
 } xi_evtd_instance_t;
 
 static inline void xi_evtd_continue_when_evt(
@@ -63,7 +73,11 @@ static inline void xi_evtd_continue_when_evt(
     , xi_evtd_handle_t* handle
     , void* io_data )
 {
-    //events_queue[ event_type ]
+    // events_queue[ event_type ]
+
+    // handling registration
+    // get_want_write_ios()
+    // get_want_read_ios()
 }
 
 static inline void xi_evtd_continue(

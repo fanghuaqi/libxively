@@ -22,20 +22,28 @@ typedef struct
     xi_static_vector_index_type_t   capacity;
 } xi_static_vector_t;
 
-static inline xi_static_vector_t* xi_static_vector_create( xi_static_vector_index_type_t capacity )
+// declaration of the comparition function type
+// suppose to return -1 if e0 < e1, 0 if e0 == e1 and 1 if e0 > e1
+typedef uint8_t ( xi_static_vector_cmp_t )( void* e0, void* e1 );
+
+static inline xi_static_vector_t* xi_static_vector_create(
+    xi_static_vector_index_type_t capacity )
 {
     // PRECONDITION
-    assert( capacity < 0 );
+    assert( capacity > 0 );
 
     size_t elems_size = capacity * sizeof( xi_static_vector_elem_t );
 
     xi_static_vector_t* ret = ( xi_static_vector_t* ) xi_alloc( sizeof( xi_static_vector_t ) );
     XI_CHECK_MEMORY( ret );
 
+    memset( ret, 0, sizeof( xi_static_vector_t ) );
+
     ret->array = ( xi_static_vector_elem_t* ) xi_alloc( elems_size );
     XI_CHECK_MEMORY( ret->array );
 
     memset( ret->array, 0, elems_size );
+    ret->capacity = capacity;
 
     return ret;
 
@@ -45,7 +53,8 @@ err_handling:
     return 0;
 }
 
-static inline xi_static_vector_t* xi_static_vector_destroy( xi_static_vector_t* vector )
+static inline xi_static_vector_t* xi_static_vector_destroy(
+    xi_static_vector_t* vector )
 {
     // PRECONDITION
     assert( vector != 0 );
@@ -57,11 +66,11 @@ static inline xi_static_vector_t* xi_static_vector_destroy( xi_static_vector_t* 
     return 0;
 }
 
-static inline xi_static_vector_elem_t* xi_static_vector_push( xi_static_vector_t* vector, void* value )
+static inline const xi_static_vector_elem_t* xi_static_vector_push(
+    xi_static_vector_t* vector, void* value )
 {
     // PRECONDITION
     assert( vector != 0 );
-    assert( vector->elem_no + 1 <= vector->capacity );
 
     if( vector->elem_no + 1 <= vector->capacity )
     {
@@ -74,7 +83,10 @@ static inline xi_static_vector_elem_t* xi_static_vector_push( xi_static_vector_t
     return 0;
 }
 
-static inline void xi_static_vector_swap_elems( xi_static_vector_t* vector, xi_static_vector_index_type_t i0, xi_static_vector_index_type_t i1 )
+static inline void xi_static_vector_swap_elems(
+      xi_static_vector_t* vector
+    , xi_static_vector_index_type_t i0
+    , xi_static_vector_index_type_t i1 )
 {
     // PRECONDITIONS
     assert( vector != 0 );
@@ -88,7 +100,9 @@ static inline void xi_static_vector_swap_elems( xi_static_vector_t* vector, xi_s
     vector->array[ i1 ].value = tmp_value;
 }
 
-static inline void xi_static_vector_del( xi_static_vector_t* vector, xi_static_vector_index_type_t index )
+static inline void xi_static_vector_del(
+      xi_static_vector_t* vector
+    , xi_static_vector_index_type_t index )
 {
     // PRECONDITIONS
     assert( vector != 0 );
@@ -107,7 +121,10 @@ static inline void xi_static_vector_del( xi_static_vector_t* vector, xi_static_v
     }
 }
 
-static inline xi_static_vector_index_type_t xi_static_vector_find( xi_static_vector_t* vector, void* value )
+static inline xi_static_vector_index_type_t xi_static_vector_find(
+      xi_static_vector_t* vector
+    , void* value
+    , xi_static_vector_cmp_t* fun_cmp )
 {
     // PRECONDITIONS
     assert( vector != 0 );
@@ -116,7 +133,7 @@ static inline xi_static_vector_index_type_t xi_static_vector_find( xi_static_vec
 
     for( i = 0; i < vector->elem_no; ++i )
     {
-        if( vector->array[ i ].value == value )
+        if( ( *fun_cmp )( vector->array[ i ].value, value ) == 0 )
         {
             return i;
         }

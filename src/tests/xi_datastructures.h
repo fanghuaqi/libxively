@@ -4,6 +4,7 @@
 #include "tinytest_macros.h"
 
 #include "xi_heap.h"
+#include "xi_static_vector.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -178,6 +179,72 @@ void test_heap_random_remove( void* data )
     xi_heap_destroy( heap );
 }
 
+void test_static_vector_create( void* data )
+{
+    (void)(data);
+
+    xi_static_vector_t* sv = xi_static_vector_create( 16 );
+
+    tt_assert( sv != 0 );
+    tt_assert( sv->array != 0 );
+    tt_assert( sv->capacity == 16 );
+    tt_assert( sv->elem_no == 0 );
+
+    xi_static_vector_destroy( sv );
+
+end:
+;
+}
+
+void test_static_vector_push( void* data )
+{
+    (void)(data);
+
+    xi_static_vector_t* sv = xi_static_vector_create( 4 );
+
+    tt_assert( sv != 0 );
+    tt_assert( sv->array != 0 );
+
+    xi_static_vector_push( sv, ( void* ) 15 );
+
+    tt_assert( sv->array[ 0 ].value == ( void* ) 15 );
+    tt_assert( sv->elem_no == 1 );
+
+end:
+;
+    xi_static_vector_destroy( sv );
+}
+
+void test_static_vector_push_all( void* data )
+{
+    (void)(data);
+
+    xi_static_vector_t* sv = xi_static_vector_create( 4 );
+
+    tt_assert( sv != 0 );
+    tt_assert( sv->array != 0 );
+
+    for( int64_t i = 0; i < 4; ++i )
+    {
+        const xi_static_vector_elem_t* e = xi_static_vector_push( sv, ( void* ) i );
+        tt_assert( &sv->array[ i ] == e );
+    }
+
+    for( int64_t i = 0; i < 4; ++i )
+    {
+        tt_assert( sv->array[ i ].value == ( void* ) i );
+    }
+
+    tt_assert( sv->elem_no == 4 );
+
+    tt_assert( 0 == xi_static_vector_push( sv, ( void* ) 123 ) );
+
+    tt_assert( sv->elem_no == 4 );
+end:
+;
+    xi_static_vector_destroy( sv );
+}
+
 struct testcase_t datastructures_tests[] = {
     /* Here's a really simple test: it has a name you can refer to it
        with, and a function to invoke it. */
@@ -187,6 +254,9 @@ struct testcase_t datastructures_tests[] = {
     { "test_heap_sequencial_add", test_heap_sequencial_add, TT_ENABLED_, 0, 0 },
     { "test_heap_random_add", test_heap_random_add, TT_ENABLED_, 0, 0 },
     { "test_heap_random_remove", test_heap_random_remove, TT_ENABLED_, 0, 0 },
+    { "test_static_vector_create", test_static_vector_create, TT_ENABLED_, 0, 0 },
+    { "test_static_vector_add", test_static_vector_push, TT_ENABLED_, 0, 0 },
+    { "test_static_vector_push_all", test_static_vector_push_all, TT_ENABLED_, 0, 0 },
     /* The array has to end with END_OF_TESTCASES. */
     END_OF_TESTCASES
 };
