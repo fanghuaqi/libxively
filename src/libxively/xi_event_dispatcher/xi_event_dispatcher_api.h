@@ -44,18 +44,6 @@ typedef struct
     }handlers;
 } xi_evtd_handle_t;
 
-
-#define SIMULTENIOUS_CONNECTIONS 1
-
-// [ fd -> ( handle ) ]
-// [ EVENT -> fd ]
-
-// fd_s get read, fd_s write, fd_s error
-//
-// set_read( fd_s )
-// set_write( fd_s )
-// set_error( fd_s )
-
 //
 typedef int xi_fd_t;
 
