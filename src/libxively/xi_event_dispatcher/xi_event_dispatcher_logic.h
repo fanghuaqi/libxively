@@ -6,27 +6,20 @@
 
 #include <stdint.h>
 
-// |
-// |------------- E()
-// |
-// |------------- CALL()
-// |
-// ED
-
 #define XI_EVTD_EVENTS_BEGIN() typedef enum evts{ \
-    XI_EVTD_COUNT = 0
+    XI_EVTD_NO_EVENT = 1 << 0, XI_EVTD_NO_EVENT_ID = 0, XI_EVTD_COUNT = 1
 #define XI_EVTD_EVENTS_END() }xi_event_type_t;
 
 #define XI_EVTD_EVENTS_1( e1 ) \
-    + 1 ,e1 = 1 << 0
+    + 1 , e1##_ID = 1, e1 = 1 << 1
 #define XI_EVTD_EVENTS_2( e1, e2 ) \
-    + 1 XI_EVTD_EVENTS_1( e1 ), e2 = 1 << 1
+    + 1 XI_EVTD_EVENTS_1( e1 ), e2##_id = 2, e2 = 1 << 2
 #define XI_EVTD_EVENTS_3( e1, e2, e3 ) \
-    + 1 XI_EVTD_EVENTS_2( e1, e2 ), e3 = 1 << 2
+    + 1 XI_EVTD_EVENTS_2( e1, e2 ), e3##_ID = 3, e3 = 1 << 3
 #define XI_EVTD_EVENTS_4( e1, e2, e3, e4 ) \
-    + 1 XI_EVTD_EVENTS_3( e1, e2, e3 ), e4 = 1 << 3
+    + 1 XI_EVTD_EVENTS_3( e1, e2, e3 ), e4##_ID = 4, e4 = 1 << 4
 #define XI_EVTD_EVENTS_5( e1, e2, e3, e4, e5 ) \
-    + 1 XI_EVTD_EVENTS_4( e1, e2, e3, e4 ), e5 = 1 << 4
+    + 1 XI_EVTD_EVENTS_4( e1, e2, e3, e4 ), e5##_ID = 5, e5 = 1 << 5
 
 #define XI_EVTD_RET( ret )       typedef ret RET;
 #define XI_EVTD_HANDLE_1( T1 )   typedef T1 xi_evtd_handle_1_t;
