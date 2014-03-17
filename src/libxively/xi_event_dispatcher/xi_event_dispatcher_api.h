@@ -50,7 +50,7 @@ typedef int xi_fd_t;
 typedef struct
 {
     xi_fd_t             fd;
-    xi_evtd_handle_t*   handle;
+    xi_evtd_handle_t    handle;
     xi_event_type_t     event_type;
 } xi_evtd_triplet_t;
 
@@ -76,12 +76,11 @@ static inline int8_t xi_evtd_cmp_fd( void* e0, void* value )
 
 static inline int8_t xi_evtd_register_fd(
       xi_evtd_instance_t* instance
-    , xi_evtd_handle_t* handle
+    , xi_evtd_handle_t handle
     , xi_fd_t fd )
 {
     // PRECONDITIONS
     assert( instance != 0 );
-    assert( handle   != 0 );
     assert( xi_static_vector_find( instance->handles_and_fd, ( void* )( intptr_t ) fd, &xi_evtd_cmp_fd ) == -1 );
 
     // register new file descriptor
@@ -257,7 +256,7 @@ static inline void xi_evtd_update_events(
             xi_evtd_triplet_t* triplet
                 = ( xi_evtd_triplet_t* ) instance->handles_and_fd->array[ id ].value;
 
-            xi_evtd_execute_handle( triplet->handle );
+            xi_evtd_execute_handle( &triplet->handle );
         }
         else
         {
