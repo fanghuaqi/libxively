@@ -160,11 +160,12 @@ static inline int8_t xi_evtd_continue_when_evt(
 
 static inline void xi_evtd_continue(
       xi_evtd_instance_t* instance
-    , xi_evtd_handle_t* handle )
+    , xi_evtd_handle_t* handle
+    , XI_HEAP_KEY_TYPE time_diff )
 {
     xi_heap_element_add(
           instance->call_heap
-        , instance->current_step + 1
+        , instance->current_step + time_diff
         , handle );
 }
 
@@ -212,9 +213,11 @@ static inline void xi_evtd_execute_handle( xi_evtd_handle_t* handle )
     }
 }
 
-static inline void xi_evtd_step( xi_evtd_instance_t* evtd_instance )
+static inline void xi_evtd_step(
+      xi_evtd_instance_t* evtd_instance
+    , XI_HEAP_KEY_TYPE new_step )
 {
-    evtd_instance->current_step  += 1;
+    evtd_instance->current_step  = new_step;
     const xi_heap_element_t* tmp = 0;
 
     while( !xi_heap_is_empty( evtd_instance->call_heap ) )
