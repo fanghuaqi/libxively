@@ -50,6 +50,19 @@ void continuation3( int a, void* b, char* c )
     printf( "test %d, %p, %s\n", a, b, c );
 }
 
+static xi_evtd_instance_t* evtd_g_i = 0;
+static xi_evtd_handle_t evtd_handle_g;
+
+void proc_loop( uint32_t* a )
+{
+    *a -= 1;
+
+    if( *a > 0 )
+    {
+        xi_evtd_continue( evtd_g_i, &evtd_handle_g, 1 );
+    }
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // DISPATCHER TESTS
 ///////////////////////////////////////////////////////////////////////////////
@@ -89,12 +102,43 @@ end:
     xi_evtd_destroy_instance( evtd_i );
 }
 
+void test_handler_processing_loop( void* data )
+{
+    (void) data;
+
+    evtd_g_i  = xi_evtd_create_instance();
+
+    uint32_t counter        = 10;
+    XI_HEAP_KEY_TYPE step   = 0;
+
+
+    evtd_handle_g.handle_type           = XI_EVTD_HANDLE_1_ID;
+    evtd_handle_g.handlers.h1.phandle_1 = &proc_loop;
+    evtd_handle_g.handlers.h1.a1        = &counter;
+
+    xi_evtd_continue( evtd_g_i, &evtd_handle_g, 0 );
+
+    while( evtd_g_i->call_heap->first_free > 0 )
+    {
+        xi_evtd_step( evtd_g_i, step );
+        step += 1;
+        tt_assert( counter == 10 - step );
+    }
+
+    tt_assert( counter == 0 );
+    tt_assert( step == 10 );
+
+end:
+    xi_evtd_destroy_instance( evtd_g_i );
+}
+
 
 struct testcase_t dispatcher_tests[] = {
     /* Here's a really simple test: it has a name you can refer to it
        with, and a function to invoke it. */
     { "test_dispatcher_continuation0", test_continuation0, TT_ENABLED_, 0, 0 },
     { "test_dispatcher_continuation1", test_continuation1, TT_ENABLED_, 0, 0 },
+    { "test_dispatcher_processing_loop", test_handler_processing_loop, TT_ENABLED_, 0, 0 },
     /* The array has to end with END_OF_TESTCASES. */
     END_OF_TESTCASES
 };
