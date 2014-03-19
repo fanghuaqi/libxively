@@ -132,6 +132,41 @@ end:
     xi_evtd_destroy_instance( evtd_g_i );
 }
 
+void test_register_fd( void* data )
+{
+    (void) data;
+
+    evtd_g_i  = xi_evtd_create_instance();
+
+    tt_assert( xi_evtd_register_fd( evtd_g_i, 15 ) != 0 );
+    {
+        xi_evtd_triplet_t* tmp = ( xi_evtd_triplet_t* ) evtd_g_i->handles_and_fd->array[ 0 ].value;
+        tt_assert( tmp->fd == 15 );
+        tt_assert( tmp->event_type == XI_EVTD_NO_EVENT );
+    }
+
+    tt_assert( xi_evtd_register_fd( evtd_g_i, 14 ) );
+    {
+        xi_evtd_triplet_t* tmp = ( xi_evtd_triplet_t* ) evtd_g_i->handles_and_fd->array[ 1 ].value;
+        tt_assert( tmp->fd == 14 );
+        tt_assert( tmp->event_type == XI_EVTD_NO_EVENT );
+    }
+
+    tt_assert( xi_evtd_register_fd( evtd_g_i, 12 ) );
+    {
+        xi_evtd_triplet_t* tmp = ( xi_evtd_triplet_t* ) evtd_g_i->handles_and_fd->array[ 2 ].value;
+        tt_assert( tmp->fd == 12 );
+        tt_assert( tmp->event_type == XI_EVTD_NO_EVENT );
+    }
+
+
+    xi_evtd_unregister_fd( evtd_g_i, 12 );
+    xi_evtd_unregister_fd( evtd_g_i, 15 );
+    xi_evtd_unregister_fd( evtd_g_i, 14 );
+
+end:
+    xi_evtd_destroy_instance( evtd_g_i );
+}
 
 struct testcase_t dispatcher_tests[] = {
     /* Here's a really simple test: it has a name you can refer to it
@@ -139,6 +174,7 @@ struct testcase_t dispatcher_tests[] = {
     { "test_dispatcher_continuation0", test_continuation0, TT_ENABLED_, 0, 0 },
     { "test_dispatcher_continuation1", test_continuation1, TT_ENABLED_, 0, 0 },
     { "test_dispatcher_processing_loop", test_handler_processing_loop, TT_ENABLED_, 0, 0 },
+    { "test_register_fd", test_register_fd, TT_ENABLED_, 0, 0 },
     /* The array has to end with END_OF_TESTCASES. */
     END_OF_TESTCASES
 };

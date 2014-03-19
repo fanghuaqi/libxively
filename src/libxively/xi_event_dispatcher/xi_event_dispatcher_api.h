@@ -76,7 +76,6 @@ static inline int8_t xi_evtd_cmp_fd( void* e0, void* value )
 
 static inline int8_t xi_evtd_register_fd(
       xi_evtd_instance_t* instance
-    , xi_evtd_handle_t handle
     , xi_fd_t fd )
 {
     // PRECONDITIONS
@@ -88,7 +87,6 @@ static inline int8_t xi_evtd_register_fd(
     XI_CHECK_MEMORY( triplet );
 
     triplet->fd            = fd;
-    triplet->handle        = handle;
     triplet->event_type    = XI_EVTD_NO_EVENT;
 
     // register within the handles
@@ -96,6 +94,8 @@ static inline int8_t xi_evtd_register_fd(
         const xi_static_vector_elem_t* e = xi_static_vector_push( instance->handles_and_fd, triplet );
         if( e == 0 ){ goto err_handling; }
     }
+
+    return 1;
 
 err_handling:
     XI_SAFE_FREE( triplet );
@@ -117,6 +117,8 @@ static inline int8_t xi_evtd_unregister_fd(
     // remove from the vector
     if( id != -1 )
     {
+        assert( instance->handles_and_fd->array[ id ].value != 0 );
+        XI_SAFE_FREE( instance->handles_and_fd->array[ id ].value );
         xi_static_vector_del( instance->handles_and_fd, id );
         return 1;
     }
@@ -129,13 +131,11 @@ static inline int8_t xi_evtd_unregister_fd(
 static inline int8_t xi_evtd_continue_when_evt(
       xi_evtd_instance_t* instance
     , xi_event_type_t event_type
-    , xi_evtd_handle_t* handle
+    , xi_evtd_handle_t handle
     , xi_fd_t fd )
 {
     // PRECONDITIONS
     assert( instance != 0 );
-    assert( handle != 0 );
-
 
     xi_static_vector_index_type_t id
         = xi_static_vector_find(
@@ -143,13 +143,14 @@ static inline int8_t xi_evtd_continue_when_evt(
             , ( void* )( intptr_t ) fd, &xi_evtd_cmp_fd );
 
 
-    // remove from the vector
+    // set up the values of the triplet
     if( id != -1 )
     {
         xi_evtd_triplet_t* triplet
             = ( xi_evtd_triplet_t* )
                 instance->handles_and_fd->array[ id ].value;
         triplet->event_type = event_type;
+        triplet->handle     = handle;
         return 1;
     }
 
@@ -181,6 +182,10 @@ static inline xi_evtd_instance_t* xi_evtd_create_instance()
 
     XI_CHECK_MEMORY( evtd_instance->call_heap );
 
+    evtd_instance->handles_and_fd = xi_static_vector_create( 16 );
+
+    XI_CHECK_MEMORY( evtd_instance->handles_and_fd );
+
     return evtd_instance;
 
 err_handling:
@@ -190,6 +195,7 @@ err_handling:
 
 static inline void xi_evtd_destroy_instance( xi_evtd_instance_t* instance )
 {
+    xi_static_vector_destroy( instance->handles_and_fd );
     xi_heap_destroy( instance->call_heap );
     XI_SAFE_FREE( instance );
 }
