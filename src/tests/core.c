@@ -292,13 +292,17 @@ struct testcase_t core_tests[] = {
     END_OF_TESTCASES
 };
 
+#include "xi_datastructures.h"
+#include "xi_dispatcher.h"
+
 /* Next, we make an array of testgroups.  This is mandatory.  Unlike more
    heavy-duty testing frameworks, groups can't nest. */
 struct testgroup_t groups[] = {
 
     /* Every group has a 'prefix', and an array of tests.  That's it. */
     { "csv/", core_tests },
-
+    { "heap/", datastructures_tests },
+    { "dispatcher/", dispatcher_tests },
     END_OF_GROUPS
 };
 
@@ -310,7 +314,7 @@ int main( int argc, char const *argv[] )
   return r;
 }
 #else
-int main() 
+int main()
 {
   const char a[] = {"sim"};
   int r = tinytest_main( 1, (const char **) a, groups );
