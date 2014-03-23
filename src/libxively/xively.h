@@ -492,6 +492,20 @@ extern const xi_context_t* xi_nob_datapoint_delete_range(
 
 #ifndef XI_NOB_ENABLED // blocking version
 
+extern const xi_response_t* xi_mqtt_publish(
+      xi_context_t* xi
+    , const char* topic
+    , const char* msg );
+
+#else // XI_NOB_ENABLED
+
+/**
+ * \brief   Creates layers and initialzes them
+ */
+extern const xi_response_t* xi_nob_mqtt_init(
+        xi_context_t* xi
+    );
+
 /**
  * \brief   Connects to the given server and publishes the msg under choosed topic
  * \note    This version disconnects immidiately
@@ -501,7 +515,15 @@ extern const xi_response_t* xi_nob_mqtt_publish(
     , const char* topic
     , const char* msg );
 
-#else // XI_NOB_ENABLED
+/**
+ * \brief   Subscribes for notification of given topic
+ * \note    The handle shall be called upon the proper message of given topic
+ */
+extern const xi_response_t* xi_nob_mqtt_subscribe(
+    xi_context_t* xi
+    , const char* topic
+    , void* handle
+    );
 
 #endif // XI_NOB_ENABLED
 

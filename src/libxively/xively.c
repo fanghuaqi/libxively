@@ -291,7 +291,19 @@ DEFINE_CONNECTION_SCHEME( CONNECTION_SCHEME_2, CONNECTION_SCHEME_2_DATA );
     #include "posix_asynch_io_layer.h"
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    #ifdef XI_MQTT_ENABLED
 
+    #include "xi_mqtt_layer.h"
+    #include "xi_mqtt_layer_data.h"
+
+    BEGIN_LAYER_TYPES_CONF()
+          LAYER_TYPE( IO_LAYER, &posix_asynch_io_layer_data_ready, &posix_asynch_io_layer_on_data_ready
+                                , &posix_asynch_io_layer_close, &posix_asynch_io_layer_on_close
+                                , &posix_asynch_io_layer_init, &posix_asynch_io_layer_connect )
+        , LAYER_TYPE( MQTT_LAYER, &xi_mqtt_layer_data_ready, &xi_mqtt_layer_on_data_ready
+                                , &xi_mqtt_layer_close, &xi_mqtt_layer_on_close, 0, 0 )
+    END_LAYER_TYPES_CONF()
+    #else
     BEGIN_LAYER_TYPES_CONF()
           LAYER_TYPE( IO_LAYER, &posix_asynch_io_layer_data_ready, &posix_asynch_io_layer_on_data_ready
                               , &posix_asynch_io_layer_close, &posix_asynch_io_layer_on_close
@@ -301,6 +313,7 @@ DEFINE_CONNECTION_SCHEME( CONNECTION_SCHEME_2, CONNECTION_SCHEME_2_DATA );
         , LAYER_TYPE( CSV_LAYER, &csv_layer_data_ready, &csv_layer_on_data_ready
                             , &csv_layer_close, &csv_layer_on_close, 0, 0 )
     END_LAYER_TYPES_CONF()
+    #endif
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1172,7 +1185,7 @@ const xi_context_t* xi_nob_datapoint_delete_range(
 
 #ifndef XI_NOB_ENABLED // blocking version
 
-extern const xi_response_t* xi_nob_mqtt_publish(
+extern const xi_response_t* xi_mqtt_publish(
       xi_context_t* xi
     , const char* topic
     , const char* msg )
@@ -1258,6 +1271,14 @@ extern const xi_response_t* xi_nob_mqtt_publish(
 }
 
 #else // XI_NOB_ENABLED
+
+extern const xi_response_t* xi_nob_mqtt_publish(
+      xi_context_t* xi
+    , const char* topic
+    , const char* msg )
+{
+    return LAYER_STATE_OK;
+}
 
 #endif // XI_NOB_ENABLED
 #endif // XI_MQTT_ENABLED
