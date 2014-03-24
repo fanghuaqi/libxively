@@ -56,25 +56,25 @@ struct user_data
 
 uint8_t on_a( layer_t* layer, mqtt_message_t* message )
 {
-    // CALL_AND_YIELD_UNTIL_DONE( xi_mqtt_nob_publish( "/topic/B", "got B!" ) );
+    // CONTINUE_ON( xi_mqtt_nob_publish( "/topic/B", "got B!" ) );
     return 0;
 }
 
 uint8_t on_b( layer_t* layer, mqtt_message_t* message )
 {
-    // CALL_AND_YIELD_UNTIL_DONE( xi_mqtt_nob_publish( "/topic/A", "got A!" ) );
+    // CONTINUE_ON( xi_mqtt_nob_publish( "/topic/A", "got A!" ) );
     return 0;
 }
 
 uint8_t publish_tempreture( layer_t* layer )
 {
-    // CALL_AND_YIELD_UNTIL_DONE( xi_mqtt_nob_publish( "/topic/tempreture", "current tempreture is %s", tempreture_value ) );
+    // CONTINUE_ON( xi_mqtt_nob_publish( "/topic/tempreture", "current tempreture is %s", tempreture_value ) );
     return 0;
 }
 
 uint8_t publish_cpu( layer_t* layer )
 {
-    // CALL_AND_YIELD_UNTIL_DONE( xi_mqtt_nob_publish( "/topic/cpu", "current cpu is %s%%", cpu_value ) );
+    // CONTINUE_ON( xi_mqtt_nob_publish( "/topic/cpu", "current cpu is %s%%", cpu_value ) );
     return 0;
 }
 
@@ -84,15 +84,15 @@ uint8_t users_idle_loop( layer_t* layer )
 
     BEGIN_CORO( coro_state );
 
-    // CALL_AND_YIELD_UNTIL_DONE( xi_mqtt_nob_subscribe( "/topic/A", on_a ) );
-    // CALL_AND_YIELD_UNTIL_DONE( xi_mqtt_nob_subscribe( "/topic/B", on_b ) );
-    // CALL_AND_YIELD_UNTIL_DONE( xi_mqtt_nob_publish( "/topic/A", "Hi friends from A!" ) );
-    // CALL_AND_YIELD_UNTIL_DONE( xi_mqtt_nob_publish( "/topic/B", "Hi friends from B!" ) );
+    // YIELD_AND_CONTINUE_ON( coro_state, xi_mqtt_nob_subscribe( "/topic/A", on_a ) );
+    // YIELD_AND_CONTINUE_ON( coro_state, xi_mqtt_nob_subscribe( "/topic/B", on_b ) );
+    // YIELD_AND_CONTINUE_ON( coro_state, xi_mqtt_nob_publish( "/topic/A", "Hi friends from A!" ) );
+    // YIELD_AND_CONTINUE_ON( coro_state, xi_mqtt_nob_publish( "/topic/B", "Hi friends from B!" ) );
 
     while( 1 )
     {
-        // CALL_AND_YIELD_UNTIL_DONE_EVERY( 10, publish_tempreture );
-        // CALL_AND_YIELD_UNTIL_DONE_EVERY( 20, publish_cpu );
+        // YIELD_AND_CONTINUE_ON_IN( coro_state, 10, publish_tempreture );
+        // YIELD_AND_CONTINUE_ON_IN( coro_state, 20, publish_cpu );
     }
 
     END_CORO();
@@ -110,8 +110,8 @@ uint8_t xi_mqtt_logic_loop( layer_t* layer )
 
     while( 1 )
     {
-        //  CALL_AND_YIELD_UNTIL_DONE( call_users_idle_loop );
-        //  CALL_AND_YIELD_UNTIL_DONE( receive_publishes );
+        //  YIELD_AND_CONTINUE( call_users_idle_loop );
+        //  YIELD_AND_CONTINUE( receive_publishes );
     }
 
     END_CORO();
