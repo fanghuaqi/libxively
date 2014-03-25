@@ -8,41 +8,7 @@
 
 #include "xi_allocator.h"
 #include "xi_macros.h"
-#include "xi_heap.h"
-#include "xi_static_vector.h"
-
-typedef struct
-{
-    xi_evtd_handle_id_t handle_type;
-    union
-    {
-        struct
-        {
-            handle_0_ptr phandle_0;
-        }h0;
-
-        struct
-        {
-            handle_1_ptr phandle_1;
-            xi_evtd_handle_1_t a1;
-        }h1;
-
-        struct
-        {
-            handle_2_ptr phandle_2;
-            xi_evtd_handle_1_t a1;
-            xi_evtd_handle_2_t a2;
-        }h2;
-
-        struct
-        {
-            handle_3_ptr phandle_3;
-            xi_evtd_handle_1_t a1;
-            xi_evtd_handle_2_t a2;
-            xi_evtd_handle_3_t a3;
-        }h3;
-    }handlers;
-} xi_evtd_handle_t;
+#include "xi_event_handler.h"
 
 //
 typedef int xi_fd_t;
@@ -54,13 +20,13 @@ typedef struct
     xi_event_type_t     event_type;
 } xi_evtd_triplet_t;
 
-
 typedef struct
 {
     XI_HEAP_KEY_TYPE        current_step;
     xi_heap_t*              call_heap;
     xi_static_vector_t*     handles_and_fd;
 } xi_evtd_instance_t;
+
 
 static inline int8_t xi_evtd_cmp_fd( void* e0, void* value )
 {

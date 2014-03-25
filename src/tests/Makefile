@@ -9,7 +9,7 @@ XI_TEST_SOURCES := $(XI_TEST_SUITE).c $(XI) $(XI_OBJDIR)/tinytest/tinytest.o
 
 TINYTEST_SRCDIR ?= ../import/tinytest/
 
-XI_CFLAGS += -I../libxively/ -I$(TINYTEST_SRCDIR) -I../libxively/xi_datastructures -I../libxively/xi_event_dispatcher
+XI_CFLAGS += -I./ -I../libxively/ -I$(TINYTEST_SRCDIR) -I../libxively/xi_datastructures -I../libxively/xi_event_dispatcher
 
 ifneq ($(XI_UNIT_TEST_TARGET),native)
   XI_CFLAGS += -DNO_FORKING

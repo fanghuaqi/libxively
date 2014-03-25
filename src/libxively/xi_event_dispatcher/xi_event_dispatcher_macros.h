@@ -1,8 +1,8 @@
 // Copyright (c) 2003-2014, LogMeIn, Inc. All rights reserved.
 // This is part of Xively C library, it is under the BSD 3-Clause license.
 
-#ifndef __XI_EVENT_DISPATCHER_LOGIC_H__
-#define __XI_EVENT_DISPATCHER_LOGIC_H__
+#ifndef __XI_EVENT_DISPATCHER_MACROS_H__
+#define __XI_EVENT_DISPATCHER_MACROS_H__
 
 #include <stdint.h>
 
@@ -40,5 +40,4 @@ typedef enum
     XI_EVTD_HANDLE_3_ID
 } xi_evtd_handle_id_t;
 
-
-#endif // __XI_EVENT_DISPATCHER_LOGIC_H__
+#endif // __XI_EVENT_DISPATCHER_MACROS_H__

@@ -16,6 +16,7 @@ typedef struct
     // handle functions versus the subscribed topics
     // so it's easy for the user to register his callback
     // for each of the subscribed topics
+
 } xi_mqtt_logic_layer_data_t;
 
 #ifdef __cplusplus
