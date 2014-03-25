@@ -1,0 +1,57 @@
+// Copyright (c) 2003-2014, LogMeIn, Inc. All rights reserved.
+// This is part of Xively C library, it is under the BSD 3-Clause license.
+
+#include "xi_coroutine.h"
+#include "xi_mqtt_logic_layer.h"
+
+#include "message.h"
+#include "serialiser.h"
+#include "parser.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+layer_state_t xi_mqtt_logic_layer_data_ready(
+      layer_connectivity_t* context
+    , const void* data
+    , const layer_hint_t hint )
+{
+    // sending request
+    // type of the request depends on
+    // the state that we are in
+    // it's easy to determine if we are in the middle of
+    // processing a single request or we are starting new one
+    //
+    return LAYER_STATE_OK;
+}
+
+layer_state_t xi_mqtt_logic_layer_on_data_ready(
+      layer_connectivity_t* context
+    , const void* data
+    , const layer_hint_t hint )
+{
+    // receiving message
+    // will go through the state machine
+    // so that it will decide what to do next
+    // this is very important part of the
+    //
+    return LAYER_STATE_OK;
+}
+
+layer_state_t xi_mqtt_logic_layer_close(
+    layer_connectivity_t* context )
+{
+    return LAYER_STATE_OK;
+}
+
+layer_state_t xi_mqtt_logic_layer_on_close(
+    layer_connectivity_t* context )
+{
+    return LAYER_STATE_OK;
+}
+
+
+#ifdef __cplusplus
+}
+#endif
