@@ -4,7 +4,8 @@
 #ifndef __MQTT_LOGIC_LAYER_DATA_H__
 #define __MQTT_LOGIC_LAYER_DATA_H__
 
-#include "parser.h"
+#include "xi_event_handler.h"
+#include "xi_static_vector.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -16,6 +17,7 @@ typedef struct
     // handle functions versus the subscribed topics
     // so it's easy for the user to register his callback
     // for each of the subscribed topics
+    xi_evtd_handle_t user_idle_handle;
 
 } xi_mqtt_logic_layer_data_t;
 
