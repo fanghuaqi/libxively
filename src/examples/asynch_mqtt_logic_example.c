@@ -56,7 +56,7 @@ struct user_data
 
 uint8_t on_a( layer_t* layer, mqtt_message_t* message )
 {
-    // CONTINUE_ON( xi_mqtt_nob_publish( "/topic/B", "got B!" ) );
+    xi_mqtt_nob_publish( "/topic/B", "got B!" );
     return 0;
 }
 
@@ -154,6 +154,16 @@ int main( int argc, char* argv[] )
     {
         return -1;
     }
+
+    xi_nob_mqtt_subscribe( xi, "/a/b/c/0", on_0 );
+    xi_nob_mqtt_subscribe( xi, "/a/b/c/1", on_1 );
+    xi_nob_mqtt_subscribe( xi, "/a/b/c/2", on_2 );
+    xi_nob_mqtt_subscribe( xi, "/a/b/c/3", on_3 );
+    xi_nob_mqtt_subscribe( xi, "/a/b/c/4", on_4 );
+    xi_call_every( 10, handler );
+
+
+    main_loop();
 
     const xi_response_t* response = xi_nob_mqtt_publish( xi_context, argv[ 1 ], argv[ 2 ] );
 

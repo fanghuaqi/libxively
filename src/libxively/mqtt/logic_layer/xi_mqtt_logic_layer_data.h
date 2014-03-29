@@ -11,14 +11,18 @@
 extern "C" {
 #endif
 
+typedef int8_t ( xi_user_idle_t )( void* );
+
 typedef struct
 {
     // here we are going to store the mapping of the
     // handle functions versus the subscribed topics
     // so it's easy for the user to register his callback
     // for each of the subscribed topics
-    xi_evtd_handle_t user_idle_handle;
 
+    // handle to the user idle function that suppose to
+    xi_user_idle_t*     user_idle_ptr;
+    xi_static_vector_t* handlers_for_topics;
 } xi_mqtt_logic_layer_data_t;
 
 #ifdef __cplusplus

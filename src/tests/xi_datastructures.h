@@ -19,7 +19,7 @@ void test_heap_index_calculus( void* data )
 {
     (void)(data);
 
-    XI_HEAP_INDEX_TYPE index = 0;
+    xi_heap_index_type_t index = 0;
 
     tt_assert( RIGHT( index ) == 2 );
     tt_assert( LEFT( index ) == 1 );
@@ -109,14 +109,14 @@ void test_heap_sequencial_add( void* data)
     xi_heap_destroy( heap );
 }
 
-void test_heap( xi_heap_t* heap, XI_HEAP_INDEX_TYPE index )
+void test_heap( xi_heap_t* heap, xi_heap_index_type_t index )
 {
     if( index >= heap->first_free ) { return; }
 
     xi_heap_element_t* e    = heap->elements[ index ];
 
-    XI_HEAP_INDEX_TYPE li   = LEFT( index );
-    XI_HEAP_INDEX_TYPE ri   = RIGHT( index );
+    xi_heap_index_type_t li   = LEFT( index );
+    xi_heap_index_type_t ri   = RIGHT( index );
 
     li = li >= heap->first_free ? index : li;
     ri = ri >= heap->first_free ? index : ri;
@@ -144,7 +144,7 @@ void test_heap_random_add( void* data )
 
     for( size_t i = 0; i < 64; ++i )
     {
-        XI_HEAP_INDEX_TYPE index = rand() & 63;
+        xi_heap_index_type_t index = rand() & 63;
         xi_heap_element_add( heap, index, ( void* ) i );
     }
 
@@ -162,11 +162,11 @@ void test_heap_random_remove( void* data )
 
     for( size_t i = 0; i < 64; ++i )
     {
-        XI_HEAP_INDEX_TYPE index = rand() & 63;
+        xi_heap_index_type_t index = rand() & 63;
         xi_heap_element_add( heap, index, ( void* ) i );
     }
 
-    XI_HEAP_KEY_TYPE key = 0;
+    xi_heap_key_type_t key = 0;
 
     for( size_t i = 0; i < 64; ++i )
     {

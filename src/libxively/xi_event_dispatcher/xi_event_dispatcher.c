@@ -1,4 +1,5 @@
 #include "xi_event_dispatcher_api.h"
+#include "xi_heap.h"
 
 static inline int8_t xi_evtd_cmp_fd( void* e0, void* value )
 {
@@ -100,7 +101,7 @@ int8_t xi_evtd_continue_when_evt(
 void xi_evtd_continue(
       xi_evtd_instance_t* instance
     , xi_evtd_handle_t* handle
-    , XI_HEAP_KEY_TYPE time_diff )
+    , xi_heap_key_type_t time_diff )
 {
     xi_heap_element_add(
           instance->call_heap
@@ -159,7 +160,7 @@ void xi_evtd_execute_handle( xi_evtd_handle_t* handle )
 
 void xi_evtd_step(
       xi_evtd_instance_t* evtd_instance
-    , XI_HEAP_KEY_TYPE new_step )
+    , xi_heap_key_type_t new_step )
 {
     evtd_instance->current_step  = new_step;
     const xi_heap_element_t* tmp = 0;

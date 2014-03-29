@@ -113,8 +113,8 @@ void test_handler_processing_loop( void* data )
 
     evtd_g_i  = xi_evtd_create_instance();
 
-    uint32_t counter        = 10;
-    XI_HEAP_KEY_TYPE step   = 0;
+    uint32_t counter            = 10;
+    xi_heap_key_type_t step     = 0;
 
 
     evtd_handle_g.handle_type           = XI_EVTD_HANDLE_1_ID;

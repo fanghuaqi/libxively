@@ -11,31 +11,22 @@
 #include "xi_debug.h"
 #include "xi_allocator.h"
 #include "xi_macros.h"
+#include "xi_heap_typedefs.h"
 
 //
-#ifndef XI_HEAP_KEY_TYPE
-#define XI_HEAP_KEY_TYPE uint32_t
-#endif // XI_HEAP_KEY_TYPE
-
-//
-#ifndef XI_HEAP_INDEX_TYPE
-#define XI_HEAP_INDEX_TYPE uint8_t
-#endif // XI_HEAP_INDEX_TYPE
-
-//
-typedef struct
+typedef struct xi_heap_element_s
 {
-    void*               value;
-    XI_HEAP_KEY_TYPE    key;
-    XI_HEAP_INDEX_TYPE  index;
+    xi_heap_type_t          value;
+    xi_heap_key_type_t      key;
+    xi_heap_index_type_t    index;
 } xi_heap_element_t;
 
 //
-typedef struct
+typedef struct xi_heap_s
 {
-    xi_heap_element_t** elements;
-    XI_HEAP_INDEX_TYPE  first_free;
-    XI_HEAP_INDEX_TYPE  capacity;
+    xi_heap_element_t**     elements;
+    xi_heap_index_type_t    first_free;
+    xi_heap_index_type_t    capacity;
 } xi_heap_t;
 
 // inxex calculus
@@ -46,17 +37,17 @@ typedef struct
 #define PARENT( i ) (   ( ( i + 1 ) >> 1 ) - 1 )
 
 // api
-extern xi_heap_t* xi_heap_create( XI_HEAP_INDEX_TYPE capacity );
+extern xi_heap_t* xi_heap_create( xi_heap_index_type_t capacity );
 
 extern void xi_heap_destroy( xi_heap_t* xi_heap );
 
 extern void xi_heap_elements_swap( xi_heap_element_t** a, xi_heap_element_t** b );
 
-extern void xi_heap_fix_order_up( xi_heap_t* xi_heap, XI_HEAP_INDEX_TYPE index );
+extern void xi_heap_fix_order_up( xi_heap_t* xi_heap, xi_heap_index_type_t index );
 
-extern void xi_heap_fix_order_down( xi_heap_t* xi_heap, XI_HEAP_INDEX_TYPE index );
+extern void xi_heap_fix_order_down( xi_heap_t* xi_heap, xi_heap_index_type_t index );
 
-extern const xi_heap_element_t* xi_heap_element_add( xi_heap_t* xi_heap, XI_HEAP_KEY_TYPE key, void* value );
+extern const xi_heap_element_t* xi_heap_element_add( xi_heap_t* xi_heap, xi_heap_key_type_t key, void* value );
 
 extern const xi_heap_element_t* xi_heap_get_top( xi_heap_t* xi_heap );
 

@@ -125,6 +125,7 @@ typedef struct {
 } http_response_t;
 
 #else   // XI_MQTT_ENABLED
+
 #include "message.h"
 #include "xi_mqtt_layer_data.h"
 typedef struct {
@@ -132,6 +133,7 @@ typedef struct {
 } mqtt_response_t;
 
 #endif  // XI_MQTT_ENABLED
+
 /**
  * \brief   _The response structure_ - it's the return type for all functions
  *          that communicate with Xively API (_i.e. not helpers or utilities_)
@@ -336,8 +338,8 @@ extern xi_context_t* xi_create_context(
  */
 extern void xi_delete_context( xi_context_t* context );
 
-#ifndef XI_MQTT_ENABLED
-#ifndef XI_NOB_ENABLED
+#if !defined( XI_MQTT_ENABLED ) && !defined( XI_NOB_ENABLED )
+
 /**
  * \brief   Update Xively feed
  */
@@ -411,7 +413,8 @@ extern const xi_response_t* xi_datapoint_delete_range(
           const xi_context_t* xi, xi_feed_id_t feed_id, const char * datastream_id
         , const xi_timestamp_t* start, const xi_timestamp_t* end );
 
-#else
+#elif !defined( XI_MQTT_ENABLED ) && defined( XI_NOB_ENABLED )
+
 //-----------------------------------------------------------------------
 // MAIN LIBRARY NON BLOCKING FUNCTIONS
 //-----------------------------------------------------------------------
@@ -487,17 +490,19 @@ extern const xi_context_t* xi_nob_datapoint_delete(
 extern const xi_context_t* xi_nob_datapoint_delete_range(
           xi_context_t* xi, xi_feed_id_t feed_id, const char * datastream_id
         , const xi_timestamp_t* start, const xi_timestamp_t* end );
-#endif  // XI_NOB_ENABLED
-#else   // XI_MQTT_ENABLED
 
-#ifndef XI_NOB_ENABLED // blocking version
+#elif defined( XI_MQTT_ENABLED ) && !defined( XI_NOB_ENABLED )
 
 extern const xi_response_t* xi_mqtt_publish(
       xi_context_t* xi
     , const char* topic
     , const char* msg );
 
-#else // XI_NOB_ENABLED
+#elif defined( XI_MQTT_ENABLED ) && defined( XI_NOB_ENABLED )
+
+#include "xi_event_dispatcher_api.h"
+extern  xi_evtd_instance_t* xi_evtd_instance;
+extern  uint8_t             xi_evtd_ref_count;
 
 /**
  * \brief   Creates layers and initialzes them
@@ -525,9 +530,7 @@ extern const xi_response_t* xi_nob_mqtt_subscribe(
     , void* handle
     );
 
-#endif // XI_NOB_ENABLED
-
-#endif  // XI_MQTT_ENABLED
+#endif // XI_MQTT_ENABLED && XI_NOB_ENABLED
 
 #ifdef __cplusplus
 }

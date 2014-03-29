@@ -64,18 +64,55 @@ extern "C" {
     context->layer_connection.layer->debug_info.debug_file_last_call = __FILE__;
 #endif
 
-#ifdef XI_DEBUG_LAYER_API
-#define CALL_ON( layer, target, context )\
-    context->layer_connection.layer->layer_functions->target( &context->layer_connection.layer->layer_connection );\
-    SET_DEBUG_INFO_ON( layer, context );
-#define CALL_ON2( layer, target, context, data, hint )\
-    context->layer_connection.layer->layer_functions->target( &context->layer_connection.layer->layer_connection, data, hint );\
-    SET_DEBUG_INFO_ON( layer, context )
+#if defined(XI_MQTT_ENABLED) && defined(XI_NOB_ENABLED)
+    #include "xi_event_dispatcher_api.h"
+    #include "xi_event_handler.h"
+    #ifdef XI_DEBUG_LAYER_API
+    #define CALL_ON( layer, target, context )\
+        { \
+            SET_DEBUG_INFO_ON( layer, context ); \
+            xi_evtd_handle_t* handle        = ( xi_evtd_handle_t* ) xi_malloc( sizeof( xi_evtd_handle_t ) ); \
+            XI_CHECK_MEMORY( handle ); \
+            handle->handle_type             = XI_EVTD_HANDLE_1_ID \
+            handle->handlers.h1.phandle_1   = context->layer_connection.layer->layer_functions->target; \
+            handle->handlers.h1.a1          = &context->layer_connection.layer->layer_connection; \
+            xi_evtd_continue( xi_evtd_instance, handle, 0 ); \
+        }
+    #define CALL_ON2( layer, target, context, data, hint )\
+        SET_DEBUG_INFO_ON( layer, context );
+        { \
+            SET_DEBUG_INFO_ON( layer, context ); \
+            xi_evtd_handle_t* handle        = ( xi_evtd_handle_t* ) xi_malloc( sizeof( xi_evtd_handle_t ) ); \
+            XI_CHECK_MEMORY( handle ); \
+            handle->handle_type             = XI_EVTD_HANDLE_3_ID \
+            handle->handlers.h1.phandle_1   = context->layer_connection.layer->layer_functions->target; \
+            handle->handlers.h1.a1          = &context->layer_connection.layer->layer_connection; \
+            handle->handlers.h1.a2          = data; \
+            handle->handlers.h1.a3          = hint; \
+            xi_evtd_continue( xi_evtd_instance, handle, 0 ); \
+        }
+    #else
+    #define CALL_ON( layer, target, context )\
+        xi_evtd_handle_t* handle = 0;
+        xi_evtd_continue( xi_evtd_instance, handle, 0 );
+    #define CALL_ON2( layer, target, context, data, hint )\
+        xi_evtd_handle_t* handle = 0;
+        xi_evtd_continue( xi_evtd_instance, handle, 0 );
+    #endif
 #else
-#define CALL_ON( layer, target, context )\
-    context->layer_connection.layer->layer_functions->target( &context->layer_connection.layer->layer_connection );
-#define CALL_ON2( layer, target, context, data, hint )\
-    context->layer_connection.layer->layer_functions->target( &context->layer_connection.layer->layer_connection, data, hint )
+    #ifdef XI_DEBUG_LAYER_API
+    #define CALL_ON( layer, target, context )\
+        context->layer_connection.layer->layer_functions->target( &context->layer_connection.layer->layer_connection );\
+        SET_DEBUG_INFO_ON( layer, context );
+    #define CALL_ON2( layer, target, context, data, hint )\
+        context->layer_connection.layer->layer_functions->target( &context->layer_connection.layer->layer_connection, data, hint );\
+        SET_DEBUG_INFO_ON( layer, context )
+    #else
+    #define CALL_ON( layer, target, context )\
+        context->layer_connection.layer->layer_functions->target( &context->layer_connection.layer->layer_connection );
+    #define CALL_ON2( layer, target, context, data, hint )\
+        context->layer_connection.layer->layer_functions->target( &context->layer_connection.layer->layer_connection, data, hint )
+    #endif
 #endif
 
 // ON_DEMAND

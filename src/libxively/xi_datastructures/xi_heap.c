@@ -1,6 +1,6 @@
 #include "xi_heap.h"
 
-xi_heap_t* xi_heap_create( XI_HEAP_INDEX_TYPE capacity )
+xi_heap_t* xi_heap_create( xi_heap_index_type_t capacity )
 {
     // PRECONDITIONS
     assert( capacity != 0 );
@@ -87,12 +87,12 @@ void xi_heap_elements_swap( xi_heap_element_t** a, xi_heap_element_t** b )
     *b = tmp_elem;
 
     // swap indexes
-    XI_HEAP_INDEX_TYPE tmp_index = ( **a ).index;
+    xi_heap_index_type_t tmp_index = ( **a ).index;
     ( **a ).index = ( **b ).index;
     ( **b ).index = tmp_index;
 }
 
-void xi_heap_fix_order_up( xi_heap_t* xi_heap, XI_HEAP_INDEX_TYPE index )
+void xi_heap_fix_order_up( xi_heap_t* xi_heap, xi_heap_index_type_t index )
 {
     // PRECONDITIONS
     assert( xi_heap != 0 );
@@ -113,15 +113,15 @@ void xi_heap_fix_order_up( xi_heap_t* xi_heap, XI_HEAP_INDEX_TYPE index )
     }
 }
 
-void xi_heap_fix_order_down( xi_heap_t* xi_heap, XI_HEAP_INDEX_TYPE index )
+void xi_heap_fix_order_down( xi_heap_t* xi_heap, xi_heap_index_type_t index )
 {
     // PRECONDITIONS
     assert( xi_heap != 0 );
     assert( xi_heap->elements != 0 );
     assert( xi_heap->capacity != 0 );
 
-    XI_HEAP_INDEX_TYPE li       = LEFT( index );
-    XI_HEAP_INDEX_TYPE ri       = RIGHT( index );
+    xi_heap_index_type_t li       = LEFT( index );
+    xi_heap_index_type_t ri       = RIGHT( index );
 
     // guard the array bounds
     li = li >= xi_heap->first_free ? index : li;
@@ -164,7 +164,7 @@ void xi_heap_fix_order_down( xi_heap_t* xi_heap, XI_HEAP_INDEX_TYPE index )
     } while( index != li && index != ri );
 }
 
-const xi_heap_element_t* xi_heap_element_add( xi_heap_t* xi_heap, XI_HEAP_KEY_TYPE key, void* value )
+const xi_heap_element_t* xi_heap_element_add( xi_heap_t* xi_heap, xi_heap_key_type_t key, void* value )
 {
     // PRECONDITIONS
     assert( xi_heap != 0 );
@@ -205,7 +205,7 @@ const xi_heap_element_t* xi_heap_get_top( xi_heap_t* xi_heap )
 
     xi_heap_element_t** last_e  = 0;
     xi_heap_element_t** e       = &xi_heap->elements[ 0 ];
-    XI_HEAP_INDEX_TYPE last_i   = xi_heap->first_free - 1;
+    xi_heap_index_type_t last_i   = xi_heap->first_free - 1;
     xi_heap->first_free        -= 1;
 
     if( last_i != 0 )

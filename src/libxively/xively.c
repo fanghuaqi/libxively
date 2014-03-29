@@ -32,6 +32,14 @@ extern "C" {
 #endif
 
 //-----------------------------------------------------------------------
+// GLOBAL INSTANCES
+//-----------------------------------------------------------------------
+#if defined( XI_MQTT_ENABLED ) && defined( XI_NOB_ENABLED )
+xi_evtd_instance_t* xi_evtd_instance    = 0;
+uint8_t xi_evtd_ref_count               = 0;
+#endif
+
+//-----------------------------------------------------------------------
 // HELPER MACROS
 //-----------------------------------------------------------------------
 
@@ -334,7 +342,6 @@ END_FACTORY_CONF()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-
 //-----------------------------------------------------------------------
 // MAIN LIBRARY FUNCTIONS
 //-----------------------------------------------------------------------
@@ -344,6 +351,19 @@ xi_context_t* xi_create_context(
     , const char* api_key
     , xi_feed_id_t feed_id )
 {
+
+#if defined( XI_MQTT_ENABLED ) && defined( XI_NOB_ENABLED )
+    if( xi_evtd_ref_count == 0 )
+    {
+        xi_evtd_instance = xi_evtd_create_instance();
+        XI_CHECK_MEMORY( xi_evtd_instance );
+    }
+    else
+    {
+        xi_evtd_ref_count += 1;
+    }
+#endif
+
     // allocate the structure to store new context
     xi_context_t* ret = ( xi_context_t* ) xi_alloc( sizeof( xi_context_t ) );
 
@@ -450,10 +470,20 @@ void xi_delete_context( xi_context_t* context )
 
     XI_SAFE_FREE( context->api_key );
     XI_SAFE_FREE( context );
+
+#if defined( XI_MQTT_ENABLED ) && defined( XI_NOB_ENABLED )
+    xi_evtd_ref_count -= 1;
+
+    if( xi_evtd_ref_count == 0 )
+    {
+        xi_evtd_destroy_instance( xi_evtd_instance );
+    }
+#endif
+
 }
 
-#ifndef XI_MQTT_ENABLED
-#ifndef XI_NOB_ENABLED
+#if !defined(XI_MQTT_ENABLED) && !defined(XI_NOB_ENABLED)
+
 const xi_response_t* xi_feed_get(
           xi_context_t* xi
         , xi_feed_t* feed )
@@ -877,7 +907,9 @@ extern const xi_response_t* xi_datapoint_delete_range(
 
     return ( ( csv_layer_data_t* ) input_layer->user_data )->response;
 }
-#else
+
+#elif !defined(XI_MQTT_ENABLED) && defined(XI_NOB_ENABLED)
+
 extern const xi_context_t* xi_nob_feed_update(
          xi_context_t* xi
        , const xi_feed_t* value )
@@ -1178,12 +1210,10 @@ const xi_context_t* xi_nob_datapoint_delete_range(
 
     return xi;
 }
-#endif // XI_NOB_ENABLED
-#else  // XI_MQTT_ENABLED
+
+#elif defined(XI_MQTT_ENABLED) && !defined(XI_NOB_ENABLED)
 
 #include "message.h"
-
-#ifndef XI_NOB_ENABLED // blocking version
 
 extern const xi_response_t* xi_mqtt_publish(
       xi_context_t* xi
@@ -1270,7 +1300,7 @@ extern const xi_response_t* xi_mqtt_publish(
     return 0;
 }
 
-#else // XI_NOB_ENABLED
+#elif defined(XI_MQTT_ENABLED) && defined(XI_NOB_ENABLED)
 
 extern const xi_response_t* xi_nob_mqtt_publish(
       xi_context_t* xi
@@ -1280,8 +1310,7 @@ extern const xi_response_t* xi_nob_mqtt_publish(
     return LAYER_STATE_OK;
 }
 
-#endif // XI_NOB_ENABLED
-#endif // XI_MQTT_ENABLED
+#endif
 
 #ifdef __cplusplus
 }

@@ -10,9 +10,11 @@
 #include "xi_allocator.h"
 #include "xi_macros.h"
 #include "xi_event_handler.h"
+#include "xi_heap_typedefs.h"
 
 //
 typedef int xi_fd_t;
+typedef struct xi_heap_s xi_heap_t;
 
 typedef struct
 {
@@ -23,7 +25,7 @@ typedef struct
 
 typedef struct
 {
-    XI_HEAP_KEY_TYPE        current_step;
+    xi_heap_key_type_t      current_step;
     xi_heap_t*              call_heap;
     xi_static_vector_t*     handles_and_fd;
 } xi_evtd_instance_t;
@@ -45,7 +47,7 @@ extern int8_t xi_evtd_continue_when_evt(
 extern void xi_evtd_continue(
       xi_evtd_instance_t* instance
     , xi_evtd_handle_t* handle
-    , XI_HEAP_KEY_TYPE time_diff );
+    , xi_heap_key_type_t time_diff );
 
 extern xi_evtd_instance_t* xi_evtd_create_instance();
 
@@ -55,7 +57,7 @@ extern void xi_evtd_execute_handle( xi_evtd_handle_t* handle );
 
 extern void xi_evtd_step(
       xi_evtd_instance_t* evtd_instance
-    , XI_HEAP_KEY_TYPE new_step );
+    , xi_heap_key_type_t new_step );
 
 /**
  * \brief update events triggers registration of continuations assigned to the given event on given device
