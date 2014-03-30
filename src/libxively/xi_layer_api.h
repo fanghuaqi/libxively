@@ -6,6 +6,11 @@
 
 #include "xi_layer.h"
 
+#if defined( XI_MQTT_ENABLED ) && defined( XI_NOB_ENABLED )
+    #include "xi_event_dispatcher_api.h"
+    #include "xi_event_dispatcher_global_instance.h"
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -65,8 +70,6 @@ extern "C" {
 #endif
 
 #if defined(XI_MQTT_ENABLED) && defined(XI_NOB_ENABLED)
-    #include "xi_event_dispatcher_api.h"
-    #include "xi_event_handler.h"
     #ifdef XI_DEBUG_LAYER_API
         #define CALL_ON( layer, target, context ) \
             SET_DEBUG_INFO_ON( layer, context ); \
@@ -84,10 +87,10 @@ extern "C" {
                 xi_evtd_handle_t handle = { \
                       XI_EVTD_HANDLE_3_ID \
                     , .handlers.h3 = { \
-                          context->layer_connection.layer->layer_functions->target; \
-                        , &context->layer_connection.layer->layer_connection; \
-                        , data; \
-                        , hint; \ }; \
+                          context->layer_connection.layer->layer_functions->target \
+                        , &context->layer_connection.layer->layer_connection \
+                        , data \
+                        , hint } }; \
                 xi_evtd_continue( xi_evtd_instance, handle, 0 ); \
             }
     #else
@@ -105,10 +108,10 @@ extern "C" {
             xi_evtd_handle_t handle = { \
                   XI_EVTD_HANDLE_3_ID \
                 , .handlers.h3 = { \
-                      context->layer_connection.layer->layer_functions->target; \
-                    , &context->layer_connection.layer->layer_connection; \
-                    , data; \
-                    , hint; \ }; \
+                      context->layer_connection.layer->layer_functions->target \
+                    , &context->layer_connection.layer->layer_connection \
+                    , data \
+                    , hint } }; \
             xi_evtd_continue( xi_evtd_instance, handle, 0 ); \
         }
     #endif

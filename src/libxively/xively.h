@@ -20,12 +20,16 @@
 extern "C" {
 #endif
 
-#if 0
+#if 0 && !defined( XI_NOB_ENABLED )
 #define XI_NOB_ENABLED 1
 #endif
 
-#if 0
+#if 0 && !defined( XI_MQTT_ENABLED )
 #define XI_MQTT_ENABLED 1
+#endif
+
+#if defined( XI_MQTT_ENABLED ) && defined( XI_NOB_ENABLED )
+    #include "xi_event_dispatcher_api.h"
 #endif
 
 //-----------------------------------------------------------------------
@@ -59,10 +63,14 @@ typedef uint32_t xi_feed_id_t;
  *          that communicate with Xively API (_i.e. not helpers or utilities_)
  */
 typedef struct {
-    char *api_key;              /** Xively API key */
     xi_protocol_t protocol;     /** Xively protocol */
-    xi_feed_id_t feed_id;       /** Xively feed ID */
     layer_chain_t layer_chain;  /** Xively reference of layers */
+    #if defined( XI_MQTT_ENABLED ) && defined( XI_NOB_ENABLED )
+        xi_evtd_handle_t on_connected_callback;
+    #else
+    char *api_key;              /** Xively API key */
+    xi_feed_id_t feed_id;       /** Xively feed ID */
+    #endif
     void*         input;        /** Xively ptr to the input data */
 } xi_context_t;
 
@@ -500,22 +508,18 @@ extern const xi_response_t* xi_mqtt_publish(
 
 #elif defined( XI_MQTT_ENABLED ) && defined( XI_NOB_ENABLED )
 
-#include "xi_event_dispatcher_api.h"
-extern  xi_evtd_instance_t* xi_evtd_instance;
-extern  uint8_t             xi_evtd_ref_count;
-
 /**
- * \brief   Creates layers and initialzes them
+ * \brief   Initialzes the connection
  */
-extern const xi_response_t* xi_nob_mqtt_init(
-        xi_context_t* xi
-    );
+extern void xi_nob_mqtt_connect(
+      xi_context_t* xi
+    , xi_evtd_handle_t callback );
 
 /**
  * \brief   Connects to the given server and publishes the msg under choosed topic
  * \note    This version disconnects immidiately
  */
-extern const xi_response_t* xi_nob_mqtt_publish(
+extern void xi_nob_mqtt_publish(
       xi_context_t* xi
     , const char* topic
     , const char* msg );
@@ -524,11 +528,10 @@ extern const xi_response_t* xi_nob_mqtt_publish(
  * \brief   Subscribes for notification of given topic
  * \note    The handle shall be called upon the proper message of given topic
  */
-extern const xi_response_t* xi_nob_mqtt_subscribe(
+extern void xi_nob_mqtt_subscribe(
     xi_context_t* xi
     , const char* topic
-    , void* handle
-    );
+    , void* handle );
 
 #endif // XI_MQTT_ENABLED && XI_NOB_ENABLED
 

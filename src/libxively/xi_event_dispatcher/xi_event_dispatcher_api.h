@@ -11,10 +11,11 @@
 #include "xi_macros.h"
 #include "xi_event_handler.h"
 #include "xi_heap_typedefs.h"
+#include "xi_static_vector.h"
 
 //
 typedef int xi_fd_t;
-typedef struct xi_heap_s xi_heap_t;
+struct xi_heap_s;
 
 typedef struct
 {
@@ -26,7 +27,7 @@ typedef struct
 typedef struct
 {
     xi_heap_key_type_t      current_step;
-    xi_heap_t*              call_heap;
+    struct xi_heap_s*       call_heap;
     xi_static_vector_t*     handles_and_fd;
 } xi_evtd_instance_t;
 

@@ -4,7 +4,7 @@ include $(LIBXIVELY)/Makefile.include
 
 ifeq ($(XI_MQTT_ENABLED),true)
     XI_EXAMPLE_SOURCES = asynch_mqtt_logic_example.c mqtt_connect_and_publish.c
-	XI_LAYER_DIRS += ../libxively/mqtt/layer ../libxively/mqtt/codec
+	XI_LAYER_DIRS += ../libxively/mqtt/layer ../libxively/mqtt/codec ../libxively/xi_event_dispatcher ../libxively/xi_datastructures
 else
     XI_EXAMPLE_SOURCES = feed_get.c
     XI_LAYER_DIRS += ../libxively/csv ../libxively/http

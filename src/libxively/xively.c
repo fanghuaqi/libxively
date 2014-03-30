@@ -27,16 +27,12 @@
 #include "xi_layer_default_allocators.h"
 #include "xi_connection_data.h"
 
-#ifdef __cplusplus
-extern "C" {
+#if defined( XI_MQTT_ENABLED ) && defined( XI_NOB_ENABLED )
+#include "xi_event_dispatcher_global_instance.h"
 #endif
 
-//-----------------------------------------------------------------------
-// GLOBAL INSTANCES
-//-----------------------------------------------------------------------
-#if defined( XI_MQTT_ENABLED ) && defined( XI_NOB_ENABLED )
-xi_evtd_instance_t* xi_evtd_instance    = 0;
-uint8_t xi_evtd_ref_count               = 0;
+#ifdef __cplusplus
+extern "C" {
 #endif
 
 //-----------------------------------------------------------------------
@@ -303,6 +299,7 @@ DEFINE_CONNECTION_SCHEME( CONNECTION_SCHEME_2, CONNECTION_SCHEME_2_DATA );
 
     #include "xi_mqtt_layer.h"
     #include "xi_mqtt_layer_data.h"
+    #include "xi_mqtt_logic_layer_data.h"
 
     BEGIN_LAYER_TYPES_CONF()
           LAYER_TYPE( IO_LAYER, &posix_asynch_io_layer_data_ready, &posix_asynch_io_layer_on_data_ready
@@ -371,8 +368,8 @@ xi_context_t* xi_create_context(
 
     // copy given numeric parameters as is
     ret->protocol       = protocol;
+#ifndef XI_MQTT_ENABLED
     ret->feed_id        = feed_id;
-
     // copy string parameters carefully
     if( api_key )
     {
@@ -385,6 +382,7 @@ xi_context_t* xi_create_context(
     {
         ret->api_key  = 0;
     }
+#endif
 
     switch( protocol )
     {
@@ -435,6 +433,7 @@ xi_context_t* xi_create_context(
     return ret;
 
 err_handling:
+#ifndef XI_MQTT_ENABLED
     if( ret )
     {
         if( ret->api_key )
@@ -444,6 +443,7 @@ err_handling:
 
         XI_SAFE_FREE( ret );
     }
+#endif
 
     return 0;
 }
@@ -467,8 +467,9 @@ void xi_delete_context( xi_context_t* context )
             assert( 0 && "not yet implemented!" );
             break;
     }
-
+#ifndef XI_MQTT_ENABLED
     XI_SAFE_FREE( context->api_key );
+#endif
     XI_SAFE_FREE( context );
 
 #if defined( XI_MQTT_ENABLED ) && defined( XI_NOB_ENABLED )
@@ -1220,7 +1221,7 @@ extern const xi_response_t* xi_mqtt_publish(
     , const char* topic
     , const char* msg )
 {
-   // we shall need it later
+    // we shall need it later
     layer_state_t state = LAYER_STATE_OK;
 
     // extract the input layer
@@ -1302,12 +1303,23 @@ extern const xi_response_t* xi_mqtt_publish(
 
 #elif defined(XI_MQTT_ENABLED) && defined(XI_NOB_ENABLED)
 
-extern const xi_response_t* xi_nob_mqtt_publish(
+extern void xi_nob_mqtt_connect(
+      xi_context_t* xi
+    , xi_evtd_handle_t callback )
+{
+    // init sequence shall call connect at the end so we shall end up with the perfectly
+    // fine connected elements
+    layer_t* input_layer = xi->layer_chain.top;
+    //xi->on_connected_callback = callback;
+    CALL_ON_SELF_INIT( input_layer, 0, LAYER_HINT_NONE );
+}
+
+extern void xi_nob_mqtt_publish(
       xi_context_t* xi
     , const char* topic
     , const char* msg )
 {
-    return LAYER_STATE_OK;
+
 }
 
 #endif

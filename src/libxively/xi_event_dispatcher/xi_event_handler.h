@@ -1,7 +1,6 @@
 #ifndef __XI_EVENT_HANDLER_H__
 #define __XI_EVENT_HANDLER_H__
 
-#include "xi_static_vector.h"
 #include "xi_handle_typedef.h"
 
 typedef struct xi_evtd_handle_s
