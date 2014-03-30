@@ -57,31 +57,31 @@ void test_heap_add(void* data)
 
     xi_heap_t* heap = xi_heap_create( 32 );
 
-    xi_heap_element_add( heap, 12, ( void* ) 12 );
+    xi_heap_element_add_void( heap, 12, ( void* ) 12 );
 
     tt_assert( heap->first_free == 1 );
 
     tt_assert( ( heap->elements[ 0 ] )->index == 0 );
     tt_assert( ( heap->elements[ 0 ] )->key == 12 );
-    tt_assert( ( heap->elements[ 0 ] )->value == ( void* ) 12 );
+    tt_assert( ( heap->elements[ 0 ] )->heap_value.void_value == ( void* ) 12 );
 
-    xi_heap_element_add( heap, 13, ( void* ) 13 );
+    xi_heap_element_add_void( heap, 13, ( void* ) 13 );
 
     tt_assert( heap->first_free == 2 );
 
     tt_assert( ( heap->elements[ 1 ] )->index == 1 );
     tt_assert( ( heap->elements[ 1 ] )->key == 13 );
-    tt_assert( ( heap->elements[ 1 ] )->value == ( void* ) 13 );
+    tt_assert( ( heap->elements[ 1 ] )->heap_value.void_value == ( void* ) 13 );
 
-    xi_heap_element_add( heap, 1, ( void* ) 1 );
+    xi_heap_element_add_void( heap, 1, ( void* ) 1 );
 
     tt_assert( ( heap->elements[ 0 ] )->index == 0 );
     tt_assert( ( heap->elements[ 0 ] )->key == 1 );
-    tt_assert( ( heap->elements[ 0 ] )->value == ( void* ) 1 );
+    tt_assert( ( heap->elements[ 0 ] )->heap_value.void_value == ( void* ) 1 );
 
     tt_assert( ( heap->elements[ 2 ] )->index == 2 );
     tt_assert( ( heap->elements[ 2 ] )->key == 12 );
-    tt_assert( ( heap->elements[ 2 ] )->value == ( void* ) 12 );
+    tt_assert( ( heap->elements[ 2 ] )->heap_value.void_value == ( void* ) 12 );
 
  end:
     xi_heap_destroy( heap );
@@ -95,13 +95,13 @@ void test_heap_sequencial_add( void* data)
 
     for( size_t i = 0; i < 16; ++i )
     {
-        xi_heap_element_add( heap, i, ( void* ) i );
+        xi_heap_element_add_void( heap, i, ( void* ) i );
     }
 
     for( size_t i = 0; i < 16; ++i )
     {
         tt_assert( heap->elements[ i ]->index == i );
-        tt_assert( heap->elements[ i ]->value == ( void* ) i );
+        tt_assert( heap->elements[ i ]->heap_value.void_value == ( void* ) i );
         tt_assert( heap->elements[ i ]->key == i );
     }
 
@@ -145,7 +145,7 @@ void test_heap_random_add( void* data )
     for( size_t i = 0; i < 64; ++i )
     {
         xi_heap_index_type_t index = rand() & 63;
-        xi_heap_element_add( heap, index, ( void* ) i );
+        xi_heap_element_add_void( heap, index, ( void* ) i );
     }
 
     test_heap( heap, 0 );
@@ -163,7 +163,7 @@ void test_heap_random_remove( void* data )
     for( size_t i = 0; i < 64; ++i )
     {
         xi_heap_index_type_t index = rand() & 63;
-        xi_heap_element_add( heap, index, ( void* ) i );
+        xi_heap_element_add_void( heap, index, ( void* ) i );
     }
 
     xi_heap_key_type_t key = 0;

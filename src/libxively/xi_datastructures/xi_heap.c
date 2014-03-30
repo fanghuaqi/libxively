@@ -164,7 +164,10 @@ void xi_heap_fix_order_down( xi_heap_t* xi_heap, xi_heap_index_type_t index )
     } while( index != li && index != ri );
 }
 
-const xi_heap_element_t* xi_heap_element_add( xi_heap_t* xi_heap, xi_heap_key_type_t key, void* value )
+const xi_heap_element_t* xi_heap_element_add_void(
+      xi_heap_t* xi_heap
+    , xi_heap_key_type_t key
+    , void* value )
 {
     // PRECONDITIONS
     assert( xi_heap != 0 );
@@ -178,9 +181,39 @@ const xi_heap_element_t* xi_heap_element_add( xi_heap_t* xi_heap, xi_heap_key_ty
     xi_heap_element_t* element  = xi_heap->elements[ xi_heap->first_free ];
 
     // add the element
-    element->index              = xi_heap->first_free;
-    element->key                = key;
-    element->value              = value;
+    element->index                      = xi_heap->first_free;
+    element->key                        = key;
+    element->heap_value.void_value      = value;
+
+    // increase the next free counter
+    xi_heap->first_free        += 1;
+
+    // fix the order up
+    xi_heap_fix_order_up( xi_heap, element->index );
+
+    return element;
+}
+
+const xi_heap_element_t* xi_heap_element_add(
+      xi_heap_t* xi_heap
+    , xi_heap_key_type_t key
+    , xi_heap_value_type_t value )
+{
+    // PRECONDITIONS
+    assert( xi_heap != 0 );
+    assert( xi_heap->elements != 0 );
+    assert( xi_heap->capacity != 0 );
+
+    // check the capacity
+    if( xi_heap->first_free > xi_heap->capacity ) { return 0; }
+
+    // derefence
+    xi_heap_element_t* element  = xi_heap->elements[ xi_heap->first_free ];
+
+    // add the element
+    element->index                      = xi_heap->first_free;
+    element->key                        = key;
+    element->heap_value.type_value      = value;
 
     // increase the next free counter
     xi_heap->first_free        += 1;

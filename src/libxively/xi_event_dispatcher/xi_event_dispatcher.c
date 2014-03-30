@@ -100,7 +100,7 @@ int8_t xi_evtd_continue_when_evt(
 
 void xi_evtd_continue(
       xi_evtd_instance_t* instance
-    , xi_evtd_handle_t* handle
+    , xi_evtd_handle_t handle
     , xi_heap_key_type_t time_diff )
 {
     xi_heap_element_add(
@@ -171,7 +171,7 @@ void xi_evtd_step(
         if( tmp->key <= evtd_instance->current_step )
         {
             tmp = xi_heap_get_top( evtd_instance->call_heap );
-            xi_evtd_handle_t* handle = ( xi_evtd_handle_t* ) tmp->value;
+            xi_evtd_handle_t* handle = ( xi_evtd_handle_t* ) &tmp->heap_value.type_value;
             xi_evtd_execute_handle( handle );
         }
         else

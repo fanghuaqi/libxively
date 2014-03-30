@@ -5,15 +5,12 @@
 
 #ifndef XI_HEAP_CUSTOM_TYPES
 
-//
-typedef uint32_t xi_heap_key_type_t;
+#include "xi_event_handler.h"
 
 //
-typedef uint8_t xi_heap_index_type_t;
-
-#ifndef XI_HEAP_VALUE_TYPE
-typedef void* xi_heap_type_t;
-#endif
+typedef uint32_t            xi_heap_key_type_t;
+typedef uint8_t             xi_heap_index_type_t;
+typedef xi_evtd_handle_t    xi_heap_value_type_t;
 
 #else
 

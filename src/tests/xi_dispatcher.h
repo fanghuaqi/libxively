@@ -2,19 +2,16 @@
 // This is part of Xively C library, it is under the BSD 3-Clause license.
 #include "tinytest.h"
 #include "tinytest_macros.h"
-
-#include "xi_heap.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 #include <time.h>
 
-#include "xi_event_dispatcher_macros.h"
-#include "xi_heap.h"
 
 #define XI_DISPATCHER_CUSTOM_TYPES
+#include "xi_event_dispatcher_macros.h"
+#include "xi_heap.h"
 #include "xi_event_dispatcher_api.h"
 
 static uint32_t g_cont0_test = 0;
@@ -64,7 +61,7 @@ void proc_loop( uint32_t* a )
 
     if( *a > 0 )
     {
-        xi_evtd_continue( evtd_g_i, &evtd_handle_g, 1 );
+        xi_evtd_continue( evtd_g_i, evtd_handle_g, 1 );
     }
 }
 
@@ -121,7 +118,7 @@ void test_handler_processing_loop( void* data )
     evtd_handle_g.handlers.h1.phandle_1 = &proc_loop;
     evtd_handle_g.handlers.h1.a1        = &counter;
 
-    xi_evtd_continue( evtd_g_i, &evtd_handle_g, 0 );
+    xi_evtd_continue( evtd_g_i, evtd_handle_g, 0 );
 
     while( evtd_g_i->call_heap->first_free > 0 )
     {

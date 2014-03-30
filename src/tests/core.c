@@ -292,8 +292,8 @@ struct testcase_t core_tests[] = {
     END_OF_TESTCASES
 };
 
-#include "xi_datastructures.h"
 #include "xi_dispatcher.h"
+#include "xi_datastructures.h"
 
 /* Next, we make an array of testgroups.  This is mandatory.  Unlike more
    heavy-duty testing frameworks, groups can't nest. */

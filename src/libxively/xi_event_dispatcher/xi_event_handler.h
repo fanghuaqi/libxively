@@ -4,7 +4,7 @@
 #include "xi_static_vector.h"
 #include "xi_handle_typedef.h"
 
-typedef struct
+typedef struct xi_evtd_handle_s
 {
     xi_evtd_handle_id_t handle_type;
     union

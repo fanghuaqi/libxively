@@ -46,7 +46,7 @@ extern int8_t xi_evtd_continue_when_evt(
 
 extern void xi_evtd_continue(
       xi_evtd_instance_t* instance
-    , xi_evtd_handle_t* handle
+    , xi_evtd_handle_t handle
     , xi_heap_key_type_t time_diff );
 
 extern xi_evtd_instance_t* xi_evtd_create_instance();
