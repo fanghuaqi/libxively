@@ -9,6 +9,7 @@
 #include <xively.h>
 #include <xi_helpers.h>
 #include <xi_coroutine.h>
+#include <xi_connection_data.h>
 
 #include <time.h>
 #include <stdio.h>
@@ -119,17 +120,26 @@ uint8_t xi_mqtt_logic_loop( layer_t* layer )
     return 0;
 }
 
-// that how
+// that how we can handle the system events
+// if you need more sophisticated handling you can decouple that
+// function onto multiple smaller ones
 void main_loop()
 {
-    //while( evt_dispatcher_have_events_to_process() )
-    //{
+    while( xi_evtd_dispatcher_continue( xi_evtd_instance ) )
+    {
         // get_dispatcher_evts( read_fds, write_fds, error_fds );
         // int result = select( read_fds, write_fds, error_fds, timeout );
         // update_dispatcher_evts( read_fds, write_fds );
-        // update_dispatcher_handles( get_current_time() );
-        // }
-    //}
+        xi_evtd_step( xi_evtd_instance, time( 0 ) );
+    }
+}
+
+uint8_t on_connected(
+      xi_context_t* context
+    , void* data )
+{
+    printf( "connected\n!" );
+    return 0;
 }
 
 int main( int argc, char* argv[] )
@@ -150,9 +160,23 @@ int main( int argc, char* argv[] )
         = xi_create_context( XI_MQTT, 0, 0 );
 
     // check if everything works
-    if( xi_context == 0 )
+    if( xi_context == 0 ) { return -1; }
+
+    xi_connection_data_t connection_data = { XI_HOST, XI_PORT };
+
+    // @TODO replace with simple macro
     {
-        return -1;
+        xi_evtd_handle_t handle =
+            { XI_EVTD_HANDLE_2_ID
+                , .handlers.h2 = {
+                      &on_connected
+                    , xi_context
+                    , 0 } };
+
+        xi_nob_mqtt_connect(
+                xi_context
+              , &connection_data
+              , handle );
     }
 
     //xi_nob_mqtt_subscribe( xi, "/a/b/c/0", on_0 );
@@ -161,7 +185,6 @@ int main( int argc, char* argv[] )
     //xi_nob_mqtt_subscribe( xi, "/a/b/c/3", on_3 );
     //xi_nob_mqtt_subscribe( xi, "/a/b/c/4", on_4 );
     //xi_call_every( 10, handler );
-
 
     main_loop();
 

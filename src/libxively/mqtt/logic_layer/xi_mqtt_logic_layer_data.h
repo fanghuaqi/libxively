@@ -23,6 +23,7 @@ typedef struct
     // handle to the user idle function that suppose to
     xi_user_idle_t*     user_idle_ptr;
     xi_static_vector_t* handlers_for_topics;
+    xi_evtd_handle_t    on_connected;
 } xi_mqtt_logic_layer_data_t;
 
 #ifdef __cplusplus

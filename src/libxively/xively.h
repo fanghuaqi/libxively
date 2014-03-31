@@ -15,6 +15,7 @@
 #include "xi_config.h"
 #include "xi_time.h"
 #include "xi_layer_connection.h"
+#include "xi_connection_data.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -26,6 +27,10 @@ extern "C" {
 
 #if 0 && !defined( XI_MQTT_ENABLED )
 #define XI_MQTT_ENABLED 1
+#endif
+
+#if 0 && !defined( XI_IO_LAYER )
+#define XI_IO_LAYER XI_IO_POSIX_ASYNCH
 #endif
 
 #if defined( XI_MQTT_ENABLED ) && defined( XI_NOB_ENABLED )
@@ -62,14 +67,12 @@ typedef uint32_t xi_feed_id_t;
  * \brief   _The context structure_ - it's the first agument for all functions
  *          that communicate with Xively API (_i.e. not helpers or utilities_)
  */
-typedef struct {
+typedef struct xi_context_s {
     xi_protocol_t protocol;     /** Xively protocol */
     layer_chain_t layer_chain;  /** Xively reference of layers */
-    #if defined( XI_MQTT_ENABLED ) && defined( XI_NOB_ENABLED )
-        xi_evtd_handle_t on_connected_callback;
-    #else
-    char *api_key;              /** Xively API key */
-    xi_feed_id_t feed_id;       /** Xively feed ID */
+    #if !defined( XI_MQTT_ENABLED )
+        char *api_key;              /** Xively API key */
+        xi_feed_id_t feed_id;       /** Xively feed ID */
     #endif
     void*         input;        /** Xively ptr to the input data */
 } xi_context_t;
@@ -513,6 +516,7 @@ extern const xi_response_t* xi_mqtt_publish(
  */
 extern void xi_nob_mqtt_connect(
       xi_context_t* xi
+    , xi_connection_data_t* connection_data
     , xi_evtd_handle_t callback );
 
 /**

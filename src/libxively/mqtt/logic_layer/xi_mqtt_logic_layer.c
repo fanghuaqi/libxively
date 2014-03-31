@@ -39,6 +39,22 @@ layer_state_t xi_mqtt_logic_layer_on_data_ready(
     return LAYER_STATE_OK;
 }
 
+layer_state_t xi_mqtt_logic_layer_init(
+      layer_connectivity_t* context
+    , const void* data
+    , const layer_hint_t hint )
+{
+    CALL_ON_PREV_INIT( context->self, data, 0 );
+}
+
+layer_state_t xi_mqtt_logic_layer_connect(
+      layer_connectivity_t* context
+    , const void* data
+    , const layer_hint_t hint )
+{
+    return LAYER_STATE_OK;
+}
+
 layer_state_t xi_mqtt_logic_layer_close(
     layer_connectivity_t* context )
 {

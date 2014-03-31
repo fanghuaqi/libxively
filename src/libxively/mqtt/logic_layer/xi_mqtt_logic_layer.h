@@ -7,7 +7,6 @@
 #include "xi_layer.h"
 #include "xi_common.h"
 #include "xively.h"
-#include "xi_mqtt_logic_layer_data.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -19,6 +18,16 @@ layer_state_t xi_mqtt_logic_layer_data_ready(
     , const layer_hint_t hint );
 
 layer_state_t xi_mqtt_logic_layer_on_data_ready(
+      layer_connectivity_t* context
+    , const void* data
+    , const layer_hint_t hint );
+
+layer_state_t xi_mqtt_logic_layer_init(
+      layer_connectivity_t* context
+    , const void* data
+    , const layer_hint_t hint );
+
+layer_state_t xi_mqtt_logic_layer_connect(
       layer_connectivity_t* context
     , const void* data
     , const layer_hint_t hint );

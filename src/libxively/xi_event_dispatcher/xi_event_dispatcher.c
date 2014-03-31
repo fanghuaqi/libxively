@@ -1,7 +1,9 @@
 #include "xi_event_dispatcher_api.h"
 #include "xi_heap.h"
 
-static inline int8_t xi_evtd_cmp_fd( void* e0, void* value )
+static inline int8_t xi_evtd_cmp_fd(
+      void* e0
+    , void* value )
 {
     xi_evtd_triplet_t* trip = ( xi_evtd_triplet_t* ) e0;
 
@@ -132,7 +134,8 @@ err_handling:
     return 0;
 }
 
-void xi_evtd_destroy_instance( xi_evtd_instance_t* instance )
+void xi_evtd_destroy_instance(
+    xi_evtd_instance_t* instance )
 {
     xi_static_vector_destroy( instance->handles_and_fd );
     xi_heap_destroy( instance->call_heap );
@@ -181,6 +184,12 @@ void xi_evtd_step(
     }
 }
 
+uint8_t xi_evtd_dispatcher_continue(
+    xi_evtd_instance_t* instance )
+{
+    return instance->stop != 1;
+}
+
 /**
  * \brief update events triggers registration of continuations assigned to the given event on given device
  * \note events_mask is the mask that's created using | operator
@@ -189,6 +198,9 @@ void xi_evtd_update_events(
       xi_evtd_instance_t* instance
     , xi_static_vector_t* fds )
 {
+    assert( instance != 0 );
+    assert( fds != 0 );
+
     for( int32_t i = 0; i < fds->elem_no; ++i )
     {
         xi_fd_t fd = ( xi_fd_t )( intptr_t ) fds->array[ i ].value;
@@ -211,4 +223,11 @@ void xi_evtd_update_events(
             assert( 1 == 0 );
         }
     }
+}
+
+void xi_evtd_stop(
+    xi_evtd_instance_t* instance )
+{
+    assert( instance != 0 );
+    instance->stop = 1;
 }

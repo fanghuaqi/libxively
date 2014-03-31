@@ -23,6 +23,16 @@ layer_state_t xi_mqtt_layer_on_data_ready(
     , const void* data
     , const layer_hint_t hint );
 
+layer_state_t xi_mqtt_layer_init(
+      layer_connectivity_t* context
+    , const void* data
+    , const layer_hint_t hint );
+
+layer_state_t xi_mqtt_layer_connect(
+      layer_connectivity_t* context
+    , const void* data
+    , const layer_hint_t hint );
+
 layer_state_t xi_mqtt_layer_close(
     layer_connectivity_t* context );
 

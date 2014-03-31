@@ -204,7 +204,7 @@ layer_state_t posix_io_layer_init(
     assert( layer->user_data != 0 );
     assert( posix_data->socket_fd != -1 );
 
-    return LAYER_STATE_OK;
+    return CALL_ON_NEXT_INIT( context->self, data, hint );
 
 err_handling:
     // cleanup the memory

@@ -29,6 +29,7 @@ typedef struct
     xi_heap_key_type_t      current_step;
     struct xi_heap_s*       call_heap;
     xi_static_vector_t*     handles_and_fd;
+    uint8_t                 stop;
 } xi_evtd_instance_t;
 
 extern int8_t xi_evtd_register_fd(
@@ -52,13 +53,18 @@ extern void xi_evtd_continue(
 
 extern xi_evtd_instance_t* xi_evtd_create_instance();
 
-extern void xi_evtd_destroy_instance( xi_evtd_instance_t* instance );
+extern void xi_evtd_destroy_instance(
+    xi_evtd_instance_t* instance );
 
-extern void xi_evtd_execute_handle( xi_evtd_handle_t* handle );
+extern void xi_evtd_execute_handle(
+    xi_evtd_handle_t* handle );
 
 extern void xi_evtd_step(
       xi_evtd_instance_t* evtd_instance
     , xi_heap_key_type_t new_step );
+
+extern uint8_t xi_evtd_dispatcher_continue(
+    xi_evtd_instance_t* instance );
 
 /**
  * \brief update events triggers registration of continuations assigned to the given event on given device
@@ -67,5 +73,7 @@ extern void xi_evtd_step(
 extern void xi_evtd_update_events(
       xi_evtd_instance_t* instance
     , xi_static_vector_t* fds );
+
+extern void xi_evtd_stop( xi_evtd_instance_t* instance );
 
 #endif // __XI_EVENT_DISPATCHER_API_H__

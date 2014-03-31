@@ -197,8 +197,8 @@ enum LAYERS_ID
     , CSV_LAYER
 #else // XI_MQTT_ENABLED
     , MQTT_LAYER
+    , MQTT_LOGIC_LAYER
 #endif // XI_MQTT_ENABLED
-
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -206,7 +206,7 @@ enum LAYERS_ID
 #ifndef XI_MQTT_ENABLED
 #define CONNECTION_SCHEME_1_DATA IO_LAYER, HTTP_LAYER, CSV_LAYER
 #else // XI_MQTT_ENABLED
-#define CONNECTION_SCHEME_2_DATA IO_LAYER, MQTT_LAYER
+#define CONNECTION_SCHEME_2_DATA IO_LAYER, MQTT_LAYER, MQTT_LOGIC_LAYER
 #endif // XI_MQTT_ENABLED
 
 #ifndef XI_MQTT_ENABLED
@@ -299,6 +299,7 @@ DEFINE_CONNECTION_SCHEME( CONNECTION_SCHEME_2, CONNECTION_SCHEME_2_DATA );
 
     #include "xi_mqtt_layer.h"
     #include "xi_mqtt_layer_data.h"
+    #include "xi_mqtt_logic_layer.h"
     #include "xi_mqtt_logic_layer_data.h"
 
     BEGIN_LAYER_TYPES_CONF()
@@ -306,7 +307,11 @@ DEFINE_CONNECTION_SCHEME( CONNECTION_SCHEME_2, CONNECTION_SCHEME_2_DATA );
                                 , &posix_asynch_io_layer_close, &posix_asynch_io_layer_on_close
                                 , &posix_asynch_io_layer_init, &posix_asynch_io_layer_connect )
         , LAYER_TYPE( MQTT_LAYER, &xi_mqtt_layer_data_ready, &xi_mqtt_layer_on_data_ready
-                                , &xi_mqtt_layer_close, &xi_mqtt_layer_on_close, 0, 0 )
+                                , &xi_mqtt_layer_close, &xi_mqtt_layer_on_close
+                                , &xi_mqtt_layer_init, &xi_mqtt_layer_connect )
+        , LAYER_TYPE( MQTT_LOGIC_LAYER, &xi_mqtt_logic_layer_data_ready, &xi_mqtt_logic_layer_on_data_ready
+                                , &xi_mqtt_logic_layer_close, &xi_mqtt_logic_layer_on_close
+                                , &xi_mqtt_logic_layer_init, &xi_mqtt_logic_layer_connect )
     END_LAYER_TYPES_CONF()
     #else
     BEGIN_LAYER_TYPES_CONF()
@@ -333,6 +338,8 @@ BEGIN_FACTORY_CONF()
                            , &default_layer_heap_alloc, &default_layer_heap_free )
 #else // XI_MQTT_ENABLED
     , FACTORY_ENTRY( MQTT_LAYER, &placement_layer_pass_create, &placement_layer_pass_delete
+                           , &default_layer_heap_alloc, &default_layer_heap_free )
+    , FACTORY_ENTRY( MQTT_LOGIC_LAYER, &placement_layer_pass_create, &placement_layer_pass_delete
                            , &default_layer_heap_alloc, &default_layer_heap_free )
 #endif // XI_MQTT_ENABLED
 END_FACTORY_CONF()
@@ -416,12 +423,14 @@ xi_context_t* xi_create_context(
         case XI_MQTT:
             {
                 // allocate staticly
-                static xi_mqtt_layer_data_t    mqtt_layer_data;
+                static xi_mqtt_layer_data_t         mqtt_layer_data;
+                static xi_mqtt_logic_layer_data_t   mqtt_logic_layer_data;
 
                 // clean the structures
                 memset( &mqtt_layer_data, 0, sizeof( xi_mqtt_layer_data_t ) );
+                memset( &mqtt_logic_layer_data, 0, sizeof( xi_mqtt_logic_layer_data_t ) );
 
-                void* user_datas[] = { 0, ( void* ) &mqtt_layer_data };
+                void* user_datas[] = { 0, ( void* ) &mqtt_layer_data, ( void* ) &mqtt_logic_layer_data };
                 ret->layer_chain = create_and_connect_layers( CONNECTION_SCHEME_2, user_datas, CONNECTION_SCHEME_LENGTH( CONNECTION_SCHEME_2 ) );
             }
             break;
@@ -1305,13 +1314,19 @@ extern const xi_response_t* xi_mqtt_publish(
 
 extern void xi_nob_mqtt_connect(
       xi_context_t* xi
+    , xi_connection_data_t* connection_data
     , xi_evtd_handle_t callback )
 {
-    // init sequence shall call connect at the end so we shall end up with the perfectly
-    // fine connected elements
     layer_t* input_layer = xi->layer_chain.top;
-    //xi->on_connected_callback = callback;
-    CALL_ON_SELF_INIT( input_layer, 0, LAYER_HINT_NONE );
+
+    xi_mqtt_logic_layer_data_t* layer_data
+        = ( xi_mqtt_logic_layer_data_t* ) input_layer->user_data;
+
+    layer_data->on_connected = callback;
+
+    CALL_ON_SELF_INIT( input_layer
+        , connection_data
+        , LAYER_HINT_NONE );
 }
 
 extern void xi_nob_mqtt_publish(

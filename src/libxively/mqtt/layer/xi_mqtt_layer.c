@@ -36,9 +36,9 @@ layer_state_t xi_mqtt_layer_data_ready(
         return LAYER_STATE_ERROR;
     }
 
-    layer_state_t state = CALL_ON_PREV_DATA_READY( context->self, ( void* ) &data_descriptor, LAYER_HINT_NONE );
+    CALL_ON_PREV_DATA_READY( context->self, ( void* ) &data_descriptor, LAYER_HINT_NONE );
 
-    return state;
+    return LAYER_STATE_OK;
 }
 
 layer_state_t xi_mqtt_layer_on_data_ready(
@@ -76,6 +76,24 @@ layer_state_t xi_mqtt_layer_on_data_ready(
     END_CORO()
 }
 
+layer_state_t xi_mqtt_layer_init(
+      layer_connectivity_t* context
+    , const void* data
+    , const layer_hint_t hint )
+{
+    CALL_ON_PREV_INIT( context->self, data, 0 );
+    return LAYER_STATE_OK;
+}
+
+layer_state_t xi_mqtt_layer_connect(
+      layer_connectivity_t* context
+    , const void* data
+    , const layer_hint_t hint )
+{
+    CALL_ON_NEXT_CONNECT( context->self, data, 0 );
+    return LAYER_STATE_OK;
+}
+
 layer_state_t xi_mqtt_layer_close(
     layer_connectivity_t* context )
 {
@@ -85,7 +103,9 @@ layer_state_t xi_mqtt_layer_close(
 
     CALL_ON_SELF_DATA_READY( context->self, &message, LAYER_HINT_NONE );
 
-    return CALL_ON_PREV_CLOSE( context->self );
+    CALL_ON_PREV_CLOSE( context->self );
+
+    return LAYER_STATE_OK;
 }
 
 layer_state_t xi_mqtt_layer_on_close(

@@ -106,9 +106,10 @@ layer_state_t posix_asynch_io_layer_on_data_ready(
 
     buffer->data_ptr[ buffer->real_size ] = '\0'; // put guard
     buffer->curr_pos = 0;
-    state = CALL_ON_NEXT_ON_DATA_READY( context->self, ( void* ) buffer, LAYER_HINT_MORE_DATA );
 
-    return state;
+    CALL_ON_NEXT_ON_DATA_READY( context->self, ( void* ) buffer, LAYER_HINT_MORE_DATA );
+
+    return LAYER_STATE_OK;
 }
 
 layer_state_t posix_asynch_io_layer_close( layer_connectivity_t* context )
@@ -206,6 +207,7 @@ layer_state_t posix_asynch_io_layer_init(
     assert( layer->user_data != 0 );
     assert( posix_asynch_data->socket_fd != -1 );
 
+    CALL_ON_SELF_CONNECT( context->self, data, 0 );
     return LAYER_STATE_OK;
 
 err_handling:
@@ -213,6 +215,7 @@ err_handling:
     if( posix_asynch_data )     { close( posix_asynch_data->socket_fd ); }
     if( layer->user_data )      { XI_SAFE_FREE( layer->user_data ); }
 
+    CALL_ON_SELF_CONNECT( context->self, data, 0 );
     return LAYER_STATE_ERROR;
 }
 
