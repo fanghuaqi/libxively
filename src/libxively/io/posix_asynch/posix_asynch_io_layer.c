@@ -20,6 +20,8 @@
 #include "xi_common.h"
 #include "xi_connection_data.h"
 #include "xi_coroutine.h"
+#include "xi_event_dispatcher_api.h"
+#include "xi_event_dispatcher_global_instance.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -146,6 +148,8 @@ layer_state_t posix_asynch_io_layer_on_close( layer_connectivity_t* context )
     }
 
 err_handling:
+    // unregister the fd
+    xi_evtd_unregister_fd( xi_evtd_instance, posix_asynch_data->socket_fd );
     // cleanup the memory
     if( posix_asynch_data ) { XI_SAFE_FREE( posix_asynch_data ); }
 
@@ -206,6 +210,10 @@ layer_state_t posix_asynch_io_layer_init(
     // POSTCONDITIONS
     assert( layer->user_data != 0 );
     assert( posix_asynch_data->socket_fd != -1 );
+
+    xi_evtd_register_fd(
+          xi_evtd_instance
+        , posix_asynch_data->socket_fd );
 
     CALL_ON_SELF_CONNECT( context->self, data, 0 );
     return LAYER_STATE_OK;
@@ -272,10 +280,22 @@ layer_state_t posix_asynch_io_layer_connect(
         }
         else
         {
-            YIELD( cs, LAYER_STATE_WANT_WRITE ); // return here whenever we can write
+            xi_evtd_handle_t handle = {
+                XI_EVTD_HANDLE_3_ID
+                    , .handlers.h3 = {
+                          context->self->layer_functions->connect
+                        , context
+                        , data
+                        , 0 } };
+            YIELD( cs, xi_evtd_continue_when_evt(
+                  xi_evtd_instance
+                , XI_EVENT_WANT_WRITE
+                , handle
+                , posix_asynch_data->socket_fd ) ); // return here whenever we can write
         }
     }
 
+    CALL_ON_NEXT_CONNECT( context->self, data, 0 );
     EXIT( cs, LAYER_STATE_OK );
 
 err_handling:
@@ -283,7 +303,10 @@ err_handling:
     if( posix_asynch_data )     { close( posix_asynch_data->socket_fd ); }
     if( layer->user_data )      { XI_SAFE_FREE( layer->user_data ); }
 
-    EXIT( cs, LAYER_STATE_ERROR );
+    // @TODO ADD ERROR
+    // maybe in the data ?
+    CALL_ON_NEXT_CONNECT( context->self, data, 0 );
+    EXIT( cs, LAYER_STATE_OK );
 
     END_CORO()
 }

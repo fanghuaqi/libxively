@@ -70,9 +70,9 @@ extern uint8_t xi_evtd_dispatcher_continue(
  * \brief update events triggers registration of continuations assigned to the given event on given device
  * \note events_mask is the mask that's created using | operator
  */
-extern void xi_evtd_update_events(
+extern void xi_evtd_update_event(
       xi_evtd_instance_t* instance
-    , xi_static_vector_t* fds );
+    , xi_fd_t fds );
 
 extern void xi_evtd_stop( xi_evtd_instance_t* instance );
 

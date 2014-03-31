@@ -32,7 +32,10 @@ int8_t xi_evtd_register_fd(
 
     // register within the handles
     {
-        const xi_static_vector_elem_t* e = xi_static_vector_push( instance->handles_and_fd, triplet );
+        const xi_static_vector_elem_t* e =
+            xi_static_vector_push(
+                  instance->handles_and_fd
+                , triplet );
         if( e == 0 ){ goto err_handling; }
     }
 
@@ -194,34 +197,29 @@ uint8_t xi_evtd_dispatcher_continue(
  * \brief update events triggers registration of continuations assigned to the given event on given device
  * \note events_mask is the mask that's created using | operator
  */
-void xi_evtd_update_events(
+void xi_evtd_update_event(
       xi_evtd_instance_t* instance
-    , xi_static_vector_t* fds )
+    , xi_fd_t fd )
 {
     assert( instance != 0 );
-    assert( fds != 0 );
 
-    for( int32_t i = 0; i < fds->elem_no; ++i )
+    xi_static_vector_index_type_t id
+        = xi_static_vector_find(
+              instance->handles_and_fd
+            , ( void* )( intptr_t ) fd
+            , &xi_evtd_cmp_fd );
+
+    if( id != -1 )
     {
-        xi_fd_t fd = ( xi_fd_t )( intptr_t ) fds->array[ i ].value;
+        xi_evtd_triplet_t* triplet
+            = ( xi_evtd_triplet_t* ) instance->handles_and_fd->array[ id ].value;
 
-        xi_static_vector_index_type_t id
-            = xi_static_vector_find(
-                  instance->handles_and_fd
-                , ( void* )( intptr_t ) fd
-                , &xi_evtd_cmp_fd );
-
-        if( id != -1 )
-        {
-            xi_evtd_triplet_t* triplet
-                = ( xi_evtd_triplet_t* ) instance->handles_and_fd->array[ id ].value;
-
-            xi_evtd_execute_handle( &triplet->handle );
-        }
-        else
-        {
-            assert( 1 == 0 );
-        }
+        triplet->event_type = XI_EVTD_NO_EVENT;
+        xi_evtd_execute_handle( &triplet->handle );
+    }
+    else
+    {
+        assert( 1 == 0 );
     }
 }
 

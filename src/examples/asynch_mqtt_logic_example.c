@@ -125,11 +125,77 @@ uint8_t xi_mqtt_logic_loop( layer_t* layer )
 // function onto multiple smaller ones
 void main_loop()
 {
+    fd_set rfds;
+    fd_set wfds;
+    fd_set efds;
+
+    FD_ZERO( &rfds );
+    FD_ZERO( &wfds );
+    FD_ZERO( &efds );
+
+    struct timeval tv;
+
     while( xi_evtd_dispatcher_continue( xi_evtd_instance ) )
     {
-        // get_dispatcher_evts( read_fds, write_fds, error_fds );
-        // int result = select( read_fds, write_fds, error_fds, timeout );
-        // update_dispatcher_evts( read_fds, write_fds );
+        xi_static_vector_index_type_t i = 0;
+        int max_fd                      = 0;
+
+        tv.tv_sec   = 1;
+        tv.tv_usec  = 0;
+
+        for( ; i < xi_evtd_instance->handles_and_fd->elem_no; ++i  )
+        {
+            xi_evtd_triplet_t* triplet =
+                ( xi_evtd_triplet_t* ) xi_evtd_instance->handles_and_fd->array[ i ].value;
+
+            if( ( triplet->event_type & XI_EVENT_WANT_READ ) > 0 )
+            {
+                FD_SET( triplet->fd, &rfds );
+                max_fd = triplet->fd > max_fd ? triplet->fd : max_fd;
+            }
+
+            if( ( triplet->event_type & XI_EVENT_WANT_WRITE ) > 0 )
+            {
+                FD_SET( triplet->fd, &wfds );
+                max_fd = triplet->fd > max_fd ? triplet->fd : max_fd;
+            }
+
+            if( ( triplet->event_type & XI_EVENT_ERROR ) > 0 )
+            {
+                FD_SET( triplet->fd, &efds );
+                max_fd = triplet->fd > max_fd ? triplet->fd : max_fd;
+            }
+        }
+
+        if( max_fd > 0 )
+        {
+            int result = select( max_fd + 1, &rfds, &wfds, &efds, &tv );
+
+            if( result > 0 )
+            {
+                for( i = 0 ; i < xi_evtd_instance->handles_and_fd->elem_no; ++i  )
+                {
+                    xi_evtd_triplet_t* triplet =
+                        ( xi_evtd_triplet_t* ) xi_evtd_instance->handles_and_fd->array[ i ].value;
+
+                    if( FD_ISSET( triplet->fd, &rfds ) )
+                    {
+                        xi_evtd_update_event( xi_evtd_instance, triplet->fd );
+                    }
+
+                    if( FD_ISSET( triplet->fd, &wfds ) )
+                    {
+                        xi_evtd_update_event( xi_evtd_instance, triplet->fd );
+                    }
+
+                    if( FD_ISSET( triplet->fd, &efds ) )
+                    {
+                        xi_evtd_update_event( xi_evtd_instance, triplet->fd );
+                    }
+                }
+            }
+        }
+
         xi_evtd_step( xi_evtd_instance, time( 0 ) );
     }
 }

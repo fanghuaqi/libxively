@@ -6,7 +6,6 @@
 
 #include "xi_layer.h"
 #include "xi_common.h"
-#include "xively.h"
 
 #ifdef __cplusplus
 extern "C" {

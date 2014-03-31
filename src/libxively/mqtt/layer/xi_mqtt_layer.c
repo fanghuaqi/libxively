@@ -3,6 +3,7 @@
 
 #include "xi_coroutine.h"
 #include "xi_mqtt_layer.h"
+#include "xively.h"
 
 #include "message.h"
 #include "serialiser.h"

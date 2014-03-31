@@ -6,7 +6,6 @@
 
 #include "xi_layer.h"
 #include "xi_common.h"
-#include "xively.h"
 #include "xi_mqtt_layer_data.h"
 
 #ifdef __cplusplus

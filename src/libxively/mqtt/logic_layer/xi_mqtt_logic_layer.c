@@ -3,6 +3,9 @@
 
 #include "xi_coroutine.h"
 #include "xi_mqtt_logic_layer.h"
+#include "xi_mqtt_logic_layer_data.h"
+#include "xi_event_dispatcher_global_instance.h"
+#include "xively.h"
 
 #include "message.h"
 #include "serialiser.h"
@@ -52,6 +55,9 @@ layer_state_t xi_mqtt_logic_layer_connect(
     , const void* data
     , const layer_hint_t hint )
 {
+    xi_mqtt_logic_layer_data_t* layer_data = context->self->user_data;
+    xi_evtd_continue( xi_evtd_instance, layer_data->on_connected, 0 );
+
     return LAYER_STATE_OK;
 }
 
