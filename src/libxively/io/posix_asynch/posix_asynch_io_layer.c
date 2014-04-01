@@ -280,13 +280,17 @@ layer_state_t posix_asynch_io_layer_connect(
         }
         else
         {
-            xi_evtd_handle_t handle = {
-                XI_EVTD_HANDLE_3_ID
-                    , .handlers.h3 = {
-                          context->self->layer_functions->connect
-                        , context
-                        , data
-                        , 0 } };
+            // @TODO stop forcing type to ( incorrect ) values
+            // this is about the constness of the arguments
+            // one of the solution is to lower the constraints, or to
+            // change all arguments into ( void* )
+            // so that it will be more generic that way
+            // but not safe on the other hand
+            MAKE_HANDLE_H3( ( handle_3_ptr ) context->self->layer_functions->connect
+                , ( xi_evtd_handle_1_t ) context
+                , ( xi_evtd_handle_2_t ) data
+                , 0 );
+
             YIELD( cs, xi_evtd_continue_when_evt(
                   xi_evtd_instance
                 , XI_EVENT_WANT_WRITE
