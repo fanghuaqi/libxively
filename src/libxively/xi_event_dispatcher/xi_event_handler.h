@@ -36,4 +36,28 @@ typedef struct xi_evtd_handle_s
     }handlers;
 } xi_evtd_handle_t;
 
+#define MAKE_HANDLE_H0( f ) \
+    xi_evtd_handle_t handle = { \
+          XI_EVTD_HANDLE_0_ID \
+       , .handlers.h0 = { \
+            f } };
+
+#define MAKE_HANDLE_H1( f, a0 ) \
+    xi_evtd_handle_t handle = { \
+          XI_EVTD_HANDLE_1_ID \
+       , .handlers.h1 = { \
+            f, a0 } };
+
+#define MAKE_HANDLE_H2( f, a0, a1 ) \
+    xi_evtd_handle_t handle = { \
+          XI_EVTD_HANDLE_2_ID \
+       , .handlers.h2 = { \
+            f, a0, a1 } };
+
+#define MAKE_HANDLE_H3( f, a0, a1, a2 ) \
+    xi_evtd_handle_t handle = { \
+          XI_EVTD_HANDLE_3_ID \
+       , .handlers.h3 = { \
+            f, a0, a1, a2 } };
+
 #endif // __XI_EVENT_HANDLER_H__
