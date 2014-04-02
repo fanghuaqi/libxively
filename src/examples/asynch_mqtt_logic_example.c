@@ -200,12 +200,13 @@ void main_loop()
     }
 }
 
-void on_connected(
+layer_state_t on_connected(
       void* in_context
     , void* data )
 {
     xi_context_t* context = ( xi_context_t* ) in_context;
     printf( "connected\n!" );
+    return LAYER_STATE_OK;
 }
 
 int main( int argc, char* argv[] )

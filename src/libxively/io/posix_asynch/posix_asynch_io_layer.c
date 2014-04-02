@@ -65,8 +65,10 @@ layer_state_t posix_asynch_io_layer_data_ready(
 layer_state_t posix_asynch_io_layer_on_data_ready(
       void* context
     , void* data
-    , layer_state_t state )
+    , layer_state_t in_state )
 {
+    XI_UNUSED( in_state );
+
     //xi_debug_logger( "[posix_asynch_io_layer_on_data_ready]" );
 
     posix_asynch_data_t* posix_asynch_data = ( posix_asynch_data_t* ) CON_SELF( context )->user_data;
@@ -105,18 +107,17 @@ layer_state_t posix_asynch_io_layer_on_data_ready(
     buffer->data_ptr[ buffer->real_size ] = '\0'; // put guard
     buffer->curr_pos = 0;
 
-    //return CALL_ON_NEXT_ON_DATA_READY( context, ( void* ) buffer, LAYER_STATE_OK );
-
-    return (1==1) ? (LAYER_STATE_OK) : ( layer_state_t ) 1;({ int a = 1; });
-
-    //return LAYER_STATE_OK;
+    return CALL_ON_NEXT_ON_DATA_READY( context, ( void* ) buffer, LAYER_STATE_OK );
 }
 
 layer_state_t posix_asynch_io_layer_close(
       void* context
     , void* data
-    , layer_state_t state )
+    , layer_state_t in_state )
 {
+    XI_UNUSED( data );
+    XI_UNUSED( in_state );
+
     posix_asynch_data_t* posix_asynch_data = ( posix_asynch_data_t* ) CON_SELF( context )->user_data;
 
     XI_UNUSED( posix_asynch_data );
@@ -126,8 +127,11 @@ layer_state_t posix_asynch_io_layer_close(
 layer_state_t posix_asynch_io_layer_on_close(
       void* context
     , void* data
-    , layer_state_t state )
+    , layer_state_t in_state )
 {
+    XI_UNUSED( in_state );
+    XI_UNUSED( data );
+
     //
     posix_asynch_data_t* posix_asynch_data = ( posix_asynch_data_t* ) CON_SELF( context )->user_data;
     layer_state_t ret = LAYER_STATE_OK;
@@ -160,9 +164,10 @@ err_handling:
 layer_state_t posix_asynch_io_layer_init(
       void* context
     , void* data
-    , layer_state_t state )
+    , layer_state_t in_state )
 {
     XI_UNUSED( data );
+    XI_UNUSED( in_state );
 
     // PRECONDITIONS
     assert( context != 0 );
@@ -228,8 +233,11 @@ err_handling:
 layer_state_t posix_asynch_io_layer_connect(
       void* context
     , void* data
-    , layer_state_t state )
+    , layer_state_t in_state )
 {
+    XI_UNUSED( data );
+    XI_UNUSED( in_state );
+
     static uint16_t cs = 0; // local coroutine prereserved state
 
     xi_connection_data_t* connection_data   = ( xi_connection_data_t* ) data;

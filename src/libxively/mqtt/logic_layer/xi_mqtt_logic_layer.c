@@ -18,8 +18,12 @@ extern "C" {
 layer_state_t xi_mqtt_logic_layer_data_ready(
       void* context
     , void* data
-    , layer_state_t state )
+    , layer_state_t in_state )
 {
+    XI_UNUSED( context );
+    XI_UNUSED( data );
+    XI_UNUSED( in_state );
+
     // sending request
     // type of the request depends on
     // the state that we are in
@@ -32,8 +36,12 @@ layer_state_t xi_mqtt_logic_layer_data_ready(
 layer_state_t xi_mqtt_logic_layer_on_data_ready(
       void* context
     , void* data
-    , layer_state_t state )
+    , layer_state_t in_state )
 {
+    XI_UNUSED( context );
+    XI_UNUSED( data );
+    XI_UNUSED( in_state );
+
     // receiving message
     // will go through the state machine
     // so that it will decide what to do next
@@ -45,16 +53,20 @@ layer_state_t xi_mqtt_logic_layer_on_data_ready(
 layer_state_t xi_mqtt_logic_layer_init(
       void* context
     , void* data
-    , layer_state_t state )
+    , layer_state_t in_state )
 {
-    return CALL_ON_PREV_INIT( context, data, 0 );
+    return CALL_ON_PREV_INIT( context, data, in_state );
 }
 
 layer_state_t xi_mqtt_logic_layer_connect(
       void* context
     , void* data
-    , layer_state_t state )
+    , layer_state_t in_state )
 {
+    XI_UNUSED( context );
+    XI_UNUSED( data );
+    XI_UNUSED( in_state );
+
     xi_mqtt_logic_layer_data_t* layer_data = CON_SELF( context )->user_data;
     xi_evtd_continue( xi_evtd_instance, layer_data->on_connected, 0 );
     return LAYER_STATE_OK;
@@ -63,16 +75,24 @@ layer_state_t xi_mqtt_logic_layer_connect(
 layer_state_t xi_mqtt_logic_layer_close(
       void* context
     , void* data
-    , layer_state_t state )
+    , layer_state_t in_state )
 {
+    XI_UNUSED( context );
+    XI_UNUSED( data );
+    XI_UNUSED( in_state );
+
     return LAYER_STATE_OK;
 }
 
 layer_state_t xi_mqtt_logic_layer_on_close(
       void* context
     , void* data
-    , layer_state_t state )
+    , layer_state_t in_state )
 {
+    XI_UNUSED( context );
+    XI_UNUSED( data );
+    XI_UNUSED( in_state );
+
     return LAYER_STATE_OK;
 }
 

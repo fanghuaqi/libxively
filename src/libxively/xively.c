@@ -357,6 +357,9 @@ xi_context_t* xi_create_context(
 {
 
 #if defined( XI_MQTT_ENABLED ) && defined( XI_NOB_ENABLED )
+    XI_UNUSED( api_key );
+    XI_UNUSED( feed_id );
+
     if( xi_evtd_ref_count == 0 )
     {
         xi_evtd_instance = xi_evtd_create_instance();
@@ -1341,7 +1344,9 @@ extern void xi_nob_mqtt_publish(
     , const char* topic
     , const char* msg )
 {
-
+    XI_UNUSED( xi );
+    XI_UNUSED( topic );
+    XI_UNUSED( msg );
 }
 
 #endif

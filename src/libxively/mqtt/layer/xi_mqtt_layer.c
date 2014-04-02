@@ -43,8 +43,11 @@ layer_state_t xi_mqtt_layer_data_ready(
 layer_state_t xi_mqtt_layer_on_data_ready(
       void* context
     , void* data
-    , layer_state_t state )
+    , layer_state_t in_state )
 {
+    XI_UNUSED( data );
+    XI_UNUSED( in_state );
+
     // must survive the yield
     static uint16_t cs                  = 0;
     static layer_state_t local_state    = LAYER_STATE_OK; //
@@ -65,7 +68,7 @@ layer_state_t xi_mqtt_layer_on_data_ready(
             , ( const uint8_t* ) data_descriptor->data_ptr
             , data_descriptor->real_size, 0 );
 
-        //YIELD_UNTIL( cs, ( local_state == LAYER_STATE_WANT_READ ), LAYER_STATE_WANT_READ );
+        YIELD_UNTIL( cs, ( local_state == LAYER_STATE_WANT_READ ), LAYER_STATE_WANT_READ );
     } while( local_state == LAYER_STATE_WANT_READ );
 
     EXIT( cs, LAYER_STATE_OK );
@@ -76,37 +79,43 @@ layer_state_t xi_mqtt_layer_on_data_ready(
 layer_state_t xi_mqtt_layer_init(
       void* context
     , void* data
-    , layer_state_t state )
+    , layer_state_t in_state )
 {
-    return CALL_ON_PREV_INIT( context, data, 0 );
+    return CALL_ON_PREV_INIT( context, data, in_state );
 }
 
 layer_state_t xi_mqtt_layer_connect(
       void* context
     , void* data
-    , layer_state_t state )
+    , layer_state_t in_state )
 {
-    return CALL_ON_NEXT_CONNECT( context, data, 0 );
+    return CALL_ON_NEXT_CONNECT( context, data, in_state );
 }
 
 layer_state_t xi_mqtt_layer_close(
       void* context
     , void* data
-    , layer_state_t state )
+    , layer_state_t in_state )
 {
+    XI_UNUSED( data );
+
     mqtt_message_t message;
     memset( &message, 0, sizeof( mqtt_message_t ) );
     message.common.common_u.common_bits.type = MQTT_TYPE_DISCONNECT;
 
-    CALL_ON_SELF_DATA_READY( context, &message, LAYER_STATE_OK );
-    return CALL_ON_PREV_CLOSE( context, 0, LAYER_STATE_OK );
+    CALL_ON_SELF_DATA_READY( context, &message, in_state );
+    return CALL_ON_PREV_CLOSE( context, 0, in_state );
 }
 
 layer_state_t xi_mqtt_layer_on_close(
       void* context
     , void* data
-    , layer_state_t state )
+    , layer_state_t in_state )
 {
+    XI_UNUSED( context );
+    XI_UNUSED( data );
+    XI_UNUSED( in_state );
+
     // reaction on closed event
     return LAYER_STATE_OK;
 }

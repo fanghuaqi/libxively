@@ -8,6 +8,7 @@
 
 layer_state_t process_xively_nob_step( xi_context_t* xi )
 {
+    XI_UNUSED( xi );
 /*    // PRECONDITION
     assert( xi != 0 );
 
