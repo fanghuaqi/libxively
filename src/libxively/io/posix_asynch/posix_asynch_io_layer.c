@@ -305,7 +305,7 @@ layer_state_t posix_asynch_io_layer_connect(
         }
     }
 
-    EXIT( cs, CALL_ON_NEXT_CONNECT( CON_SELF( context ), data, LAYER_STATE_OK ) );
+    EXIT( cs, CALL_ON_NEXT_CONNECT( context, data, LAYER_STATE_OK ););
 
 err_handling:
     // cleanup the memory
