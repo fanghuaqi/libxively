@@ -21,7 +21,7 @@ XI_EVTD_EVENTS_END()
 #define xi_evtd_handle_2_t void*
 #define xi_evtd_handle_3_t layer_state_t
 
-XI_EVTD_HANDLE_PTRS();
+XI_EVTD_HANDLE_PTRS()
 
 typedef uint8_t xi_evtd_evt_desc_t;
 

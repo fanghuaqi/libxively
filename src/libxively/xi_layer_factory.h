@@ -24,7 +24,7 @@ static inline layer_t* alloc_layer( layer_type_id_t layer_type_id )
 static inline void free_layer( layer_t* layer )
 {
     layer_type_t* layer_type = &LAYER_TYPES[ layer->layer_type_id ];
-    return FACTORY_ENTRIES[ layer->layer_type_id ].free( layer_type, layer );
+    FACTORY_ENTRIES[ layer->layer_type_id ].free( layer_type, layer );
 }
 
 static inline layer_t* create_layer( layer_t* layer, void* user_data )

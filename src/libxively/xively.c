@@ -1314,13 +1314,6 @@ extern const xi_response_t* xi_mqtt_publish(
 }
 
 #elif defined(XI_MQTT_ENABLED) && defined(XI_NOB_ENABLED)
-// function used via the xi_layer_api macros...
-// @TODO relocate into another more suitable compilation
-// unit
-layer_state_t state_returner( layer_state_t in )
-{
-    return in;
-}
 
 extern layer_state_t xi_nob_mqtt_connect(
       xi_context_t* xi

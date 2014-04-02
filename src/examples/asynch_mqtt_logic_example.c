@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <sys/select.h>
 
 void print_usage()
 {
@@ -49,11 +50,6 @@ void print_usage()
 // idle->publishing
 // reading subscription->idle
 // publishing->idle
-
-struct user_data
-{
-
-};
 
 uint8_t on_a( layer_t* layer, mqtt_message_t* message )
 {

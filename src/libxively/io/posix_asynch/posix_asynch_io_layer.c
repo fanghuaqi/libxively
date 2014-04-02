@@ -268,7 +268,7 @@ layer_state_t posix_asynch_io_layer_connect(
     // set the address and the port for further connection attempt
     memset( &name, 0, sizeof( struct sockaddr_in ) );
     name.sin_family     = AF_INET;
-    name.sin_addr       = *( ( struct in_addr* ) hostinfo->h_addr );
+    name.sin_addr       = *( ( struct in_addr* ) hostinfo->h_addr_list[0] );
     name.sin_port       = htons( connection_data->port );
 
     xi_debug_logger( "Connecting to the endpoint..." );
