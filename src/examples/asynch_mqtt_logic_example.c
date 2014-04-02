@@ -140,8 +140,12 @@ void main_loop()
         xi_static_vector_index_type_t i = 0;
         int max_fd                      = 0;
 
-        tv.tv_sec   = 1;
-        tv.tv_usec  = 0;
+        tv.tv_sec   = 0;
+        tv.tv_usec  = 250000;
+
+        FD_ZERO( &rfds );
+        FD_ZERO( &wfds );
+        FD_ZERO( &efds );
 
         for( ; i < xi_evtd_instance->handles_and_fd->elem_no; ++i  )
         {
@@ -167,31 +171,28 @@ void main_loop()
             }
         }
 
-        if( max_fd > 0 )
+        int result = select( max_fd + 1, &rfds, &wfds, &efds, &tv );
+
+        if( result > 0 )
         {
-            int result = select( max_fd + 1, &rfds, &wfds, &efds, &tv );
-
-            if( result > 0 )
+            for( i = 0 ; i < xi_evtd_instance->handles_and_fd->elem_no; ++i  )
             {
-                for( i = 0 ; i < xi_evtd_instance->handles_and_fd->elem_no; ++i  )
+                xi_evtd_triplet_t* triplet =
+                    ( xi_evtd_triplet_t* ) xi_evtd_instance->handles_and_fd->array[ i ].value;
+
+                if( FD_ISSET( triplet->fd, &rfds ) )
                 {
-                    xi_evtd_triplet_t* triplet =
-                        ( xi_evtd_triplet_t* ) xi_evtd_instance->handles_and_fd->array[ i ].value;
+                    xi_evtd_update_event( xi_evtd_instance, triplet->fd );
+                }
 
-                    if( FD_ISSET( triplet->fd, &rfds ) )
-                    {
-                        xi_evtd_update_event( xi_evtd_instance, triplet->fd );
-                    }
+                if( FD_ISSET( triplet->fd, &wfds ) )
+                {
+                    xi_evtd_update_event( xi_evtd_instance, triplet->fd );
+                }
 
-                    if( FD_ISSET( triplet->fd, &wfds ) )
-                    {
-                        xi_evtd_update_event( xi_evtd_instance, triplet->fd );
-                    }
-
-                    if( FD_ISSET( triplet->fd, &efds ) )
-                    {
-                        xi_evtd_update_event( xi_evtd_instance, triplet->fd );
-                    }
+                if( FD_ISSET( triplet->fd, &efds ) )
+                {
+                    xi_evtd_update_event( xi_evtd_instance, triplet->fd );
                 }
             }
         }
