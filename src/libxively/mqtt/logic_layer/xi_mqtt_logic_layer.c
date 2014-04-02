@@ -15,7 +15,7 @@
 extern "C" {
 #endif
 
-void xi_mqtt_logic_layer_data_ready(
+layer_state_t xi_mqtt_logic_layer_data_ready(
       void* context
     , void* data
     , layer_state_t state )
@@ -26,9 +26,10 @@ void xi_mqtt_logic_layer_data_ready(
     // it's easy to determine if we are in the middle of
     // processing a single request or we are starting new one
     //
+    return LAYER_STATE_OK;
 }
 
-void xi_mqtt_logic_layer_on_data_ready(
+layer_state_t xi_mqtt_logic_layer_on_data_ready(
       void* context
     , void* data
     , layer_state_t state )
@@ -38,9 +39,10 @@ void xi_mqtt_logic_layer_on_data_ready(
     // so that it will decide what to do next
     // this is very important part of the
     //
+    return LAYER_STATE_OK;
 }
 
-void xi_mqtt_logic_layer_init(
+layer_state_t xi_mqtt_logic_layer_init(
       void* context
     , void* data
     , layer_state_t state )
@@ -48,27 +50,30 @@ void xi_mqtt_logic_layer_init(
     return CALL_ON_PREV_INIT( context, data, 0 );
 }
 
-void xi_mqtt_logic_layer_connect(
+layer_state_t xi_mqtt_logic_layer_connect(
       void* context
     , void* data
     , layer_state_t state )
 {
     xi_mqtt_logic_layer_data_t* layer_data = CON_SELF( context )->user_data;
     xi_evtd_continue( xi_evtd_instance, layer_data->on_connected, 0 );
+    return LAYER_STATE_OK;
 }
 
-void xi_mqtt_logic_layer_close(
+layer_state_t xi_mqtt_logic_layer_close(
       void* context
     , void* data
     , layer_state_t state )
 {
+    return LAYER_STATE_OK;
 }
 
-void xi_mqtt_logic_layer_on_close(
+layer_state_t xi_mqtt_logic_layer_on_close(
       void* context
     , void* data
     , layer_state_t state )
 {
+    return LAYER_STATE_OK;
 }
 
 

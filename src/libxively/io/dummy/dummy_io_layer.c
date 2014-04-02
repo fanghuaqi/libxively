@@ -16,63 +16,73 @@
 #include "xi_common.h"
 
 layer_state_t dummy_io_layer_data_ready(
-      struct layer_connectivity_s* context
-    , const void* data
-    , const layer_hint_t hint )
+      void* context
+    , void* data
+    , layer_state_t in_state )
 {
     XI_UNUSED( context );
     XI_UNUSED( data );
-    XI_UNUSED( hint );
+    XI_UNUSED( in_state );
 
     return LAYER_STATE_OK;
 }
 
 layer_state_t dummy_io_layer_on_data_ready(
-      struct layer_connectivity_s* context
-    , const void* data
-    , const layer_hint_t hint )
+      void* context
+    , void* data
+    , layer_state_t in_state )
 {
     XI_UNUSED( context );
     XI_UNUSED( data );
-    XI_UNUSED( hint );
+    XI_UNUSED( in_state );
 
     return LAYER_STATE_OK;
 }
 
-layer_state_t dummy_io_layer_close( struct layer_connectivity_s* context )
+layer_state_t dummy_io_layer_close(
+      void* context
+    , void* data
+    , layer_state_t in_state )
 {
     XI_UNUSED( context );
+    XI_UNUSED( data );
+    XI_UNUSED( in_state );
 
     return LAYER_STATE_OK;
 }
 
-layer_state_t dummy_io_layer_on_close( struct layer_connectivity_s* context )
+layer_state_t dummy_io_layer_on_close(
+      void* context
+    , void* data
+    , layer_state_t in_state )
 {
     XI_UNUSED( context );
+    XI_UNUSED( data );
+    XI_UNUSED( in_state );
 
     return LAYER_STATE_OK;
 }
 
 layer_state_t dummy_io_layer_init(
-      struct layer_connectivity_s* context
-    , const void* data
-    , const layer_hint_t hint )
+      void* context
+    , void* data
+    , layer_state_t in_state )
 {
     XI_UNUSED( context );
     XI_UNUSED( data );
-    XI_UNUSED( hint );
+    XI_UNUSED( in_state );
 
     return LAYER_STATE_OK;
 }
 
 layer_state_t dummy_io_layer_connect(
-      struct layer_connectivity_s* context
-    , const void* data
-    , const layer_hint_t hint )
+      void* context
+    , void* data
+    , layer_state_t in_state )
 {
     XI_UNUSED( context );
     XI_UNUSED( data );
-    XI_UNUSED( hint );
+    XI_UNUSED( in_state );
 
     return LAYER_STATE_OK;
 }

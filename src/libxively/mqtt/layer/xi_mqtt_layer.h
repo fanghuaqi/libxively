@@ -12,32 +12,32 @@
 extern "C" {
 #endif
 
-void xi_mqtt_layer_data_ready(
+layer_state_t xi_mqtt_layer_data_ready(
       void* context
     , void* data
     , layer_state_t );
 
-void xi_mqtt_layer_on_data_ready(
+layer_state_t xi_mqtt_layer_on_data_ready(
       void* context
     , void* data
     , layer_state_t );
 
-void xi_mqtt_layer_init(
+layer_state_t xi_mqtt_layer_init(
       void* context
     , void* data
     , layer_state_t );
 
-void xi_mqtt_layer_connect(
+layer_state_t xi_mqtt_layer_connect(
       void* context
     , void* data
     , layer_state_t );
 
-void xi_mqtt_layer_close(
+layer_state_t xi_mqtt_layer_close(
       void* context
     , void* data
     , layer_state_t state );
 
-void xi_mqtt_layer_on_close(
+layer_state_t xi_mqtt_layer_on_close(
       void* context
     , void* data
     , layer_state_t state );

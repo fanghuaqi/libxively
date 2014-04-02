@@ -15,6 +15,8 @@
 extern "C" {
 #endif
 
+extern layer_state_t state_returner( layer_state_t in );
+
 #define CON_SELF( context ) ( ( layer_connectivity_t* ) context )->self
 
 #ifdef XI_DEBUG_LAYER_API
@@ -80,10 +82,11 @@ extern "C" {
                       XI_EVTD_HANDLE_3_ID \
                     , .handlers.h3 = { \
                           context->layer_connection.layer->layer_functions->target \
-                        , ( void* ) &context->layer_connection.layer->layer_connection \
+                        , &context->layer_connection.layer->layer_connection \
                         , data \
                         , state } }; \
                 xi_evtd_continue( xi_evtd_instance, handle, 0 ); \
+                state_returner( state ); \
             })
     #else
     #define CALL_ON2( layer, target, context, data, state )\
@@ -92,10 +95,11 @@ extern "C" {
                   XI_EVTD_HANDLE_3_ID \
                 , .handlers.h3 = { \
                       context->layer_connection.layer->layer_functions->target \
-                    , ( void* ) &context->layer_connection.layer->layer_connection \
+                    , &context->layer_connection.layer->layer_connection \
                     , data \
                     , state } }; \
             xi_evtd_continue( xi_evtd_instance, handle, 0 ); \
+            state_returner( state ); \
         })
     #endif
 #else

@@ -27,7 +27,7 @@
 extern "C" {
 #endif
 
-void posix_asynch_io_layer_data_ready(
+layer_state_t posix_asynch_io_layer_data_ready(
       void* context
     , void* data
     , layer_state_t state )
@@ -46,23 +46,23 @@ void posix_asynch_io_layer_data_ready(
             int errval = errno;
             if( errval == EAGAIN ) // that can happen
             {
-                // return LAYER_STATE_WANT_WRITE;
+                return LAYER_STATE_WANT_WRITE;
             }
 
             xi_debug_printf( "error reading: errno = %d \n", errval );
-            // return LAYER_STATE_ERROR;
+            return LAYER_STATE_ERROR;
         }
 
         if( len < buffer->data_size )
         {
-            // return LAYER_STATE_ERROR;
+            return LAYER_STATE_ERROR;
         }
     }
 
-    // return hint == LAYER_HINT_MORE_DATA ? LAYER_STATE_WANT_WRITE : LAYER_STATE_OK;
+    return LAYER_STATE_OK;
 }
 
-void posix_asynch_io_layer_on_data_ready(
+layer_state_t posix_asynch_io_layer_on_data_ready(
       void* context
     , void* data
     , layer_state_t state )
@@ -105,12 +105,14 @@ void posix_asynch_io_layer_on_data_ready(
     buffer->data_ptr[ buffer->real_size ] = '\0'; // put guard
     buffer->curr_pos = 0;
 
-    return CALL_ON_NEXT_ON_DATA_READY( context, ( void* ) buffer, LAYER_STATE_OK );
+    //return CALL_ON_NEXT_ON_DATA_READY( context, ( void* ) buffer, LAYER_STATE_OK );
+
+    return (1==1) ? (LAYER_STATE_OK) : ( layer_state_t ) 1;({ int a = 1; });
 
     //return LAYER_STATE_OK;
 }
 
-void posix_asynch_io_layer_close(
+layer_state_t posix_asynch_io_layer_close(
       void* context
     , void* data
     , layer_state_t state )
@@ -118,21 +120,23 @@ void posix_asynch_io_layer_close(
     posix_asynch_data_t* posix_asynch_data = ( posix_asynch_data_t* ) CON_SELF( context )->user_data;
 
     XI_UNUSED( posix_asynch_data );
+    return LAYER_STATE_OK;
 }
 
-void posix_asynch_io_layer_on_close(
+layer_state_t posix_asynch_io_layer_on_close(
       void* context
     , void* data
     , layer_state_t state )
 {
     //
     posix_asynch_data_t* posix_asynch_data = ( posix_asynch_data_t* ) CON_SELF( context )->user_data;
+    layer_state_t ret = LAYER_STATE_OK;
 
     if( shutdown( posix_asynch_data->socket_fd, SHUT_RDWR ) == -1 )
     {
         xi_set_err( XI_SOCKET_SHUTDOWN_ERROR );
         close( posix_asynch_data->socket_fd ); // just in case
-        // ret = LAYER_STATE_ERROR;
+        ret = LAYER_STATE_ERROR;
         goto err_handling;
     }
 
@@ -140,7 +144,7 @@ void posix_asynch_io_layer_on_close(
     if( close( posix_asynch_data->socket_fd ) == -1 )
     {
         xi_set_err( XI_SOCKET_CLOSE_ERROR );
-        // ret = LAYER_STATE_ERROR;
+        ret = LAYER_STATE_ERROR;
         goto err_handling;
     }
 
@@ -150,10 +154,10 @@ err_handling:
     // cleanup the memory
     if( posix_asynch_data ) { XI_SAFE_FREE( posix_asynch_data ); }
 
-    //return ret;
+    return ret;
 }
 
-void posix_asynch_io_layer_init(
+layer_state_t posix_asynch_io_layer_init(
       void* context
     , void* data
     , layer_state_t state )
@@ -221,7 +225,7 @@ err_handling:
     return CALL_ON_SELF_CONNECT( context, data, LAYER_STATE_ERROR );
 }
 
-void posix_asynch_io_layer_connect(
+layer_state_t posix_asynch_io_layer_connect(
       void* context
     , void* data
     , layer_state_t state )
@@ -289,7 +293,7 @@ void posix_asynch_io_layer_connect(
                 , handle
                 , posix_asynch_data->socket_fd );
 
-            YIELD( cs, ); // return here whenever we can write
+            YIELD( cs, LAYER_STATE_OK ); // return here whenever we can write
         }
     }
 

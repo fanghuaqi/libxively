@@ -15,30 +15,32 @@ extern "C" {
 
 layer_state_t csv_layer_data_ready(
       void* context
-    , const void* data
-    , const layer_hint_t hint );
+    , void* data
+    , layer_state_t in_state );
 
 layer_state_t csv_layer_on_data_ready(
       void* context
-    , const void* data
-    , const layer_hint_t hint );
+    , void* data
+    , layer_state_t in_state );
 
 layer_state_t csv_layer_close(
-    void* context );
+      void* context
+    , void* data
+    , layer_state_t in_state );
 
 layer_state_t csv_layer_on_close(
-    void* context );
+      void* context
+    , void* data
+    , layer_state_t in_state );
 
 layer_state_t csv_layer_parse_datastream(
         csv_layer_data_t* csv_layer_data
       , const_data_descriptor_t* data
-      , const layer_hint_t hint
       , xi_datapoint_t* dp );
 
 layer_state_t csv_layer_parse_feed(
         csv_layer_data_t* csv_layer_data
       , const_data_descriptor_t* data
-      , const layer_hint_t hint
       , xi_feed_t* dp );
 
 const void* csv_layer_data_generator_datastream_get(

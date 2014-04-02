@@ -16,7 +16,7 @@ XI_EVTD_EVENTS_BEGIN()
 XI_EVTD_EVENTS_3( XI_EVENT_WANT_READ, XI_EVENT_WANT_WRITE, XI_EVENT_ERROR )
 XI_EVTD_EVENTS_END()
 
-#define RET void
+#define RET int16_t
 #define xi_evtd_handle_1_t void*
 #define xi_evtd_handle_2_t void*
 #define xi_evtd_handle_3_t layer_state_t

@@ -514,7 +514,7 @@ extern const xi_response_t* xi_mqtt_publish(
 /**
  * \brief   Initialzes the connection
  */
-extern void xi_nob_mqtt_connect(
+extern layer_state_t xi_nob_mqtt_connect(
       xi_context_t* xi
     , xi_connection_data_t* connection_data
     , xi_evtd_handle_t callback );

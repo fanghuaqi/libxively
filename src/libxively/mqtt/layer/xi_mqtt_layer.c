@@ -13,7 +13,7 @@
 extern "C" {
 #endif
 
-void xi_mqtt_layer_data_ready(
+layer_state_t xi_mqtt_layer_data_ready(
       void* context
     , void* data
     , layer_state_t state )
@@ -37,12 +37,10 @@ void xi_mqtt_layer_data_ready(
         // return LAYER_STATE_ERROR;
     }
 
-    CALL_ON_PREV_DATA_READY( context, ( void* ) &data_descriptor, LAYER_STATE_OK );
-
-    //return LAYER_STATE_OK;
+    return CALL_ON_PREV_DATA_READY( context, ( void* ) &data_descriptor, LAYER_STATE_OK );
 }
 
-void xi_mqtt_layer_on_data_ready(
+layer_state_t xi_mqtt_layer_on_data_ready(
       void* context
     , void* data
     , layer_state_t state )
@@ -70,28 +68,28 @@ void xi_mqtt_layer_on_data_ready(
         //YIELD_UNTIL( cs, ( local_state == LAYER_STATE_WANT_READ ), LAYER_STATE_WANT_READ );
     } while( local_state == LAYER_STATE_WANT_READ );
 
-    //EXIT( cs, LAYER_STATE_OK );
+    EXIT( cs, LAYER_STATE_OK );
 
     END_CORO()
 }
 
-void xi_mqtt_layer_init(
+layer_state_t xi_mqtt_layer_init(
       void* context
     , void* data
     , layer_state_t state )
 {
-    CALL_ON_PREV_INIT( context, data, 0 );
+    return CALL_ON_PREV_INIT( context, data, 0 );
 }
 
-void xi_mqtt_layer_connect(
+layer_state_t xi_mqtt_layer_connect(
       void* context
     , void* data
     , layer_state_t state )
 {
-    CALL_ON_NEXT_CONNECT( context, data, 0 );
+    return CALL_ON_NEXT_CONNECT( context, data, 0 );
 }
 
-void xi_mqtt_layer_close(
+layer_state_t xi_mqtt_layer_close(
       void* context
     , void* data
     , layer_state_t state )
@@ -101,15 +99,16 @@ void xi_mqtt_layer_close(
     message.common.common_u.common_bits.type = MQTT_TYPE_DISCONNECT;
 
     CALL_ON_SELF_DATA_READY( context, &message, LAYER_STATE_OK );
-    CALL_ON_PREV_CLOSE( context, 0, LAYER_STATE_OK );
+    return CALL_ON_PREV_CLOSE( context, 0, LAYER_STATE_OK );
 }
 
-void xi_mqtt_layer_on_close(
+layer_state_t xi_mqtt_layer_on_close(
       void* context
     , void* data
     , layer_state_t state )
 {
     // reaction on closed event
+    return LAYER_STATE_OK;
 }
 
 #ifdef __cplusplus

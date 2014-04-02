@@ -11,30 +11,34 @@ extern "C" {
 #endif
 
 layer_state_t dummy_io_layer_data_ready(
-      struct layer_connectivity_s* context
-    , const void* data
-    , const layer_hint_t hint );
+      void* context
+    , void* data
+    , layer_state_t in_state );
 
 layer_state_t dummy_io_layer_on_data_ready(
-      struct layer_connectivity_s* context
-    , const void* data
-    , const layer_hint_t hint );
+      void* context
+    , void* data
+    , layer_state_t in_state );
 
 layer_state_t dummy_io_layer_close(
-    struct layer_connectivity_s* context );
+      void* context
+    , void* data
+    , layer_state_t in_state );
 
 layer_state_t dummy_io_layer_on_close(
-    struct layer_connectivity_s* context );
+      void* context
+    , void* data
+    , layer_state_t in_state );
 
 layer_state_t dummy_io_layer_init(
-      struct layer_connectivity_s* context
-    , const void* data
-    , const layer_hint_t hint );
+      void* context
+    , void* data
+    , layer_state_t in_state );
 
 layer_state_t dummy_io_layer_connect(
-      struct layer_connectivity_s* context
-    , const void* data
-    , const layer_hint_t hint );
+      void* context
+    , void* data
+    , layer_state_t in_state );
 
 #ifdef __cplusplus
 }

@@ -506,12 +506,12 @@ const xi_response_t* xi_feed_get(
     layer_t* io_layer       = xi->layer_chain.bottom;
 
     { // init & connect
-        state = CALL_ON_SELF_INIT( io_layer, 0, LAYER_HINT_NONE );
+        state = CALL_ON_SELF_INIT( io_layer, 0, LAYER_STATE_OK );
         if( state != LAYER_STATE_OK ) { return 0; }
 
         xi_connection_data_t conn_data = { XI_HOST, XI_PORT };
 
-        state = CALL_ON_SELF_CONNECT( io_layer, ( void *) &conn_data, LAYER_HINT_NONE );
+        state = CALL_ON_SELF_CONNECT( io_layer, ( void *) &conn_data, LAYER_STATE_OK );
         if( state != LAYER_STATE_OK ) { return 0; }
     }
 
@@ -527,14 +527,14 @@ const xi_response_t* xi_feed_get(
         , { .xi_get_feed = { .feed = feed } }
     };
 
-    state = CALL_ON_SELF_DATA_READY( input_layer, ( void *) &http_layer_input, LAYER_HINT_NONE );
+    state = CALL_ON_SELF_DATA_READY( input_layer, ( void *) &http_layer_input, LAYER_STATE_OK );
 
     if( state == LAYER_STATE_OK )
     {
-        CALL_ON_SELF_ON_DATA_READY( io_layer, ( void *) 0, LAYER_HINT_NONE );
+        CALL_ON_SELF_ON_DATA_READY( io_layer, ( void *) 0, LAYER_STATE_OK );
     }
 
-    CALL_ON_SELF_CLOSE( input_layer );
+    CALL_ON_SELF_CLOSE( input_layer, ( void* ) 0, LAYER_STATE_OK );
 
     return ( ( csv_layer_data_t* ) input_layer->user_data )->response;
 }
@@ -551,12 +551,12 @@ const xi_response_t* xi_feed_get_all(
     layer_t* io_layer       = xi->layer_chain.bottom;
 
     { // init & connect
-        state = CALL_ON_SELF_INIT( io_layer, 0, LAYER_HINT_NONE );
+        state = CALL_ON_SELF_INIT( io_layer, 0, LAYER_STATE_OK );
         if( state != LAYER_STATE_OK ) { return 0; }
 
         xi_connection_data_t conn_data = { XI_HOST, XI_PORT };
 
-        state = CALL_ON_SELF_CONNECT( io_layer, ( void *) &conn_data, LAYER_HINT_NONE );
+        state = CALL_ON_SELF_CONNECT( io_layer, ( void *) &conn_data, LAYER_STATE_OK );
         if( state != LAYER_STATE_OK ) { return 0; }
     }
 
@@ -572,14 +572,14 @@ const xi_response_t* xi_feed_get_all(
         , { .xi_get_feed = { .feed = feed } }
     };
 
-    state = CALL_ON_SELF_DATA_READY( input_layer, ( void *) &http_layer_input, LAYER_HINT_NONE );
+    state = CALL_ON_SELF_DATA_READY( input_layer, ( void *) &http_layer_input, LAYER_STATE_OK );
 
     if( state == LAYER_STATE_OK )
     {
-        CALL_ON_SELF_ON_DATA_READY( io_layer, ( void *) 0, LAYER_HINT_NONE );
+        CALL_ON_SELF_ON_DATA_READY( io_layer, ( void *) 0, LAYER_STATE_OK );
     }
 
-    CALL_ON_SELF_CLOSE( input_layer );
+    CALL_ON_SELF_CLOSE( input_layer, ( void* ) 0, LAYER_STATE_OK );
 
     return ( ( csv_layer_data_t* ) input_layer->user_data )->response;
 }
@@ -597,12 +597,12 @@ const xi_response_t* xi_feed_update(
     layer_t* io_layer       = xi->layer_chain.bottom;
 
     { // init & connect
-        state = CALL_ON_SELF_INIT( io_layer, 0, LAYER_HINT_NONE );
+        state = CALL_ON_SELF_INIT( io_layer, 0, LAYER_STATE_OK );
         if( state != LAYER_STATE_OK ) { return 0; }
 
         xi_connection_data_t conn_data = { XI_HOST, XI_PORT };
 
-        state = CALL_ON_SELF_CONNECT( io_layer, ( void *) &conn_data, LAYER_HINT_NONE );
+        state = CALL_ON_SELF_CONNECT( io_layer, ( void *) &conn_data, LAYER_STATE_OK );
         if( state != LAYER_STATE_OK ) { return 0; }
     }
 
@@ -618,14 +618,14 @@ const xi_response_t* xi_feed_update(
         , { .xi_update_feed = { ( xi_feed_t * ) feed } }
     };
 
-    state = CALL_ON_SELF_DATA_READY( input_layer, ( void *) &http_layer_input, LAYER_HINT_NONE );
+    state = CALL_ON_SELF_DATA_READY( input_layer, ( void *) &http_layer_input, LAYER_STATE_OK );
 
     if( state == LAYER_STATE_OK )
     {
-        CALL_ON_SELF_ON_DATA_READY( io_layer, ( void *) 0, LAYER_HINT_NONE );
+        CALL_ON_SELF_ON_DATA_READY( io_layer, ( void *) 0, LAYER_STATE_OK );
     }
 
-    CALL_ON_SELF_CLOSE( input_layer );
+    CALL_ON_SELF_CLOSE( input_layer, ( void* ) 0, LAYER_STATE_OK );
 
     return ( ( csv_layer_data_t* ) input_layer->user_data )->response;
 }
@@ -644,12 +644,12 @@ const xi_response_t* xi_datastream_get(
     layer_t* io_layer       = xi->layer_chain.bottom;
 
     { // init & connect
-        state = CALL_ON_SELF_INIT( io_layer, 0, LAYER_HINT_NONE );
+        state = CALL_ON_SELF_INIT( io_layer, 0, LAYER_STATE_OK );
         if( state != LAYER_STATE_OK ) { return 0; }
 
         xi_connection_data_t conn_data = { XI_HOST, XI_PORT };
 
-        state = CALL_ON_SELF_CONNECT( io_layer, ( void *) &conn_data, LAYER_HINT_NONE );
+        state = CALL_ON_SELF_CONNECT( io_layer, ( void *) &conn_data, LAYER_STATE_OK );
         if( state != LAYER_STATE_OK ) { return 0; }
     }
 
@@ -665,14 +665,14 @@ const xi_response_t* xi_datastream_get(
         , { ( struct xi_get_datastream_t ) { datastream_id, o } }
     };
 
-    state = CALL_ON_SELF_DATA_READY( input_layer, ( void *) &http_layer_input, LAYER_HINT_NONE );
+    state = CALL_ON_SELF_DATA_READY( input_layer, ( void *) &http_layer_input, LAYER_STATE_OK );
 
     if( state == LAYER_STATE_OK )
     {
-        CALL_ON_SELF_ON_DATA_READY( io_layer, ( void *) 0, LAYER_HINT_NONE );
+        CALL_ON_SELF_ON_DATA_READY( io_layer, ( void *) 0, LAYER_STATE_OK );
     }
 
-    CALL_ON_SELF_CLOSE( input_layer );
+    CALL_ON_SELF_CLOSE( input_layer, ( void* ) 0, LAYER_STATE_OK );
 
     return ( ( csv_layer_data_t* ) input_layer->user_data )->response;
 }
@@ -693,12 +693,12 @@ const xi_response_t* xi_datastream_create(
     layer_t* io_layer       = xi->layer_chain.bottom;
 
     { // init & connect
-        state = CALL_ON_SELF_INIT( io_layer, 0, LAYER_HINT_NONE );
+        state = CALL_ON_SELF_INIT( io_layer, 0, LAYER_STATE_OK );
         if( state != LAYER_STATE_OK ) { return 0; }
 
         xi_connection_data_t conn_data = { XI_HOST, XI_PORT };
 
-        state = CALL_ON_SELF_CONNECT( io_layer, ( void *) &conn_data, LAYER_HINT_NONE );
+        state = CALL_ON_SELF_CONNECT( io_layer, ( void *) &conn_data, LAYER_STATE_OK );
         if( state != LAYER_STATE_OK ) { return 0; }
     }
 
@@ -714,14 +714,14 @@ const xi_response_t* xi_datastream_create(
         , { .xi_create_datastream = { ( char* ) datastream_id, ( xi_datapoint_t* ) datapoint } }
     };
 
-    state = CALL_ON_SELF_DATA_READY( input_layer, ( void *) &http_layer_input, LAYER_HINT_NONE );
+    state = CALL_ON_SELF_DATA_READY( input_layer, ( void *) &http_layer_input, LAYER_STATE_OK );
 
     if( state == LAYER_STATE_OK )
     {
-        CALL_ON_SELF_ON_DATA_READY( io_layer, ( void *) 0, LAYER_HINT_NONE );
+        CALL_ON_SELF_ON_DATA_READY( io_layer, ( void *) 0, LAYER_STATE_OK );
     }
 
-    CALL_ON_SELF_CLOSE( input_layer );
+    CALL_ON_SELF_CLOSE( input_layer, ( void* ) 0, LAYER_STATE_OK );
 
     return ( ( csv_layer_data_t* ) input_layer->user_data )->response;
 }
@@ -741,12 +741,12 @@ const xi_response_t* xi_datastream_update(
     layer_t* io_layer       = xi->layer_chain.bottom;
 
     { // init & connect
-        state = CALL_ON_SELF_INIT( io_layer, 0, LAYER_HINT_NONE );
+        state = CALL_ON_SELF_INIT( io_layer, 0, LAYER_STATE_OK );
         if( state != LAYER_STATE_OK ) { return 0; }
 
         xi_connection_data_t conn_data = { XI_HOST, XI_PORT };
 
-        state = CALL_ON_SELF_CONNECT( io_layer, ( void *) &conn_data, LAYER_HINT_NONE );
+        state = CALL_ON_SELF_CONNECT( io_layer, ( void *) &conn_data, LAYER_STATE_OK );
         if( state != LAYER_STATE_OK ) { return 0; }
     }
 
@@ -762,14 +762,14 @@ const xi_response_t* xi_datastream_update(
         , { .xi_update_datastream = { ( char* ) datastream_id, ( xi_datapoint_t* ) datapoint } }
     };
 
-    state = CALL_ON_SELF_DATA_READY( input_layer, ( void *) &http_layer_input, LAYER_HINT_NONE );
+    state = CALL_ON_SELF_DATA_READY( input_layer, ( void *) &http_layer_input, LAYER_STATE_OK );
 
     if( state == LAYER_STATE_OK )
     {
-        CALL_ON_SELF_ON_DATA_READY( io_layer, ( void *) 0, LAYER_HINT_NONE );
+        CALL_ON_SELF_ON_DATA_READY( io_layer, ( void *) 0, LAYER_STATE_OK );
     }
 
-    CALL_ON_SELF_CLOSE( input_layer );
+    CALL_ON_SELF_CLOSE( input_layer, ( void* ) 0, LAYER_STATE_OK );
 
     return ( ( csv_layer_data_t* ) input_layer->user_data )->response;
 }
@@ -788,12 +788,12 @@ const xi_response_t* xi_datastream_delete(
     layer_t* io_layer       = xi->layer_chain.bottom;
 
     { // init & connect
-        state = CALL_ON_SELF_INIT( io_layer, 0, LAYER_HINT_NONE );
+        state = CALL_ON_SELF_INIT( io_layer, 0, LAYER_STATE_OK );
         if( state != LAYER_STATE_OK ) { return 0; }
 
         xi_connection_data_t conn_data = { XI_HOST, XI_PORT };
 
-        state = CALL_ON_SELF_CONNECT( io_layer, ( void *) &conn_data, LAYER_HINT_NONE );
+        state = CALL_ON_SELF_CONNECT( io_layer, ( void *) &conn_data, LAYER_STATE_OK );
         if( state != LAYER_STATE_OK ) { return 0; }
     }
 
@@ -809,14 +809,14 @@ const xi_response_t* xi_datastream_delete(
         , { .xi_delete_datastream = { datastream_id } }
     };
 
-    state = CALL_ON_SELF_DATA_READY( input_layer, ( void *) &http_layer_input, LAYER_HINT_NONE );
+    state = CALL_ON_SELF_DATA_READY( input_layer, ( void *) &http_layer_input, LAYER_STATE_OK );
 
     if( state == LAYER_STATE_OK )
     {
-        CALL_ON_SELF_ON_DATA_READY( io_layer, ( void *) 0, LAYER_HINT_NONE );
+        CALL_ON_SELF_ON_DATA_READY( io_layer, ( void *) 0, LAYER_STATE_OK );
     }
 
-    CALL_ON_SELF_CLOSE( input_layer );
+    CALL_ON_SELF_CLOSE( input_layer, ( void* ) 0, LAYER_STATE_OK );
 
     return ( ( csv_layer_data_t* ) input_layer->user_data )->response;
 }
@@ -836,12 +836,12 @@ const xi_response_t* xi_datapoint_delete(
     layer_t* io_layer       = xi->layer_chain.bottom;
 
     { // init & connect
-        state = CALL_ON_SELF_INIT( io_layer, 0, LAYER_HINT_NONE );
+        state = CALL_ON_SELF_INIT( io_layer, 0, LAYER_STATE_OK );
         if( state != LAYER_STATE_OK ) { return 0; }
 
         xi_connection_data_t conn_data = { XI_HOST, XI_PORT };
 
-        state = CALL_ON_SELF_CONNECT( io_layer, ( void *) &conn_data, LAYER_HINT_NONE );
+        state = CALL_ON_SELF_CONNECT( io_layer, ( void *) &conn_data, LAYER_STATE_OK );
         if( state != LAYER_STATE_OK ) { return 0; }
     }
 
@@ -857,14 +857,14 @@ const xi_response_t* xi_datapoint_delete(
         , { .xi_delete_datapoint = { ( char* ) datastream_id, ( xi_datapoint_t* ) o } }
     };
 
-    state = CALL_ON_SELF_DATA_READY( input_layer, ( void *) &http_layer_input, LAYER_HINT_NONE );
+    state = CALL_ON_SELF_DATA_READY( input_layer, ( void *) &http_layer_input, LAYER_STATE_OK );
 
     if( state == LAYER_STATE_OK )
     {
-        CALL_ON_SELF_ON_DATA_READY( io_layer, ( void *) 0, LAYER_HINT_NONE );
+        CALL_ON_SELF_ON_DATA_READY( io_layer, ( void *) 0, LAYER_STATE_OK );
     }
 
-    CALL_ON_SELF_CLOSE( input_layer );
+    CALL_ON_SELF_CLOSE( input_layer, ( void * ) 0, LAYER_STATE_OK );
 
     return ( ( csv_layer_data_t* ) input_layer->user_data )->response;
 }
@@ -885,12 +885,12 @@ extern const xi_response_t* xi_datapoint_delete_range(
     layer_t* io_layer       = xi->layer_chain.bottom;
 
     { // init & connect
-        state = CALL_ON_SELF_INIT( io_layer, 0, LAYER_HINT_NONE );
+        state = CALL_ON_SELF_INIT( io_layer, 0, LAYER_STATE_OK );
         if( state != LAYER_STATE_OK ) { return 0; }
 
         xi_connection_data_t conn_data = { XI_HOST, XI_PORT };
 
-        state = CALL_ON_SELF_CONNECT( io_layer, ( void *) &conn_data, LAYER_HINT_NONE );
+        state = CALL_ON_SELF_CONNECT( io_layer, ( void *) &conn_data, LAYER_STATE_OK );
         if( state != LAYER_STATE_OK ) { return 0; }
     }
 
@@ -906,14 +906,14 @@ extern const xi_response_t* xi_datapoint_delete_range(
         , { .xi_delete_datapoint_range = { ( char* ) datastream_id, ( xi_timestamp_t* ) start, ( xi_timestamp_t* ) end } }
     };
 
-    state = CALL_ON_SELF_DATA_READY( input_layer, ( void *) &http_layer_input, LAYER_HINT_NONE );
+    state = CALL_ON_SELF_DATA_READY( input_layer, ( void *) &http_layer_input, LAYER_STATE_OK );
 
     if( state == LAYER_STATE_OK )
     {
-        CALL_ON_SELF_ON_DATA_READY( io_layer, ( void *) 0, LAYER_HINT_NONE );
+        CALL_ON_SELF_ON_DATA_READY( io_layer, ( void *) 0, LAYER_STATE_OK );
     }
 
-    CALL_ON_SELF_CLOSE( input_layer );
+    CALL_ON_SELF_CLOSE( input_layer, ( void* ) 0, LAYER_STATE_OK );
 
     return ( ( csv_layer_data_t* ) input_layer->user_data )->response;
 }
@@ -1311,8 +1311,15 @@ extern const xi_response_t* xi_mqtt_publish(
 }
 
 #elif defined(XI_MQTT_ENABLED) && defined(XI_NOB_ENABLED)
+// function used via the xi_layer_api macros...
+// @TODO relocate into another more suitable compilation
+// unit
+layer_state_t state_returner( layer_state_t in )
+{
+    return in;
+}
 
-extern void xi_nob_mqtt_connect(
+extern layer_state_t xi_nob_mqtt_connect(
       xi_context_t* xi
     , xi_connection_data_t* connection_data
     , xi_evtd_handle_t callback )
@@ -1324,7 +1331,7 @@ extern void xi_nob_mqtt_connect(
 
     layer_data->on_connected = callback;
 
-    CALL_ON_SELF_INIT( &input_layer->layer_connection
+    return CALL_ON_SELF_INIT( &input_layer->layer_connection
         , connection_data
         , LAYER_STATE_OK );
 }

@@ -592,9 +592,9 @@ static inline layer_state_t http_layer_data_ready_gen(
                         = ( const const_data_descriptor_t* ) ( *gen )( input, &gstate );
 
                 state = CALL_ON_PREV_DATA_READY(
-                              context->self
-                            , ( const void* ) ret
-                            , LAYER_HINT_NONE );
+                              context
+                            , ( void* ) ret
+                            , LAYER_STATE_OK );
             }
 
             if( state != LAYER_STATE_OK )
@@ -610,12 +610,12 @@ static inline layer_state_t http_layer_data_ready_gen(
 
 layer_state_t http_layer_data_ready(
       void* context
-    , const void* data
-    , const layer_hint_t hint )
+    , void* data
+    , layer_state_t state )
 {
     XI_UNUSED( context );
     XI_UNUSED( data );
-    XI_UNUSED( hint );
+    XI_UNUSED( state );
     //xi_debug_function_entered();
 
     // unpack the data
@@ -675,14 +675,15 @@ layer_state_t http_layer_data_ready(
 
 layer_state_t http_layer_on_data_ready(
       void* context
-    , const void* data
-    , const layer_hint_t hint )
+    , void* data
+    , layer_state_t in_state )
 {
-    XI_UNUSED( hint );
+    XI_UNUSED( in_state );
     static uint16_t cs = 0; // coroutine state
 
     // unpack http_layer_data so unpack it
-    http_layer_data_t* http_layer_data = ( http_layer_data_t* ) context->self->user_data;
+    http_layer_data_t* http_layer_data
+        = ( http_layer_data_t* ) CON_SELF( context )->user_data;
 
     // some tmp variables
     short sscanf_state      = 0;
@@ -878,9 +879,9 @@ layer_state_t http_layer_on_data_ready(
 
             if( http_layer_data->response->http.http_status == 200 )
             {
-                state = CALL_ON_NEXT_ON_DATA_READY( context->self
-                                            , ( const void* ) data
-                                            , ( http_layer_data->counter < http_layer_data->content_length ) ? LAYER_HINT_MORE_DATA : LAYER_HINT_NONE );
+                state = CALL_ON_NEXT_ON_DATA_READY( context
+                                            , ( void* ) data
+                                            , LAYER_STATE_OK );
 
                 if( state == LAYER_STATE_WANT_READ && http_layer_data->counter < http_layer_data->content_length )
                 {
@@ -917,15 +918,19 @@ layer_state_t http_layer_on_data_ready(
 
 
 layer_state_t http_layer_close(
-    void* context )
+      void* context
+    , void* data
+    , layer_state_t state )
 {
-    return CALL_ON_PREV_CLOSE( context->self );
+    return CALL_ON_PREV_CLOSE( context, data, state );
 }
 
 layer_state_t http_layer_on_close(
-    void* context )
+      void* context
+    , void* data
+    , layer_state_t state )
 {
-    return  CALL_ON_NEXT_ON_CLOSE( context->self );
+    return  CALL_ON_NEXT_ON_CLOSE( context, data, state );
 }
 
 #ifdef __cplusplus
