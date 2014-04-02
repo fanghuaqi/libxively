@@ -33,7 +33,7 @@ extern "C" {
 #endif
 
 layer_state_t posix_io_layer_data_ready(
-      layer_connectivity_t* context
+      struct layer_connectivity_s* context
     , const void* data
     , const layer_hint_t hint )
 {
@@ -64,7 +64,7 @@ layer_state_t posix_io_layer_data_ready(
 }
 
 layer_state_t posix_io_layer_on_data_ready(
-      layer_connectivity_t* context
+      struct layer_connectivity_s* context
     , const void* data
     , const layer_hint_t hint )
 {
@@ -116,7 +116,7 @@ layer_state_t posix_io_layer_on_data_ready(
     return LAYER_STATE_OK;
 }
 
-layer_state_t posix_io_layer_close( layer_connectivity_t* context )
+layer_state_t posix_io_layer_close( struct layer_connectivity_s* context )
 {
     posix_data_t* posix_data = ( posix_data_t* ) context->self->user_data;
 
@@ -125,7 +125,7 @@ layer_state_t posix_io_layer_close( layer_connectivity_t* context )
     return CALL_ON_SELF_ON_CLOSE( context->self );
 }
 
-layer_state_t posix_io_layer_on_close( layer_connectivity_t* context )
+layer_state_t posix_io_layer_on_close( struct layer_connectivity_s* context )
 {
     posix_data_t* posix_data = ( posix_data_t* ) context->self->user_data;
 
@@ -168,7 +168,7 @@ err_handling:
 // here we are going to allocate the space for the posix data, and we are going to create the socket
 // and store it in the data module so it's we can use it later on
 layer_state_t posix_io_layer_init(
-      layer_connectivity_t* context
+      struct layer_connectivity_s* context
     , const void* data
     , const layer_hint_t hint )
 {
@@ -214,7 +214,7 @@ err_handling:
     return LAYER_STATE_ERROR;
 }
 
-layer_state_t posix_io_layer_connect( layer_connectivity_t* context, const void* data, const layer_hint_t hint )
+layer_state_t posix_io_layer_connect( struct layer_connectivity_s* context, const void* data, const layer_hint_t hint )
 {
     XI_UNUSED( hint );
 

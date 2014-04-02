@@ -200,12 +200,12 @@ void main_loop()
     }
 }
 
-uint8_t on_connected(
-      xi_context_t* context
+void on_connected(
+      void* in_context
     , void* data )
 {
+    xi_context_t* context = ( xi_context_t* ) in_context;
     printf( "connected\n!" );
-    return 0;
 }
 
 int main( int argc, char* argv[] )
@@ -232,12 +232,7 @@ int main( int argc, char* argv[] )
 
     // @TODO replace with simple macro
     {
-        xi_evtd_handle_t handle =
-            { XI_EVTD_HANDLE_2_ID
-                , .handlers.h2 = {
-                      &on_connected
-                    , xi_context
-                    , 0 } };
+        MAKE_HANDLE_H2( on_connected, ( void* ) xi_context, 0 );
 
         xi_nob_mqtt_connect(
                 xi_context

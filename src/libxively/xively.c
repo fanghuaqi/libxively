@@ -1324,9 +1324,9 @@ extern void xi_nob_mqtt_connect(
 
     layer_data->on_connected = callback;
 
-    CALL_ON_SELF_INIT( input_layer
+    CALL_ON_SELF_INIT( &input_layer->layer_connection
         , connection_data
-        , LAYER_HINT_NONE );
+        , LAYER_STATE_OK );
 }
 
 extern void xi_nob_mqtt_publish(

@@ -12,7 +12,7 @@ extern "C" {
 
 // little helper to encapsulate error handling
 static inline layer_state_t layer_sender(
-          layer_connectivity_t* context
+          void* context
         , const char* const data
         , const layer_hint_t hint )
 {

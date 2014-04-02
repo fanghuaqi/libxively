@@ -13,7 +13,7 @@
 extern "C" {
 #endif
 
-static inline layer_t* default_layer_heap_alloc( const layer_type_t* type )
+static inline layer_t* default_layer_heap_alloc( layer_type_t* type )
 {
     layer_t* ret = ( layer_t* ) xi_alloc( sizeof( layer_t ) );
 
@@ -31,7 +31,7 @@ err_handling:
     return 0;
 }
 
-static inline void default_layer_heap_free( const layer_type_t* type, layer_t* layer )
+static inline void default_layer_heap_free( layer_type_t* type, layer_t* layer )
 {
     XI_UNUSED( type );
     xi_free( layer );
@@ -41,7 +41,7 @@ static unsigned char stack_counter = 0;
 
 #define MAX_LAYERS_ON_STACK 4
 
-static inline layer_t* default_layer_stack_alloc( const layer_type_t* type )
+static inline layer_t* default_layer_stack_alloc( layer_type_t* type )
 {
     static layer_t layers_stack[ MAX_LAYERS_ON_STACK ];
 
@@ -56,7 +56,7 @@ static inline layer_t* default_layer_stack_alloc( const layer_type_t* type )
     return &layers_stack[ stack_counter - 1 ];
 }
 
-static inline void default_layer_stack_free( const layer_type_t* type, layer_t* layer )
+static inline void default_layer_stack_free( layer_type_t* type, layer_t* layer )
 {
     XI_UNUSED( type );
     XI_UNUSED( layer );

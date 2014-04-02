@@ -570,7 +570,7 @@ const void* http_layer_data_generator_datapoint_delete_range(
 }
 
 static inline layer_state_t http_layer_data_ready_gen(
-      layer_connectivity_t* context
+      void* context
     , const http_layer_input_t* input
     , xi_generator_t* gen )
 {
@@ -609,7 +609,7 @@ static inline layer_state_t http_layer_data_ready_gen(
 }
 
 layer_state_t http_layer_data_ready(
-      layer_connectivity_t* context
+      void* context
     , const void* data
     , const layer_hint_t hint )
 {
@@ -674,7 +674,7 @@ layer_state_t http_layer_data_ready(
 }
 
 layer_state_t http_layer_on_data_ready(
-      layer_connectivity_t* context
+      void* context
     , const void* data
     , const layer_hint_t hint )
 {
@@ -917,13 +917,13 @@ layer_state_t http_layer_on_data_ready(
 
 
 layer_state_t http_layer_close(
-    layer_connectivity_t* context )
+    void* context )
 {
     return CALL_ON_PREV_CLOSE( context->self );
 }
 
 layer_state_t http_layer_on_close(
-    layer_connectivity_t* context )
+    void* context )
 {
     return  CALL_ON_NEXT_ON_CLOSE( context->self );
 }

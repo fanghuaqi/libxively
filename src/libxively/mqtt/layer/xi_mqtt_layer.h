@@ -12,31 +12,35 @@
 extern "C" {
 #endif
 
-layer_state_t xi_mqtt_layer_data_ready(
-      layer_connectivity_t* context
-    , const void* data
-    , const layer_hint_t hint );
+void xi_mqtt_layer_data_ready(
+      void* context
+    , void* data
+    , layer_state_t );
 
-layer_state_t xi_mqtt_layer_on_data_ready(
-      layer_connectivity_t* context
-    , const void* data
-    , const layer_hint_t hint );
+void xi_mqtt_layer_on_data_ready(
+      void* context
+    , void* data
+    , layer_state_t );
 
-layer_state_t xi_mqtt_layer_init(
-      layer_connectivity_t* context
-    , const void* data
-    , const layer_hint_t hint );
+void xi_mqtt_layer_init(
+      void* context
+    , void* data
+    , layer_state_t );
 
-layer_state_t xi_mqtt_layer_connect(
-      layer_connectivity_t* context
-    , const void* data
-    , const layer_hint_t hint );
+void xi_mqtt_layer_connect(
+      void* context
+    , void* data
+    , layer_state_t );
 
-layer_state_t xi_mqtt_layer_close(
-    layer_connectivity_t* context );
+void xi_mqtt_layer_close(
+      void* context
+    , void* data
+    , layer_state_t state );
 
-layer_state_t xi_mqtt_layer_on_close(
-    layer_connectivity_t* context );
+void xi_mqtt_layer_on_close(
+      void* context
+    , void* data
+    , layer_state_t state );
 
 #ifdef __cplusplus
 }

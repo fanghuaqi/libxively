@@ -15,10 +15,10 @@
 extern "C" {
 #endif
 
-layer_state_t xi_mqtt_logic_layer_data_ready(
-      layer_connectivity_t* context
-    , const void* data
-    , const layer_hint_t hint )
+void xi_mqtt_logic_layer_data_ready(
+      void* context
+    , void* data
+    , layer_state_t state )
 {
     // sending request
     // type of the request depends on
@@ -26,51 +26,49 @@ layer_state_t xi_mqtt_logic_layer_data_ready(
     // it's easy to determine if we are in the middle of
     // processing a single request or we are starting new one
     //
-    return LAYER_STATE_OK;
 }
 
-layer_state_t xi_mqtt_logic_layer_on_data_ready(
-      layer_connectivity_t* context
-    , const void* data
-    , const layer_hint_t hint )
+void xi_mqtt_logic_layer_on_data_ready(
+      void* context
+    , void* data
+    , layer_state_t state )
 {
     // receiving message
     // will go through the state machine
     // so that it will decide what to do next
     // this is very important part of the
     //
-    return LAYER_STATE_OK;
 }
 
-layer_state_t xi_mqtt_logic_layer_init(
-      layer_connectivity_t* context
-    , const void* data
-    , const layer_hint_t hint )
+void xi_mqtt_logic_layer_init(
+      void* context
+    , void* data
+    , layer_state_t state )
 {
-    CALL_ON_PREV_INIT( context->self, data, 0 );
+    return CALL_ON_PREV_INIT( context, data, 0 );
 }
 
-layer_state_t xi_mqtt_logic_layer_connect(
-      layer_connectivity_t* context
-    , const void* data
-    , const layer_hint_t hint )
+void xi_mqtt_logic_layer_connect(
+      void* context
+    , void* data
+    , layer_state_t state )
 {
-    xi_mqtt_logic_layer_data_t* layer_data = context->self->user_data;
+    xi_mqtt_logic_layer_data_t* layer_data = CON_SELF( context )->user_data;
     xi_evtd_continue( xi_evtd_instance, layer_data->on_connected, 0 );
-
-    return LAYER_STATE_OK;
 }
 
-layer_state_t xi_mqtt_logic_layer_close(
-    layer_connectivity_t* context )
+void xi_mqtt_logic_layer_close(
+      void* context
+    , void* data
+    , layer_state_t state )
 {
-    return LAYER_STATE_OK;
 }
 
-layer_state_t xi_mqtt_logic_layer_on_close(
-    layer_connectivity_t* context )
+void xi_mqtt_logic_layer_on_close(
+      void* context
+    , void* data
+    , layer_state_t state )
 {
-    return LAYER_STATE_OK;
 }
 
 

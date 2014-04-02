@@ -21,11 +21,6 @@
 #define XI_EVTD_EVENTS_5( e1, e2, e3, e4, e5 ) \
     + 1 XI_EVTD_EVENTS_4( e1, e2, e3, e4 ), e5##_ID = 5, e5 = 1 << 5
 
-#define XI_EVTD_RET( ret )       typedef ret RET;
-#define XI_EVTD_HANDLE_1( T1 )   typedef T1 xi_evtd_handle_1_t;
-#define XI_EVTD_HANDLE_2( T2 )   typedef T2 xi_evtd_handle_2_t;
-#define XI_EVTD_HANDLE_3( T3 )   typedef T3 xi_evtd_handle_3_t;
-
 #define XI_EVTD_HANDLE_PTRS() \
 typedef RET (handle_0)(void); typedef handle_0* handle_0_ptr; \
 typedef RET (handle_1)(xi_evtd_handle_1_t); typedef handle_1* handle_1_ptr; \

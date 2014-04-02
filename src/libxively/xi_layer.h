@@ -17,12 +17,12 @@ extern "C" {
 
 typedef struct layer
 {
-    const layer_interface_t*    layer_functions;
-    layer_connectivity_t        layer_connection;
-    layer_type_id_t             layer_type_id;
-    void*                       user_data;
+    layer_interface_t*      layer_functions;
+    layer_connectivity_t    layer_connection;
+    layer_type_id_t         layer_type_id;
+    void*                   user_data;
 #ifdef XI_DEBUG_LAYER_API
-    layer_debug_info_t          debug_info;
+    layer_debug_info_t      debug_info;
 #endif
 } layer_t;
 

@@ -21,7 +21,7 @@
 extern "C" {
 
 layer_state_t mbed_io_layer_data_ready(
-      layer_connectivity_t* context
+      struct layer_connectivity_s* context
     , const void* data
     , const layer_hint_t hint )
 {
@@ -46,7 +46,7 @@ layer_state_t mbed_io_layer_data_ready(
 }
 
 layer_state_t mbed_io_layer_on_data_ready(
-      layer_connectivity_t* context
+      struct layer_connectivity_s* context
     , const void* data
     , const layer_hint_t hint )
 {
@@ -87,7 +87,7 @@ layer_state_t mbed_io_layer_on_data_ready(
 }
 
 layer_state_t mbed_io_layer_close(
-    layer_connectivity_t* context )
+    struct layer_connectivity_s* context )
 {
     // extract the layer specific data
     mbed_data_t* mbed_data
@@ -130,13 +130,13 @@ err_handling:
     return LAYER_STATE_ERROR;
 }
 
-layer_state_t mbed_io_layer_on_close( layer_connectivity_t* context )
+layer_state_t mbed_io_layer_on_close( struct layer_connectivity_s* context )
 {
     return CALL_ON_NEXT_CLOSE( context->self );
 }
 
 layer_state_t mbed_io_layer_init(
-      layer_connectivity_t* context
+      struct layer_connectivity_s* context
     , const void* data
     , const layer_hint_t hint )
 {
@@ -178,7 +178,7 @@ err_handling:
 }
 
 layer_state_t mbed_io_layer_connect (
-      layer_connectivity_t* context
+      struct layer_connectivity_s* context
     , const void* data
     , const layer_hint_t hint )
 {

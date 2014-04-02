@@ -12,20 +12,20 @@ extern "C" {
 #endif
 
 layer_state_t http_layer_data_ready(
-      layer_connectivity_t* context
+      void* context
     , const void* data
     , const layer_hint_t hint );
 
 layer_state_t http_layer_on_data_ready(
-      layer_connectivity_t* context
+      void* context
     , const void* data
     , const layer_hint_t hint );
 
 layer_state_t http_layer_close(
-      layer_connectivity_t* context );
+      void* context );
 
 layer_state_t http_layer_on_close(
-      layer_connectivity_t* context );
+      void* context );
 
 const void* http_layer_data_generator_datastream_get(
       const void* input

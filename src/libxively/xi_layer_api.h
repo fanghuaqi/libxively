@@ -15,6 +15,8 @@
 extern "C" {
 #endif
 
+#define CON_SELF( context ) ( ( layer_connectivity_t* ) context )->self
+
 #ifdef XI_DEBUG_LAYER_API
 #define LAYER_LOCAL_INSTANCE( layer_name_instance, layer_interface, layer_type_id, user_data )\
     layer_t layer_name_instance                     = { layer_interface, { 0, 0, 0 }, layer_type_id, ( void* ) user_data, { 0, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0 } };\
@@ -71,125 +73,101 @@ extern "C" {
 
 #if defined( XI_MQTT_ENABLED ) && defined( XI_NOB_ENABLED )
     #ifdef XI_DEBUG_LAYER_API
-        #define CALL_ON( layer, target, context ) \
-            { \
-                SET_DEBUG_INFO_ON( layer, context ); \
-                xi_evtd_handle_t handle = { \
-                      XI_EVTD_HANDLE_1_ID \
-                    , .handlers.h1 = { \
-                          context->layer_connection.layer->layer_functions->target \
-                        , &context->layer_connection.layer->layer_connection } }; \
-                xi_evtd_continue( xi_evtd_instance, handle, 0 ); \
-            }
-        #define CALL_ON2( layer, target, context, data, hint ) \
-            { \
+        #define CALL_ON2( layer, target, context, data, state ) \
+            ({ \
                 SET_DEBUG_INFO_ON( layer, context ); \
                 xi_evtd_handle_t handle = { \
                       XI_EVTD_HANDLE_3_ID \
                     , .handlers.h3 = { \
                           context->layer_connection.layer->layer_functions->target \
-                        , &context->layer_connection.layer->layer_connection \
+                        , ( void* ) &context->layer_connection.layer->layer_connection \
                         , data \
-                        , hint } }; \
+                        , state } }; \
                 xi_evtd_continue( xi_evtd_instance, handle, 0 ); \
-            }
+            })
     #else
-    #define CALL_ON( layer, target, context )\
-        { \
-            xi_evtd_handle_t handle = { \
-                  XI_EVTD_HANDLE_1_ID \
-                , .handlers.h1 = { \
-                      context->layer_connection.layer->layer_functions->target \
-                    , &context->layer_connection.layer->layer_connection } }; \
-            xi_evtd_continue( xi_evtd_instance, handle, 0 ); \
-        }
-    #define CALL_ON2( layer, target, context, data, hint )\
-        { \
+    #define CALL_ON2( layer, target, context, data, state )\
+        ({ \
             xi_evtd_handle_t handle = { \
                   XI_EVTD_HANDLE_3_ID \
                 , .handlers.h3 = { \
                       context->layer_connection.layer->layer_functions->target \
-                    , &context->layer_connection.layer->layer_connection \
+                    , ( void* ) &context->layer_connection.layer->layer_connection \
                     , data \
-                    , hint } }; \
+                    , state } }; \
             xi_evtd_continue( xi_evtd_instance, handle, 0 ); \
-        }
+        })
     #endif
 #else
     #ifdef XI_DEBUG_LAYER_API
-    #define CALL_ON( layer, target, context )\
-        context->layer_connection.layer->layer_functions->target( &context->layer_connection.layer->layer_connection );\
-        SET_DEBUG_INFO_ON( layer, context );
-    #define CALL_ON2( layer, target, context, data, hint )\
-        context->layer_connection.layer->layer_functions->target( &context->layer_connection.layer->layer_connection, data, hint );\
+    #define CALL_ON2( layer, target, context, data, state )\
+        context->layer_connection.layer->layer_functions->target( &context->layer_connection.layer->layer_connection, data, state );\
         SET_DEBUG_INFO_ON( layer, context )
     #else
-    #define CALL_ON( layer, target, context )\
-        context->layer_connection.layer->layer_functions->target( &context->layer_connection.layer->layer_connection );
-    #define CALL_ON2( layer, target, context, data, hint )\
-        context->layer_connection.layer->layer_functions->target( &context->layer_connection.layer->layer_connection, data, hint )
+    #define CALL_ON2( layer, target, context, data, state )\
+        context->layer_connection.layer->layer_functions->target( &context->layer_connection.layer->layer_connection, data, state )
     #endif
 #endif
 
 // ON_DEMAND
-#define CALL_ON_SELF_DATA_READY( context, data, hint )\
-    CALL_ON2( self, data_ready, context, data, hint )
+#define CALL_ON_SELF_DATA_READY( context, data, state )\
+    CALL_ON2( self, data_ready, CON_SELF( context ), data, state )
 
-#define CALL_ON_NEXT_DATA_READY( context, data, hint )\
-    CALL_ON2( next, data_ready, context, data, hint )
+#define CALL_ON_NEXT_DATA_READY( context, data, state )\
+    CALL_ON2( next, data_ready, CON_SELF( context ), data, state )
 
-#define CALL_ON_PREV_DATA_READY( context, data, hint )\
-    CALL_ON2( prev, data_ready, context, data, hint )
+#define CALL_ON_PREV_DATA_READY( context, data, state )\
+    CALL_ON2( prev, data_ready, CON_SELF( context ), data, state )
 
 // ON_DATA_READY
-#define CALL_ON_SELF_ON_DATA_READY( context, data, hint )\
-    CALL_ON2( self, on_data_ready, context, data, hint )
+#define CALL_ON_SELF_ON_DATA_READY( context, data, state )\
+    CALL_ON2( self, on_data_ready, CON_SELF( context ), data, state )
 
-#define CALL_ON_NEXT_ON_DATA_READY( context, data, hint )\
-    CALL_ON2( next, on_data_ready, context, data, hint )
+#define CALL_ON_NEXT_ON_DATA_READY( context, data, state )\
+    CALL_ON2( next, on_data_ready, CON_SELF( context ), data, state )
 
-#define CALL_ON_PREV_ON_DATA_READY( context, data, hint )\
-    CALL_ON2( prev, on_data_ready, context, data, hint )
+#define CALL_ON_PREV_ON_DATA_READY( context, data, state )\
+    CALL_ON2( prev, on_data_ready, CON_SELF( context ), data, state )
 
 // CLOSE
-#define CALL_ON_SELF_CLOSE( context )\
-    CALL_ON( self, close, context )
+#define CALL_ON_SELF_CLOSE( context, data, state )\
+    CALL_ON2( self, close, CON_SELF( context ), data, state )
 
-#define CALL_ON_NEXT_CLOSE( context )\
-    CALL_ON( next, close, context )
+#define CALL_ON_NEXT_CLOSE( context, data, state )\
+    CALL_ON2( next, close, CON_SELF( context ), data, state )
 
-#define CALL_ON_PREV_CLOSE( context )\
-    CALL_ON( prev, close, context )
+#define CALL_ON_PREV_CLOSE( context, data, state )\
+    CALL_ON2( prev, close, CON_SELF( context ), data, state )
 
 // ON_CLOSE
-#define CALL_ON_SELF_ON_CLOSE( context )\
-    CALL_ON( self, on_close, context )
+#define CALL_ON_SELF_ON_CLOSE( context, data, state )\
+    CALL_ON2( self, on_close, CON_SELF( context ), data, state )
 
-#define CALL_ON_NEXT_ON_CLOSE( context )\
-    CALL_ON( next, on_close, context )
+#define CALL_ON_NEXT_ON_CLOSE( context, data, state )\
+    CALL_ON2( next, on_close, CON_SELF( context ), data, state )
 
-#define CALL_ON_PREV_ON_CLOSE( context )\
-    CALL_ON( prev, on_close, context )
+#define CALL_ON_PREV_ON_CLOSE( context, data, state )\
+    CALL_ON2( prev, on_close, CON_SELF( context ), data, state )
 
 // INIT
-#define CALL_ON_SELF_INIT( context, data, hint )\
-    CALL_ON2( self, init, context, data, hint )
+#define CALL_ON_SELF_INIT( context, data, state )\
+    CALL_ON2( self, init, CON_SELF( context ), data, state )
 
-#define CALL_ON_NEXT_INIT( context, data, hint )\
-    CALL_ON2( next, init, context, data, hint )
+#define CALL_ON_NEXT_INIT( context, data, state )\
+    CALL_ON2( next, init, CON_SELF( context ), data, state )
 
-#define CALL_ON_PREV_INIT( context, data, hint )\
-    CALL_ON2( prev, init, context, data, hint )
+#define CALL_ON_PREV_INIT( context, data, state )\
+    CALL_ON2( prev, init, CON_SELF( context ), data, state )
 
 // CONNECT
-#define CALL_ON_SELF_CONNECT( context, data, hint )\
-    CALL_ON2( self, connect, context, data, hint )
+#define CALL_ON_SELF_CONNECT( context, data, state )\
+    CALL_ON2( self, connect, CON_SELF( context ), data, state )
 
-#define CALL_ON_NEXT_CONNECT( context, data, hint )\
-    CALL_ON2( next, connect, context, data, hint )
+#define CALL_ON_NEXT_CONNECT( context, data, state )\
+    CALL_ON2( next, connect, CON_SELF( context ), data, state )
 
-#define CALL_ON_PREV_CONNECT( context, data, hint )\
-    CALL_ON2( prev, connect, context, data, hint )
+#define CALL_ON_PREV_CONNECT( context, data, state )\
+    CALL_ON2( prev, connect, CON_SELF( context ), data, state )
 
 #ifdef __cplusplus
 }
