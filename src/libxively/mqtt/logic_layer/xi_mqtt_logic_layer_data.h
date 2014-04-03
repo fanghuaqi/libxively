@@ -13,6 +13,23 @@ extern "C" {
 
 //typedef int8_t ( xi_user_idle_t )( void* );
 
+typedef struct xi_mqtt_logic_in_s
+{
+    enum
+    {
+          XI_MQTT_CONNECT = 0
+        , XI_MQTT_PUBLISH
+        , XI_MQTT_SUBSCRIBE
+    } scenario_t;
+
+    enum
+    {
+          XI_MQTT_QOS_ZERO = 0
+        , XI_MQTT_QOS_ONE
+        , XI_MQTT_QOS_TWO
+    } qos_t;
+} xi_mqtt_logic_in_t;
+
 typedef struct
 {
     // here we are going to store the mapping of the
@@ -24,6 +41,8 @@ typedef struct
     //xi_user_idle_t*     user_idle_ptr;
     //xi_static_vector_t* handlers_for_topics;
     xi_evtd_handle_t    on_connected;
+    xi_mqtt_logic_in_t  logic;
+    uint16_t            data_ready_cs;
 } xi_mqtt_logic_layer_data_t;
 
 #ifdef __cplusplus

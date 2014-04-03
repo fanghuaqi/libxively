@@ -1340,6 +1340,10 @@ extern void xi_nob_mqtt_publish(
     XI_UNUSED( xi );
     XI_UNUSED( topic );
     XI_UNUSED( msg );
+
+
+    layer_t* input_layer = xi->layer_chain.top;
+
 }
 
 #endif

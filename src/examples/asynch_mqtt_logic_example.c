@@ -245,9 +245,9 @@ int main( int argc, char* argv[] )
     //xi_nob_mqtt_subscribe( xi, "/a/b/c/4", on_4 );
     //xi_call_every( 10, handler );
 
-    main_loop();
+    //xi_nob_mqtt_publish( xi_context, argv[ 1 ], argv[ 2 ] );
 
-    // const xi_response_t* response = xi_nob_mqtt_publish( xi_context, argv[ 1 ], argv[ 2 ] );
+    main_loop();
 
     xi_delete_context( xi_context );
 
