@@ -216,10 +216,6 @@ layer_state_t posix_asynch_io_layer_init(
     assert( layer->user_data != 0 );
     assert( posix_asynch_data->socket_fd != -1 );
 
-    xi_evtd_register_fd(
-          xi_evtd_instance
-        , posix_asynch_data->socket_fd );
-
     return CALL_ON_SELF_CONNECT( context, data, LAYER_STATE_OK );
 
 err_handling:
@@ -273,6 +269,18 @@ layer_state_t posix_asynch_io_layer_connect(
 
     xi_debug_logger( "Connecting to the endpoint..." );
 
+    {
+        MAKE_HANDLE_H3( &posix_asynch_io_layer_on_data_ready
+            , context
+            , 0
+            , LAYER_STATE_OK );
+
+        xi_evtd_register_fd(
+              xi_evtd_instance
+            , posix_asynch_data->socket_fd
+            , handle );
+    }
+
     if( connect( posix_asynch_data->socket_fd, ( struct sockaddr* ) &name, sizeof( struct sockaddr ) ) == -1 )
     {
         if( errno != EINPROGRESS )
@@ -290,7 +298,7 @@ layer_state_t posix_asynch_io_layer_connect(
             // cause that won't work in asynch word
             // ....
             MAKE_HANDLE_H3(
-                  ( handle_3_ptr ) CON_SELF( context )->layer_functions->connect
+                  &posix_asynch_io_layer_connect
                 , ( void* ) context
                 , data
                 , LAYER_STATE_OK );
@@ -309,6 +317,8 @@ layer_state_t posix_asynch_io_layer_connect(
 
 err_handling:
     // cleanup the memory
+    xi_evtd_unregister_fd( xi_evtd_instance, posix_asynch_data->socket_fd );
+
     if( posix_asynch_data )     { close( posix_asynch_data->socket_fd ); }
     if( layer->user_data )      { XI_SAFE_FREE( layer->user_data ); }
 

@@ -71,7 +71,7 @@ layer_state_t xi_mqtt_layer_on_data_ready(
         YIELD_UNTIL( cs, ( local_state == LAYER_STATE_WANT_READ ), LAYER_STATE_WANT_READ );
     } while( local_state == LAYER_STATE_WANT_READ );
 
-    EXIT( cs, LAYER_STATE_OK );
+    EXIT( cs, CALL_ON_NEXT_ON_DATA_READY( context, &layer_data->msg, local_state ) );
 
     END_CORO()
 }

@@ -23,7 +23,7 @@ static inline void fill_with_connect_data( mqtt_message_t* msg )
     msg->common.common_u.common_bits.qos        = MQTT_QOS_AT_MOST_ONCE;
     msg->common.common_u.common_bits.dup        = MQTT_DUP_FALSE;
     msg->common.common_u.common_bits.type       = MQTT_TYPE_CONNECT;
-    msg->common.remaining_length                = 0; // ?????????
+    msg->common.remaining_length                = 0; // this is filled during the serialization
 
     memcpy( msg->connect.protocol_name.data, "MQIsdp", 6 );
     msg->connect.protocol_name.length                    = 6;
@@ -45,38 +45,64 @@ static inline void fill_with_connect_data( mqtt_message_t* msg )
     }
 }
 
-layer_state_t xi_mqtt_logic_layer_data_ready(
-      void* context
-    , void* data
-    , layer_state_t in_state )
+/**
+ * The function works as a working
+ */
+static layer_state_t connect_server_logic(
+      layer_connectivity_t* context // should be the context of the logic layer
+    , mqtt_message_t* msg_memory
+    , xi_mqtt_logic_layer_data_t* layer_data  // this is the config
+    , layer_state_t* state )
 {
-    XI_UNUSED( context );
-    XI_UNUSED( data );
-    XI_UNUSED( in_state );
+    XI_UNUSED( state );
 
-    // sending request
-    // type of the request depends on
-    // the state that we are in
-    // it's easy to determine if we are in the middle of
-    // processing a single request or we are starting new one
     //
+    BEGIN_CORO( layer_data->data_ready_cs );
 
-    static mqtt_message_t mqtt_message;
+    fill_with_connect_data( msg_memory );
+    YIELD( layer_data->data_ready_cs
+        , CALL_ON_PREV_DATA_READY(
+              context
+            , msg_memory
+            , LAYER_STATE_OK ) );
+
+    // parse the response
+    if( msg_memory->common.common_u.common_bits.type == MQTT_TYPE_CONNACK )
+    {
+        if( msg_memory->connack.return_code == 0 )
+        {
+           EXIT( layer_data->data_ready_cs, LAYER_STATE_OK );
+        }
+        else
+        {
+            xi_debug_format( "connack.return_code == %d\n", msg_memory->connack.return_code );
+            EXIT( layer_data->data_ready_cs, LAYER_STATE_ERROR );
+        }
+    }
+
+    EXIT( layer_data->data_ready_cs, LAYER_STATE_OK );
+    END_CORO();
+
+    return LAYER_STATE_ERROR;
+}
+
+static layer_state_t main_logic(
+        layer_connectivity_t* context
+      , void* data
+      , layer_state_t in_state )
+{
     xi_mqtt_logic_layer_data_t* layer_data
         = ( xi_mqtt_logic_layer_data_t* ) CON_SELF( context )->user_data;
 
-    xi_mqtt_logic_in_t* dr = ( xi_mqtt_logic_in_t* ) data;
-
-    BEGIN_CORO( layer_data->data_ready_cs );
+    xi_mqtt_logic_in_t* dr = ( xi_mqtt_logic_in_t* ) &layer_data->logic;
 
     if( dr->scenario_t == XI_MQTT_CONNECT )
     {
-        fill_with_connect_data( &mqtt_message );
-        YIELD( layer_data->data_ready_cs
-            , CALL_ON_PREV_ON_DATA_READY(
-                  context
-                , &mqtt_message
-                , LAYER_STATE_OK ) );
+        return connect_server_logic(
+              context
+            , data
+            , layer_data
+            , &in_state );
     }
     else if( dr->scenario_t == XI_MQTT_PUBLISH )
     {
@@ -86,11 +112,29 @@ layer_state_t xi_mqtt_logic_layer_data_ready(
     {
 
     }
-
-    // ERROR UNKNOWN SCENARIO
-    END_CORO();
+    // else if( dr->scenario_t == XI_MQTT )
 
     return LAYER_STATE_OK;
+}
+
+layer_state_t xi_mqtt_logic_layer_data_ready(
+      void* context
+    , void* data
+    , layer_state_t in_state )
+{
+    XI_UNUSED( context );
+    XI_UNUSED( data );
+    XI_UNUSED( in_state );
+
+    static mqtt_message_t mqtt_message;
+
+    // sending request
+    // type of the request depends on
+    // the state that we are in
+    // it's easy to determine if we are in the middle of
+    // processing a single request or we are starting new one
+
+    return main_logic( context, &mqtt_message, in_state );
 }
 
 layer_state_t xi_mqtt_logic_layer_on_data_ready(
@@ -107,7 +151,8 @@ layer_state_t xi_mqtt_logic_layer_on_data_ready(
     // so that it will decide what to do next
     // this is very important part of the
     //
-    return LAYER_STATE_OK;
+
+    return main_logic( context, data, in_state );
 }
 
 layer_state_t xi_mqtt_logic_layer_init(
@@ -128,7 +173,17 @@ layer_state_t xi_mqtt_logic_layer_connect(
     XI_UNUSED( in_state );
 
     xi_mqtt_logic_layer_data_t* layer_data = CON_SELF( context )->user_data;
-    xi_evtd_continue( xi_evtd_instance, layer_data->on_connected, 0 );
+
+    layer_data->logic.scenario_t = XI_MQTT_CONNECT;
+    layer_data->logic.scenario_t = XI_MQTT_QOS_ZERO;
+
+    MAKE_HANDLE_H3(
+          &xi_mqtt_logic_layer_data_ready
+        , context
+        , &layer_data->logic
+        , LAYER_STATE_OK );
+
+    xi_evtd_continue( xi_evtd_instance, handle, 0 );
 
     return LAYER_STATE_OK;
 }
@@ -142,7 +197,7 @@ layer_state_t xi_mqtt_logic_layer_close(
     XI_UNUSED( data );
     XI_UNUSED( in_state );
 
-    return LAYER_STATE_OK;
+    return CALL_ON_PREV_CLOSE( context, data, in_state );
 }
 
 layer_state_t xi_mqtt_logic_layer_on_close(

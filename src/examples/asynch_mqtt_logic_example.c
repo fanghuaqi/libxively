@@ -203,6 +203,10 @@ layer_state_t on_connected(
 {
     xi_context_t* context = ( xi_context_t* ) in_context;
     printf( "connected\n!" );
+
+    // sending the connect request
+
+
     return LAYER_STATE_OK;
 }
 
@@ -230,7 +234,10 @@ int main( int argc, char* argv[] )
 
     // @TODO replace with simple macro
     {
-        MAKE_HANDLE_H2( on_connected, ( void* ) xi_context, 0 );
+        MAKE_HANDLE_H2(
+              on_connected
+            , ( void* ) xi_context
+            , 0 );
 
         xi_nob_mqtt_connect(
                 xi_context

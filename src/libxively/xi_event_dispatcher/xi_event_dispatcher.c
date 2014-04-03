@@ -17,7 +17,8 @@ static inline int8_t xi_evtd_cmp_fd(
 
 int8_t xi_evtd_register_fd(
       xi_evtd_instance_t* instance
-    , xi_fd_t fd )
+    , xi_fd_t fd
+    , xi_evtd_handle_t read_handle )
 {
     // PRECONDITIONS
     assert( instance != 0 );
@@ -28,7 +29,9 @@ int8_t xi_evtd_register_fd(
     XI_CHECK_MEMORY( triplet );
 
     triplet->fd            = fd;
-    triplet->event_type    = XI_EVTD_NO_EVENT;
+    triplet->event_type    = XI_EVENT_WANT_READ; // this is default state
+    triplet->read_handle   = read_handle;        // remember the read one
+    triplet->handle        = read_handle;        // we shall start to listen
 
     // register within the handles
     {
@@ -214,8 +217,18 @@ void xi_evtd_update_event(
         xi_evtd_triplet_t* triplet
             = ( xi_evtd_triplet_t* ) instance->handles_and_fd->array[ id ].value;
 
-        triplet->event_type = XI_EVTD_NO_EVENT;
-        xi_evtd_execute_handle( &triplet->handle );
+        // save the handle to execute
+        xi_evtd_handle_t to_exec    = triplet->handle;
+
+        // set the default one
+        triplet->event_type         = XI_EVENT_WANT_READ;       // default
+        triplet->handle             = triplet->read_handle;
+
+        // execute previously saved handle
+        // we save the handle because the triplet->handle
+        // may be overrided within the handle execution
+        // so we don't won't to override that again
+        xi_evtd_execute_handle( &to_exec );
     }
     else
     {

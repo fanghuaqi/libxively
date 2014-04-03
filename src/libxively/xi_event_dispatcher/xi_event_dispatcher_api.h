@@ -21,6 +21,7 @@ typedef struct
 {
     xi_fd_t             fd;
     xi_evtd_handle_t    handle;
+    xi_evtd_handle_t    read_handle;
     xi_event_type_t     event_type;
 } xi_evtd_triplet_t;
 
@@ -34,7 +35,8 @@ typedef struct
 
 extern int8_t xi_evtd_register_fd(
       xi_evtd_instance_t* instance
-    , xi_fd_t fd );
+    , xi_fd_t fd
+    , xi_evtd_handle_t read_handle );
 
 extern int8_t xi_evtd_unregister_fd(
       xi_evtd_instance_t* instance
