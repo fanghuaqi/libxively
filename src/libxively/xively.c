@@ -1341,9 +1341,38 @@ extern void xi_nob_mqtt_publish(
     XI_UNUSED( topic );
     XI_UNUSED( msg );
 
-
     layer_t* input_layer = xi->layer_chain.top;
 
+    xi_mqtt_logic_layer_data_t* layer_data
+        = ( xi_mqtt_logic_layer_data_t* ) input_layer->user_data;
+
+    layer_data->logic.scenario_t = XI_MQTT_PUBLISH;
+
+    xi_mqtt_logic_topic_msg_t* topic_and_msg
+        = xi_alloc( sizeof( xi_mqtt_logic_topic_msg_t ) );
+
+    XI_CHECK_MEMORY( topic_and_msg );
+
+    topic_and_msg->topic = xi_str_dup( topic );
+
+    XI_CHECK_MEMORY( topic_and_msg->topic );
+
+    topic_and_msg->msg = xi_str_dup( msg );
+
+    XI_CHECK_MEMORY( topic_and_msg->msg );
+
+    return CALL_ON_SELF_DATA_READY(
+          &input_layer->layer_connection
+        , topic_and_msg
+        , LAYER_STATE_OK );
+
+err_handling:
+    if( topic_and_msg )
+    {
+        XI_SAFE_FREE( topic_and_msg->msg );
+        XI_SAFE_FREE( topic_and_msg->topic );
+        XI_SAFE_FREE( topic_and_msg );
+    }
 }
 
 #endif

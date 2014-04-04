@@ -205,7 +205,7 @@ layer_state_t on_connected(
     printf( "connected\n!" );
 
     // sending the connect request
-
+    xi_nob_mqtt_publish( context, "test_topic", "test_msg" );
 
     return LAYER_STATE_OK;
 }

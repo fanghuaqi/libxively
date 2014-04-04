@@ -45,11 +45,39 @@ static inline void fill_with_connect_data( mqtt_message_t* msg )
     }
 }
 
+static inline void fill_with_publish_data(
+      mqtt_message_t* msg
+    , const char* topic
+    , const char* cnt )
+{
+    memset( msg, 0, sizeof( mqtt_message_t ) );
+
+    msg->common.common_u.common_bits.retain     = MQTT_RETAIN_FALSE;
+    msg->common.common_u.common_bits.qos        = MQTT_QOS_AT_MOST_ONCE;
+    msg->common.common_u.common_bits.dup        = MQTT_DUP_FALSE;
+    msg->common.common_u.common_bits.type       = MQTT_TYPE_PUBLISH;
+    msg->common.remaining_length                = 0; // this is filled during the serialization
+
+    msg->publish.topic_name.length              = strlen( topic );
+    msg->publish.content.length                 = strlen( cnt );
+
+    memcpy(
+          msg->publish.topic_name.data
+        , topic
+        , msg->publish.topic_name.length );
+
+    memcpy(
+          msg->publish.content.data
+        , cnt
+        , msg->publish.content.length );
+}
+
 /**
  * The function works as a working
  */
 static layer_state_t connect_server_logic(
       layer_connectivity_t* context // should be the context of the logic layer
+    , void* data
     , mqtt_message_t* msg_memory
     , xi_mqtt_logic_layer_data_t* layer_data  // this is the config
     , layer_state_t* state )
@@ -71,11 +99,25 @@ static layer_state_t connect_server_logic(
     {
         if( msg_memory->connack.return_code == 0 )
         {
-           EXIT( layer_data->data_ready_cs, LAYER_STATE_OK );
+            layer_data->on_connected.handlers.h3.a3 = LAYER_STATE_OK;
+            xi_evtd_continue(
+                  xi_evtd_instance
+                , layer_data->on_connected
+                , 0 );
+
+            EXIT( layer_data->data_ready_cs, LAYER_STATE_OK );
         }
         else
         {
             xi_debug_format( "connack.return_code == %d\n", msg_memory->connack.return_code );
+
+            layer_data->on_connected.handlers.h3.a3 = LAYER_STATE_ERROR;
+
+            xi_evtd_continue(
+                  xi_evtd_instance
+                , layer_data->on_connected
+                , 0 );
+
             EXIT( layer_data->data_ready_cs, LAYER_STATE_ERROR );
         }
     }
@@ -86,9 +128,45 @@ static layer_state_t connect_server_logic(
     return LAYER_STATE_ERROR;
 }
 
+static layer_state_t publish_server_logic(
+      layer_connectivity_t* context // should be the context of the logic layer
+    , void* data
+    , mqtt_message_t* msg_memory
+    , xi_mqtt_logic_layer_data_t* layer_data  // this is the config
+    , layer_state_t* state )
+{
+    XI_UNUSED( state );
+
+    xi_mqtt_logic_topic_msg_t* topic_and_msg
+        = ( xi_mqtt_logic_topic_msg_t* ) data;
+
+    //
+    BEGIN_CORO( layer_data->data_ready_cs );
+
+    fill_with_publish_data(
+          msg_memory
+        , topic_and_msg->topic
+        , topic_and_msg->msg );
+
+    XI_SAFE_FREE( topic_and_msg->msg );
+    XI_SAFE_FREE( topic_and_msg->topic );
+    XI_SAFE_FREE( topic_and_msg );
+
+    EXIT( layer_data->data_ready_cs
+        , CALL_ON_PREV_DATA_READY(
+              context
+            , msg_memory
+            , LAYER_STATE_OK ) );
+
+    END_CORO();
+
+    return LAYER_STATE_ERROR;
+}
+
 static layer_state_t main_logic(
         layer_connectivity_t* context
       , void* data
+      , mqtt_message_t* msg
       , layer_state_t in_state )
 {
     xi_mqtt_logic_layer_data_t* layer_data
@@ -101,12 +179,18 @@ static layer_state_t main_logic(
         return connect_server_logic(
               context
             , data
+            , msg
             , layer_data
             , &in_state );
     }
     else if( dr->scenario_t == XI_MQTT_PUBLISH )
     {
-
+        return publish_server_logic(
+              context
+            , data
+            , msg
+            , layer_data
+            , &in_state );
     }
     else if( dr->scenario_t == XI_MQTT_SUBSCRIBE )
     {
@@ -134,7 +218,7 @@ layer_state_t xi_mqtt_logic_layer_data_ready(
     // it's easy to determine if we are in the middle of
     // processing a single request or we are starting new one
 
-    return main_logic( context, &mqtt_message, in_state );
+    return main_logic( context, data, &mqtt_message, in_state );
 }
 
 layer_state_t xi_mqtt_logic_layer_on_data_ready(
@@ -152,7 +236,7 @@ layer_state_t xi_mqtt_logic_layer_on_data_ready(
     // this is very important part of the
     //
 
-    return main_logic( context, data, in_state );
+    return main_logic( context, data, data, in_state );
 }
 
 layer_state_t xi_mqtt_logic_layer_init(
