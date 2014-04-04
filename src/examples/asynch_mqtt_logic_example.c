@@ -197,6 +197,23 @@ void main_loop()
     }
 }
 
+layer_state_t delayed_publish(
+          void* in_context
+    )
+{
+    xi_context_t* context = ( xi_context_t* ) in_context;
+
+    // sending the connect request
+    xi_nob_mqtt_publish( context, "test_topic", "test_msg" );
+
+    { // register delayed publish again
+        MAKE_HANDLE_H1( &delayed_publish, in_context );
+        xi_evtd_continue( xi_evtd_instance, handle, 5 );
+    }
+
+    return LAYER_STATE_OK;
+}
+
 layer_state_t on_connected(
       void* in_context
     , void* data )
@@ -206,6 +223,11 @@ layer_state_t on_connected(
 
     // sending the connect request
     xi_nob_mqtt_publish( context, "test_topic", "test_msg" );
+
+    { // register delayed publish
+        MAKE_HANDLE_H1( &delayed_publish, in_context );
+        xi_evtd_continue( xi_evtd_instance, handle, 5 );
+    }
 
     return LAYER_STATE_OK;
 }
