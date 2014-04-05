@@ -72,6 +72,33 @@ static inline void fill_with_publish_data(
         , msg->publish.content.length );
 }
 
+/*static inline void fill_with_subscribe_data(
+      mqtt_message_t* msg
+    , const char* topic
+    , const char* cnt )
+{
+    memset( msg, 0, sizeof( mqtt_message_t ) );
+
+    msg->common.common_u.common_bits.retain     = MQTT_RETAIN_FALSE;
+    msg->common.common_u.common_bits.qos        = MQTT_QOS_AT_MOST_ONCE;
+    msg->common.common_u.common_bits.dup        = MQTT_DUP_FALSE;
+    msg->common.common_u.common_bits.type       = MQTT_TYPE_SUBSCRIBE;
+    msg->common.remaining_length                = 0; // this is filled during the serialization
+
+    msg->subscribe. = strlen( topic );
+    msg->publish.content.length                 = strlen( cnt );
+
+    memcpy(
+          msg->publish.topic_name.data
+        , topic
+        , msg->publish.topic_name.length );
+
+    memcpy(
+          msg->publish.content.data
+        , cnt
+        , msg->publish.content.length );
+}*/
+
 /**
  * The function works as a working
  */

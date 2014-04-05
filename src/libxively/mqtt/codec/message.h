@@ -141,21 +141,21 @@ typedef union mqtt_message_u {
     MQTT_MESSAGE_COMMON_FIELDS
 
     uint16_t message_id;
-    mqtt_topicpair_t* topics;
+    mqtt_topicpair_t topics;
   } subscribe;
 
   struct {
     MQTT_MESSAGE_COMMON_FIELDS
 
     uint16_t message_id;
-    mqtt_topicpair_t* topics;
+    mqtt_topicpair_t topics;
   } suback;
 
   struct {
     MQTT_MESSAGE_COMMON_FIELDS
 
     uint16_t message_id;
-    mqtt_topic_t* topics;
+    mqtt_topic_t topics;
   } unsubscribe;
 
   struct {
