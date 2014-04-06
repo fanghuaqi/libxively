@@ -194,6 +194,8 @@ mqtt_serialiser_rc_t mqtt_serialiser_write(
 
             WRITE_STRING( message->subscribe.topics.name );
 
+            buffer[ offset++ ] = message->subscribe.topics.qos & 0xff;
+
             break;
         }
 

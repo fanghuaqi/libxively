@@ -533,9 +533,9 @@ extern void xi_nob_mqtt_publish(
  * \note    The handle shall be called upon the proper message of given topic
  */
 extern void xi_nob_mqtt_subscribe(
-    xi_context_t* xi
+      xi_context_t* xi
     , const char* topic
-    , void* handle );
+    , xi_evtd_handle_t handler );
 
 #endif // XI_MQTT_ENABLED && XI_NOB_ENABLED
 

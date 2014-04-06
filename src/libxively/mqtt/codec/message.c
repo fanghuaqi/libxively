@@ -49,4 +49,9 @@ void mqtt_message_dump(mqtt_message_t* message) {
     mqtt_buffer_dump(&(message->connect.password));
     printf("\n");
   }
+  else if( message->common.common_u.common_bits.type == MQTT_TYPE_PUBLISH )
+  {
+    printf( "content: " );
+    mqtt_buffer_dump( & ( message->publish.content ) );
+  }
 }

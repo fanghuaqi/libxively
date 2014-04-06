@@ -26,6 +26,7 @@
 #include "xi_layer_factory_conf.h"
 #include "xi_layer_default_allocators.h"
 #include "xi_connection_data.h"
+#include "xi_static_vector.h"
 
 #if defined( XI_MQTT_ENABLED ) && defined( XI_NOB_ENABLED )
 #include "xi_event_dispatcher_global_instance.h"
@@ -1374,6 +1375,49 @@ err_handling:
         XI_SAFE_FREE( topic_and_msg );
     }
 }
+
+void xi_nob_mqtt_subscribe(
+      xi_context_t* xi
+    , const char* topic
+    , xi_evtd_handle_t handler )
+{
+    layer_t* input_layer = xi->layer_chain.top;
+
+    xi_mqtt_logic_layer_data_t* layer_data
+        = ( xi_mqtt_logic_layer_data_t* ) input_layer->user_data;
+
+    layer_data->logic.scenario_t
+        = XI_MQTT_SUBSCRIBE;
+
+    xi_mqtt_logic_topic_handler_t* topic_and_hndl
+        = xi_alloc( sizeof( xi_mqtt_logic_topic_handler_t ) );
+
+    XI_CHECK_MEMORY( topic_and_hndl );
+
+    topic_and_hndl->topic = xi_str_dup( topic );
+
+    XI_CHECK_MEMORY( topic_and_hndl->topic );
+
+    topic_and_hndl->handler = handler;
+
+    xi_static_vector_push(
+            layer_data->handlers_for_topics
+          , topic_and_hndl );
+
+    return CALL_ON_SELF_DATA_READY(
+              &input_layer->layer_connection
+            , topic_and_hndl
+            , LAYER_STATE_OK
+        );
+
+err_handling:
+    if( topic_and_hndl )
+    {
+        XI_SAFE_FREE( topic_and_hndl->topic );
+        XI_SAFE_FREE( topic_and_hndl );
+    }
+}
+
 
 #endif
 

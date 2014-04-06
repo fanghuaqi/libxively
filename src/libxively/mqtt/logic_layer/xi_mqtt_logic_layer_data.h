@@ -20,6 +20,7 @@ typedef struct xi_mqtt_logic_in_s
           XI_MQTT_CONNECT = 0
         , XI_MQTT_PUBLISH
         , XI_MQTT_SUBSCRIBE
+        , XI_MQTT_RECV_PUBLISH
     } scenario_t;
 
     enum
@@ -36,6 +37,12 @@ typedef struct xi_mqtt_logic_topic_msg_s
     char* msg;
 } xi_mqtt_logic_topic_msg_t;
 
+typedef struct xi_mqtt_logic_topic_handler_s
+{
+    char*               topic;
+    xi_evtd_handle_t    handler;
+} xi_mqtt_logic_topic_handler_t;
+
 typedef struct
 {
     // here we are going to store the mapping of the
@@ -45,7 +52,7 @@ typedef struct
 
     // handle to the user idle function that suppose to
     //xi_user_idle_t*     user_idle_ptr;
-    //xi_static_vector_t* handlers_for_topics;
+    xi_static_vector_t*         handlers_for_topics;
     xi_evtd_handle_t            on_connected;
     xi_mqtt_logic_in_t          logic;
     uint16_t                    data_ready_cs;

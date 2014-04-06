@@ -54,8 +54,8 @@ typedef struct mqtt_topicpair_s {
 struct { \
     union { \
         struct { \
-            unsigned int qos    : 2; \
             unsigned int retain : 1; \
+            unsigned int qos    : 2; \
             unsigned int dup    : 1; \
             unsigned int type   : 4; \
         } common_bits; \
