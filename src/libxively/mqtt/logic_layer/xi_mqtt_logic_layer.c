@@ -324,10 +324,12 @@ static inline layer_state_t recv_publish (
 }
 
 static layer_state_t main_logic(
-        layer_connectivity_t* context
+        void* in
       , void* data
       , layer_state_t in_state )
 {
+    layer_connectivity_t* context = ( layer_connectivity_t* ) in;
+
     xi_mqtt_logic_layer_data_t* layer_data
         = ( xi_mqtt_logic_layer_data_t* ) CON_SELF( context )->user_data;
 
