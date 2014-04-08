@@ -37,6 +37,11 @@ layer_state_t posix_asynch_io_layer_data_ready(
     posix_asynch_data_t* posix_asynch_data  = ( posix_asynch_data_t* ) CON_SELF( context )->user_data;
     const const_data_descriptor_t* buffer   = ( const const_data_descriptor_t* ) data;
 
+    posix_asynch_data_t* layer_data
+        = ( posix_asynch_data_t* ) CON_SELF( context )->user_data;
+
+    BEGIN_CORO( layer_data->cs );
+
     if( buffer != 0 && buffer->data_size > 0 )
     {
         int len = write( posix_asynch_data->socket_fd, buffer->data_ptr, buffer->data_size );
@@ -46,18 +51,22 @@ layer_state_t posix_asynch_io_layer_data_ready(
             int errval = errno;
             if( errval == EAGAIN ) // that can happen
             {
-                return LAYER_STATE_WANT_WRITE;
+                YIELD( layer_data->cs, CALL_ON_NEXT_DATA_READY( context, data, LAYER_STATE_WANT_WRITE ) );
             }
 
-            xi_debug_printf( "error reading: errno = %d \n", errval );
-            return LAYER_STATE_ERROR;
+            xi_debug_printf( "error writing: errno = %d \n", errval );
+            YIELD( layer_data->cs, CALL_ON_NEXT_DATA_READY( context, data, LAYER_STATE_ERROR ) );
         }
 
         if( len < buffer->data_size )
         {
-            return LAYER_STATE_ERROR;
+            YIELD( layer_data->cs, CALL_ON_NEXT_DATA_READY( context, data, LAYER_STATE_WANT_WRITE ) );
         }
     }
+
+    EXIT( layer_data->cs, CALL_ON_NEXT_DATA_READY( context, data, LAYER_STATE_OK ) );
+
+    END_CORO();
 
     return LAYER_STATE_OK;
 }

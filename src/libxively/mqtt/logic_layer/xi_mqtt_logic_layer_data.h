@@ -6,6 +6,7 @@
 
 //#include "xi_static_vector.h"
 #include "xi_event_dispatcher_api.h"
+#include "message.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -13,35 +14,79 @@ extern "C" {
 
 //typedef int8_t ( xi_user_idle_t )( void* );
 
-typedef struct xi_mqtt_logic_in_s
+typedef struct xi_mqtt_logic_task_data_s
 {
-    enum
+    struct xi_mqtt_logic_in_s
     {
-          XI_MQTT_CONNECT = 0
-        , XI_MQTT_PUBLISH
-        , XI_MQTT_SUBSCRIBE
-        , XI_MQTT_RECV_PUBLISH
-    } scenario_t;
+        enum
+        {
+              XI_MQTT_NONE = 0
+            , XI_MQTT_CONNECT
+            , XI_MQTT_PUBLISH
+            , XI_MQTT_SUBSCRIBE
+        } scenario_t;
 
-    enum
+        enum
+        {
+              XI_MQTT_QOS_ZERO = 0
+            , XI_MQTT_QOS_ONE
+            , XI_MQTT_QOS_TWO
+        } qos_t;
+    } mqtt_settings;
+
+    union data_t
     {
-          XI_MQTT_QOS_ZERO = 0
-        , XI_MQTT_QOS_ONE
-        , XI_MQTT_QOS_TWO
-    } qos_t;
-} xi_mqtt_logic_in_t;
+        struct data_t_publish_t
+        {
+            char* topic;
+            char* msg;
+        } publish;
 
-typedef struct xi_mqtt_logic_topic_msg_s
-{
-    char* topic;
-    char* msg;
-} xi_mqtt_logic_topic_msg_t;
+        struct data_t_subscribe_t
+        {
+            char*               topic;
+            xi_evtd_handle_t    handler;
+        } subscribe;
+    } *data_u;
+} xi_mqtt_logic_task_data_t;
 
-typedef struct xi_mqtt_logic_topic_handler_s
+typedef struct xi_mqtt_logic_task_s
 {
-    char*               topic;
-    xi_evtd_handle_t    handler;
-} xi_mqtt_logic_topic_handler_t;
+    xi_mqtt_logic_task_data_t   data;
+} xi_mqtt_logic_task_t;
+
+#define PUSH_BACK( type, list, elem ) { \
+    type* prev = list; \
+    type* curr = prev; \
+    while( curr ) { \
+       prev = curr; \
+       curr = curr->__next; \
+    } \
+    if( prev == curr ) { \
+        list = elem; \
+    } else { \
+        prev->__next = elem; \
+    } \
+}
+
+#define POP( type, list, out ) { \
+    out = list;\
+    if( out->__next == 0 ) { \
+        list = 0; \
+    } else { \
+        list = out->__next; \
+        out->__next = 0; \
+    } \
+}
+
+typedef struct xi_mqtt_logic_queue_s
+{
+    layer_connectivity_t*           context;
+    xi_mqtt_logic_task_t*           task;
+    mqtt_message_t*                 msg;
+    layer_state_t                   state;
+    struct xi_mqtt_logic_queue_s* __next;
+} xi_mqtt_logic_queue_t;
 
 typedef struct
 {
@@ -52,9 +97,10 @@ typedef struct
 
     // handle to the user idle function that suppose to
     //xi_user_idle_t*     user_idle_ptr;
+    xi_mqtt_logic_queue_t*      tasks_queue;
     xi_static_vector_t*         handlers_for_topics;
     xi_evtd_handle_t            on_connected;
-    xi_mqtt_logic_in_t          logic;
+    xi_mqtt_logic_task_t*       curr_task;
     uint16_t                    data_ready_cs;
 } xi_mqtt_logic_layer_data_t;
 

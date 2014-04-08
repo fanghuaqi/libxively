@@ -12,8 +12,9 @@ extern "C" {
 
 typedef struct
 {
-    mqtt_parser_t   parser;
-    mqtt_message_t  msg;
+    mqtt_parser_t    parser;
+    mqtt_message_t*  msg;
+    uint16_t          cs;
 } xi_mqtt_layer_data_t;
 
 #ifdef __cplusplus

@@ -164,6 +164,9 @@ void xi_evtd_execute_handle( xi_evtd_handle_t* handle )
         case XI_EVTD_HANDLE_3_ID:
             ( *handle->handlers.h3.phandle_3 )( handle->handlers.h3.a1, handle->handlers.h3.a2, handle->handlers.h3.a3 );
         break;
+        case XI_EVTD_HANDLE_4_ID:
+            ( *handle->handlers.h4.phandle_4 )( handle->handlers.h4.a1, handle->handlers.h4.a2, handle->handlers.h4.a3, handle->handlers.h4.a4 );
+        break;
     }
 }
 

@@ -21,15 +21,15 @@
 extern "C" {
 #endif
 
-#if 0 && !defined( XI_NOB_ENABLED )
+#if 1 && !defined( XI_NOB_ENABLED )
 #define XI_NOB_ENABLED 1
 #endif
 
-#if 0 && !defined( XI_MQTT_ENABLED )
+#if 1 && !defined( XI_MQTT_ENABLED )
 #define XI_MQTT_ENABLED 1
 #endif
 
-#if 0 && !defined( XI_IO_LAYER )
+#if 1 && !defined( XI_IO_LAYER )
 #define XI_IO_LAYER XI_IO_POSIX_ASYNCH
 #endif
 
@@ -523,7 +523,7 @@ extern layer_state_t xi_nob_mqtt_connect(
  * \brief   Connects to the given server and publishes the msg under choosed topic
  * \note    This version disconnects immidiately
  */
-extern void xi_nob_mqtt_publish(
+extern layer_state_t xi_nob_mqtt_publish(
       xi_context_t* xi
     , const char* topic
     , const char* msg );
@@ -532,7 +532,7 @@ extern void xi_nob_mqtt_publish(
  * \brief   Subscribes for notification of given topic
  * \note    The handle shall be called upon the proper message of given topic
  */
-extern void xi_nob_mqtt_subscribe(
+extern layer_state_t xi_nob_mqtt_subscribe(
       xi_context_t* xi
     , const char* topic
     , xi_evtd_handle_t handler );

@@ -1333,7 +1333,7 @@ extern layer_state_t xi_nob_mqtt_connect(
         , LAYER_STATE_OK );
 }
 
-extern void xi_nob_mqtt_publish(
+extern layer_state_t xi_nob_mqtt_publish(
       xi_context_t* xi
     , const char* topic
     , const char* msg )
@@ -1347,36 +1347,39 @@ extern void xi_nob_mqtt_publish(
     xi_mqtt_logic_layer_data_t* layer_data
         = ( xi_mqtt_logic_layer_data_t* ) input_layer->user_data;
 
-    layer_data->logic.scenario_t = XI_MQTT_PUBLISH;
+    xi_mqtt_logic_task_t* task
+        = ( xi_mqtt_logic_task_t* ) xi_alloc( sizeof( xi_mqtt_logic_task_t ) );
 
-    xi_mqtt_logic_topic_msg_t* topic_and_msg
-        = xi_alloc( sizeof( xi_mqtt_logic_topic_msg_t ) );
-
-    XI_CHECK_MEMORY( topic_and_msg );
-
-    topic_and_msg->topic = xi_str_dup( topic );
-
-    XI_CHECK_MEMORY( topic_and_msg->topic );
-
-    topic_and_msg->msg = xi_str_dup( msg );
-
-    XI_CHECK_MEMORY( topic_and_msg->msg );
+    XI_CHECK_MEMORY( task );
+    task->data.mqtt_settings.scenario_t = XI_MQTT_PUBLISH;
+    task->data.mqtt_settings.qos_t      = XI_MQTT_QOS_ZERO;
+    task->data.data_u = ( union data_t* ) xi_alloc( sizeof( union data_t ) );
+    XI_CHECK_MEMORY( task->data.data_u );
+    task->data.data_u->publish.topic     = xi_str_dup( topic );
+    XI_CHECK_MEMORY( task->data.data_u->publish.topic );
+    task->data.data_u->publish.msg       = xi_str_dup( msg );
+    XI_CHECK_MEMORY( task->data.data_u->publish.msg );
 
     return CALL_ON_SELF_DATA_READY(
           &input_layer->layer_connection
-        , topic_and_msg
+        , task
         , LAYER_STATE_OK );
 
 err_handling:
-    if( topic_and_msg )
+    if( task )
     {
-        XI_SAFE_FREE( topic_and_msg->msg );
-        XI_SAFE_FREE( topic_and_msg->topic );
-        XI_SAFE_FREE( topic_and_msg );
+        if( task->data.data_u )
+        {
+            XI_SAFE_FREE( task->data.data_u->publish.msg );
+            XI_SAFE_FREE( task->data.data_u->publish.topic );
+            XI_SAFE_FREE( task );
+        }
+        XI_SAFE_FREE( task->data.data_u );
     }
+    return LAYER_STATE_ERROR;
 }
 
-void xi_nob_mqtt_subscribe(
+layer_state_t xi_nob_mqtt_subscribe(
       xi_context_t* xi
     , const char* topic
     , xi_evtd_handle_t handler )
@@ -1386,36 +1389,39 @@ void xi_nob_mqtt_subscribe(
     xi_mqtt_logic_layer_data_t* layer_data
         = ( xi_mqtt_logic_layer_data_t* ) input_layer->user_data;
 
-    layer_data->logic.scenario_t
-        = XI_MQTT_SUBSCRIBE;
+    xi_mqtt_logic_task_t* task
+        = ( xi_mqtt_logic_task_t* ) xi_alloc( sizeof( xi_mqtt_logic_task_t ) );
 
-    xi_mqtt_logic_topic_handler_t* topic_and_hndl
-        = xi_alloc( sizeof( xi_mqtt_logic_topic_handler_t ) );
-
-    XI_CHECK_MEMORY( topic_and_hndl );
-
-    topic_and_hndl->topic = xi_str_dup( topic );
-
-    XI_CHECK_MEMORY( topic_and_hndl->topic );
-
-    topic_and_hndl->handler = handler;
+    XI_CHECK_MEMORY( task );
+    task->data.mqtt_settings.scenario_t = XI_MQTT_SUBSCRIBE;
+    task->data.mqtt_settings.qos_t      = XI_MQTT_QOS_ONE;
+    task->data.data_u = ( union data_t* ) xi_alloc( sizeof( union data_t ) );
+    XI_CHECK_MEMORY( task->data.data_u );
+    task->data.data_u->subscribe.topic  = xi_str_dup( topic );
+    XI_CHECK_MEMORY( task->data.data_u->subscribe.topic );
+    task->data.data_u->subscribe.handler= handler;
 
     xi_static_vector_push(
             layer_data->handlers_for_topics
-          , topic_and_hndl );
+          , &task->data.data_u->subscribe );
 
     return CALL_ON_SELF_DATA_READY(
               &input_layer->layer_connection
-            , topic_and_hndl
+            , task
             , LAYER_STATE_OK
         );
 
 err_handling:
-    if( topic_and_hndl )
+    if( task )
     {
-        XI_SAFE_FREE( topic_and_hndl->topic );
-        XI_SAFE_FREE( topic_and_hndl );
+        if( task->data.data_u )
+        {
+            XI_SAFE_FREE( task->data.data_u->subscribe.topic );
+            XI_SAFE_FREE( task );
+        }
+        XI_SAFE_FREE( task->data.data_u );
     }
+    return LAYER_STATE_ERROR;
 }
 
 

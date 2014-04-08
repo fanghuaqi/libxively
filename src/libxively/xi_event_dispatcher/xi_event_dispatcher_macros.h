@@ -25,14 +25,16 @@
 typedef RET (handle_0)(void); typedef handle_0* handle_0_ptr; \
 typedef RET (handle_1)(xi_evtd_handle_1_t); typedef handle_1* handle_1_ptr; \
 typedef RET (handle_2)(xi_evtd_handle_1_t, xi_evtd_handle_2_t); typedef handle_2* handle_2_ptr; \
-typedef RET (handle_3)(xi_evtd_handle_1_t, xi_evtd_handle_2_t, xi_evtd_handle_3_t); typedef handle_3* handle_3_ptr;
+typedef RET (handle_3)(xi_evtd_handle_1_t, xi_evtd_handle_2_t, xi_evtd_handle_3_t); typedef handle_3* handle_3_ptr; \
+typedef RET (handle_4)(xi_evtd_handle_1_t, xi_evtd_handle_2_t, xi_evtd_handle_3_t, xi_evtd_handle_4_t); typedef handle_4* handle_4_ptr;
 
 typedef enum
 {
     XI_EVTD_HANDLE_0_ID = 0,
     XI_EVTD_HANDLE_1_ID,
     XI_EVTD_HANDLE_2_ID,
-    XI_EVTD_HANDLE_3_ID
+    XI_EVTD_HANDLE_3_ID,
+    XI_EVTD_HANDLE_4_ID
 } xi_evtd_handle_id_t;
 
 #endif // __XI_EVENT_DISPATCHER_MACROS_H__

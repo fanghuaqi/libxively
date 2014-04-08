@@ -15,9 +15,13 @@
 extern "C" {
 #endif
 
+
+static layer_state_t run_next_task(
+    layer_connectivity_t* context );
+
 static int8_t cmp_topics( void* a, void* b )
 {
-    xi_mqtt_logic_topic_handler_t* ca = ( xi_mqtt_logic_topic_handler_t* ) a; // this suppose to be the one from the vector
+    struct data_t_subscribe_t* ca = ( struct data_t_subscribe_t* ) a; // this suppose to be the one from the vector
     mqtt_buffer_t* cb = ( mqtt_buffer_t* ) b; // this suppose to be the one from the msg
 
     for( uint8_t i = 0; i < cb->length; ++i )
@@ -114,13 +118,19 @@ static layer_state_t connect_server_logic(
       layer_connectivity_t* context // should be the context of the logic layer
     , void* data
     , mqtt_message_t* msg_memory
-    , xi_mqtt_logic_layer_data_t* layer_data  // this is the config
     , layer_state_t* state )
 {
     XI_UNUSED( state );
 
+    xi_mqtt_logic_layer_data_t* layer_data
+        = ( xi_mqtt_logic_layer_data_t* ) CON_SELF( context )->user_data;
+
     //
     BEGIN_CORO( layer_data->data_ready_cs );
+
+    msg_memory = xi_alloc( sizeof( mqtt_message_t ) );
+    XI_CHECK_MEMORY( msg_memory );
+    memset( msg_memory, 0, sizeof( mqtt_message_t ) );
 
     fill_with_connect_data( msg_memory );
     YIELD( layer_data->data_ready_cs
@@ -128,6 +138,9 @@ static layer_state_t connect_server_logic(
               context
             , msg_memory
             , LAYER_STATE_OK ) );
+
+    YIELD( layer_data->data_ready_cs
+        , LAYER_STATE_OK );
 
     // parse the response
     if( msg_memory->common.common_u.common_bits.type == MQTT_TYPE_CONNACK )
@@ -139,6 +152,10 @@ static layer_state_t connect_server_logic(
                   xi_evtd_instance
                 , layer_data->on_connected
                 , 0 );
+
+            run_next_task( context );
+
+            XI_SAFE_FREE( msg_memory );
 
             EXIT( layer_data->data_ready_cs, LAYER_STATE_OK );
         }
@@ -153,69 +170,54 @@ static layer_state_t connect_server_logic(
                 , layer_data->on_connected
                 , 0 );
 
+            run_next_task( context );
+
+            XI_SAFE_FREE( msg_memory );
+
             EXIT( layer_data->data_ready_cs, LAYER_STATE_ERROR );
         }
     }
 
-    EXIT( layer_data->data_ready_cs, LAYER_STATE_OK );
+    XI_SAFE_FREE( msg_memory );
+
+    run_next_task( context );
+
+    EXIT( layer_data->data_ready_cs, LAYER_STATE_ERROR );
     END_CORO();
+
+    return LAYER_STATE_ERROR;
+
+err_handling:
 
     return LAYER_STATE_ERROR;
 }
 
 static layer_state_t publish_server_logic(
       layer_connectivity_t* context // should be the context of the logic layer
-    , void* data
+    , xi_mqtt_logic_task_t* task
     , mqtt_message_t* msg_memory
-    , xi_mqtt_logic_layer_data_t* layer_data  // this is the config
     , layer_state_t* state )
 {
     XI_UNUSED( state );
 
-    xi_mqtt_logic_topic_msg_t* topic_and_msg
-        = ( xi_mqtt_logic_topic_msg_t* ) data;
+    xi_mqtt_logic_layer_data_t* layer_data
+        = ( xi_mqtt_logic_layer_data_t* ) CON_SELF( context )->user_data;
 
     //
     BEGIN_CORO( layer_data->data_ready_cs );
+
+    msg_memory = xi_alloc( sizeof( mqtt_message_t ) );
+    XI_CHECK_MEMORY( msg_memory );
+    memset( msg_memory, 0, sizeof( mqtt_message_t ) );
 
     fill_with_publish_data(
           msg_memory
-        , topic_and_msg->topic
-        , topic_and_msg->msg );
+        , task->data.data_u->publish.topic
+        , task->data.data_u->publish.msg );
 
-    XI_SAFE_FREE( topic_and_msg->msg );
-    XI_SAFE_FREE( topic_and_msg->topic );
-    XI_SAFE_FREE( topic_and_msg );
-
-    EXIT( layer_data->data_ready_cs
-        , CALL_ON_PREV_DATA_READY(
-              context
-            , msg_memory
-            , LAYER_STATE_OK ) );
-
-    END_CORO();
-
-    return LAYER_STATE_ERROR;
-}
-
-static layer_state_t send_subscribe_logic(
-      layer_connectivity_t* context // should be the context of the logic layer
-    , void* data
-    , mqtt_message_t* msg_memory
-    , xi_mqtt_logic_layer_data_t* layer_data  // this is the config
-    , layer_state_t* state )
-{
-    XI_UNUSED( state );
-
-    xi_mqtt_logic_topic_handler_t* topic_and_handler
-        = ( xi_mqtt_logic_topic_handler_t* ) data;
-
-    //
-    BEGIN_CORO( layer_data->data_ready_cs );
-
-    fill_with_subscribe_data(
-          msg_memory
-        , topic_and_handler->topic );
+    XI_SAFE_FREE( task->data.data_u->publish.topic );
+    XI_SAFE_FREE( task->data.data_u->publish.msg );
+    XI_SAFE_FREE( task->data.data_u );
 
     YIELD( layer_data->data_ready_cs
         , CALL_ON_PREV_DATA_READY(
@@ -223,20 +225,71 @@ static layer_state_t send_subscribe_logic(
             , msg_memory
             , LAYER_STATE_OK ) );
 
+    run_next_task( context );
+
     EXIT( layer_data->data_ready_cs, LAYER_STATE_OK );
 
-    END_CORO()
+    END_CORO();
+
+    return LAYER_STATE_ERROR;
+
+err_handling:
+
+    return LAYER_STATE_ERROR;
+}
+
+static layer_state_t send_subscribe_logic(
+      layer_connectivity_t* context // should be the context of the logic layer
+    , xi_mqtt_logic_task_t* task
+    , mqtt_message_t* msg_memory
+    , layer_state_t* state )
+{
+    XI_UNUSED( state );
+
+    xi_mqtt_logic_layer_data_t* layer_data
+        = ( xi_mqtt_logic_layer_data_t* ) CON_SELF( context )->user_data;
+
+    //
+    BEGIN_CORO( layer_data->data_ready_cs );
+
+    msg_memory = xi_alloc( sizeof( mqtt_message_t ) );
+    XI_CHECK_MEMORY( msg_memory );
+    memset( msg_memory, 0, sizeof( mqtt_message_t ) );
+
+    fill_with_subscribe_data(
+          msg_memory
+        , task->data.data_u->subscribe.topic );
+
+    YIELD( layer_data->data_ready_cs
+        , CALL_ON_PREV_DATA_READY(
+              context
+            , msg_memory
+            , LAYER_STATE_OK ) );
+
+    YIELD( layer_data->data_ready_cs
+        , LAYER_STATE_OK );
+
+    run_next_task( context );
+
+    EXIT( layer_data->data_ready_cs, LAYER_STATE_OK );
+
+    END_CORO();
 
     return LAYER_STATE_OK;
+
+err_handling:
+
+    return LAYER_STATE_ERROR;
 }
 
 static inline layer_state_t recv_publish (
       layer_connectivity_t* context // should be the context of the logic layer
-    , void* data
+    , xi_mqtt_logic_task_t* task
     , mqtt_message_t* msg_memory
-    , xi_mqtt_logic_layer_data_t* layer_data  // this is the config
     , layer_state_t* state )
 {
+    xi_mqtt_logic_layer_data_t* layer_data
+        = ( xi_mqtt_logic_layer_data_t* ) CON_SELF( context )->user_data;
 
     //
     BEGIN_CORO( layer_data->data_ready_cs );
@@ -250,14 +303,14 @@ static inline layer_state_t recv_publish (
     if( index != -1 )
     {
         //
-        xi_mqtt_logic_topic_handler_t* topic_and_hndl
+        struct data_t_subscribe_t* subscribe_data
             = layer_data->handlers_for_topics->array[ index ].value;
 
-        topic_and_hndl->handler.handlers.h3.a2 = msg_memory;
+        subscribe_data->handler.handlers.h3.a2 = msg_memory;
 
         xi_evtd_continue(
                xi_evtd_instance
-             , topic_and_hndl->handler
+             , subscribe_data->handler
              , 0 );
     }
     else
@@ -273,51 +326,79 @@ static inline layer_state_t recv_publish (
 static layer_state_t main_logic(
         layer_connectivity_t* context
       , void* data
-      , mqtt_message_t* msg
       , layer_state_t in_state )
 {
     xi_mqtt_logic_layer_data_t* layer_data
         = ( xi_mqtt_logic_layer_data_t* ) CON_SELF( context )->user_data;
 
-    xi_mqtt_logic_in_t* dr = ( xi_mqtt_logic_in_t* ) &layer_data->logic;
+    xi_mqtt_logic_task_t* task
+        = layer_data->curr_task;
 
-    switch( dr->scenario_t )
+    switch( task->data.mqtt_settings.scenario_t )
     {
         case XI_MQTT_CONNECT:
         {
             return connect_server_logic(
                   context
+                , task
                 , data
-                , msg
-                , layer_data
                 , &in_state );
         }
         case XI_MQTT_PUBLISH:
         {
             return publish_server_logic(
                   context
+                , task
                 , data
-                , msg
-                , layer_data
                 , &in_state );
         }
         case XI_MQTT_SUBSCRIBE:
         {
             return send_subscribe_logic(
                   context
+                , task
                 , data
-                , msg
-                , layer_data
                 , &in_state );
         }
-        case XI_MQTT_RECV_PUBLISH:
+        case XI_MQTT_NONE:
         {
-            return recv_publish(
-                  context
-                , data
-                , msg
-                , layer_data
-                , &in_state );
+            xi_debug_logger( "XI_MQTT_NONE reached!" );
+        }
+        default:
+        {
+            xi_debug_logger( "!default! reached!" );
+        }
+    }
+
+    return LAYER_STATE_ERROR;
+}
+
+static layer_state_t run_next_task(
+    layer_connectivity_t* context )
+{
+    xi_mqtt_logic_layer_data_t* layer_data
+        = ( xi_mqtt_logic_layer_data_t* ) CON_SELF( context )->user_data;
+
+    struct xi_mqtt_logic_queue_s* out = 0;
+
+    XI_SAFE_FREE( layer_data->curr_task );
+
+    if( layer_data->tasks_queue )
+    {
+        POP( struct xi_mqtt_logic_queue_s
+           , layer_data->tasks_queue
+           , out );
+
+        layer_data->curr_task = out->task;
+
+        layer_connectivity_t* context   = out->context;
+        layer_state_t state             = out->state;
+
+        XI_SAFE_FREE( out );
+
+        {
+            MAKE_HANDLE_H3( &main_logic, context, 0, state );
+            xi_evtd_continue( xi_evtd_instance, handle, 0 );
         }
     }
 
@@ -333,7 +414,32 @@ layer_state_t xi_mqtt_logic_layer_data_ready(
     XI_UNUSED( data );
     XI_UNUSED( in_state );
 
-    static mqtt_message_t mqtt_message;
+    xi_mqtt_logic_layer_data_t* layer_data
+        = ( xi_mqtt_logic_layer_data_t* ) CON_SELF( context )->user_data;
+
+    xi_mqtt_logic_queue_t* tmp = 0;
+
+    if( layer_data->curr_task != 0 )
+    {
+        tmp = ( xi_mqtt_logic_queue_t* )
+                xi_alloc( sizeof( xi_mqtt_logic_queue_t ) );
+
+        XI_CHECK_MEMORY( tmp );
+
+        tmp->context        = context;
+        tmp->task           = ( xi_mqtt_logic_task_t* ) data;
+        tmp->state          = in_state;
+        tmp->__next         = 0;
+
+        PUSH_BACK(
+              xi_mqtt_logic_queue_t
+            , layer_data->tasks_queue
+            , tmp );
+
+        return LAYER_STATE_OK;
+    }
+
+    layer_data->curr_task = ( xi_mqtt_logic_task_t* ) data;
 
     // sending request
     // type of the request depends on
@@ -341,7 +447,11 @@ layer_state_t xi_mqtt_logic_layer_data_ready(
     // it's easy to determine if we are in the middle of
     // processing a single request or we are starting new one
 
-    return main_logic( context, data, &mqtt_message, in_state );
+    return main_logic( context, data, in_state );
+
+err_handling:
+    XI_SAFE_FREE( tmp );
+    return LAYER_STATE_ERROR;
 }
 
 layer_state_t xi_mqtt_logic_layer_on_data_ready(
@@ -356,21 +466,16 @@ layer_state_t xi_mqtt_logic_layer_on_data_ready(
     mqtt_message_t* recvd_msg
         = ( mqtt_message_t* ) data;
 
-    xi_mqtt_logic_layer_data_t* layer_data
-        = ( xi_mqtt_logic_layer_data_t* ) CON_SELF( context )->user_data;
+    xi_mqtt_logic_layer_data_t* layer_data = CON_SELF( context )->user_data;
 
-    if( recvd_msg->common.common_u.common_bits.type == MQTT_TYPE_PUBLISH )
+    // special case doesn't change the current logic settings
+    // this way the state machine is always at the proper state
+    if( recvd_msg && recvd_msg->common.common_u.common_bits.type == MQTT_TYPE_PUBLISH )
     {
-        layer_data->logic.scenario_t = XI_MQTT_RECV_PUBLISH;
+        return recv_publish( context, data, recvd_msg, &in_state );
     }
 
-    // receiving message
-    // will go through the state machine
-    // so that it will decide what to do next
-    // this is very important part of the
-    //
-
-    return main_logic( context, data, data, in_state );
+    return main_logic( context, data, in_state );
 }
 
 layer_state_t xi_mqtt_logic_layer_init(
@@ -401,18 +506,25 @@ layer_state_t xi_mqtt_logic_layer_connect(
 
     xi_mqtt_logic_layer_data_t* layer_data = CON_SELF( context )->user_data;
 
-    layer_data->logic.scenario_t = XI_MQTT_CONNECT;
-    layer_data->logic.qos_t      = XI_MQTT_QOS_ZERO;
+    xi_mqtt_logic_task_t* task = xi_alloc( sizeof( xi_mqtt_logic_task_t ) );
+    XI_CHECK_MEMORY( task );
+    memset( task, 0, sizeof( xi_mqtt_logic_task_t ) );
+
+    task->data.mqtt_settings.scenario_t = XI_MQTT_CONNECT;
+    task->data.mqtt_settings.qos_t      = XI_MQTT_QOS_ZERO;
 
     MAKE_HANDLE_H3(
           &xi_mqtt_logic_layer_data_ready
         , context
-        , &layer_data->logic
+        , task
         , LAYER_STATE_OK );
 
     xi_evtd_continue( xi_evtd_instance, handle, 0 );
 
     return LAYER_STATE_OK;
+
+err_handling:
+    return LAYER_STATE_ERROR;
 }
 
 layer_state_t xi_mqtt_logic_layer_close(

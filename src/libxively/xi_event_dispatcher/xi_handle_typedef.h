@@ -20,6 +20,7 @@ XI_EVTD_EVENTS_END()
 #define xi_evtd_handle_1_t void*
 #define xi_evtd_handle_2_t void*
 #define xi_evtd_handle_3_t layer_state_t
+#define xi_evtd_handle_4_t void*
 
 XI_EVTD_HANDLE_PTRS()
 

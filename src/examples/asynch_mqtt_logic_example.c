@@ -60,10 +60,27 @@ layer_state_t on_test_message(
     mqtt_message_t* msg = ( mqtt_message_t* ) message;
     xi_debug_logger( "received message: " );
     mqtt_message_dump( msg );
+    xi_debug_logger( "\n" );
     //
 
     return LAYER_STATE_OK;
 }
+
+layer_state_t on_test_message2(
+      void* context
+    , void* message
+    , layer_state_t state )
+{
+    // xi_mqtt_nob_publish( "/topic/B", "got B!" );
+    mqtt_message_t* msg = ( mqtt_message_t* ) message;
+    xi_debug_logger( "received message2: " );
+    mqtt_message_dump( msg );
+    xi_debug_logger( "\n" );
+    //
+
+    return LAYER_STATE_OK;
+}
+
 
 uint8_t on_b( layer_t* layer, mqtt_message_t* message )
 {
@@ -230,17 +247,29 @@ layer_state_t on_connected(
     printf( "connected\n!" );
 
     // sending the connect request
-    //xi_nob_mqtt_publish( context, "test_topic", "test_msg" );
+    xi_nob_mqtt_publish( context, "test_topic", "test_msg" );
+    xi_nob_mqtt_publish( context, "test_topic2", "test_msg2" );
+    xi_nob_mqtt_publish( context, "test_topic3", "test_msg3" );
 
     { // register delayed publish
         MAKE_HANDLE_H1( &delayed_publish, in_context );
-        //xi_evtd_continue( xi_evtd_instance, handle, 5 );
+        xi_evtd_continue( xi_evtd_instance, handle, 5 );
+    }
+
+    { // register delayed publish
+        MAKE_HANDLE_H1( &delayed_publish, in_context );
+        xi_evtd_continue( xi_evtd_instance, handle, 3 );
     }
 
     {
         MAKE_HANDLE_H3( &on_test_message, context, 0, LAYER_STATE_OK );
         xi_nob_mqtt_subscribe( context, "test_topic", handle );
     }
+
+    /*{
+        MAKE_HANDLE_H3( &on_test_message2, context, 0, LAYER_STATE_OK );
+        xi_nob_mqtt_subscribe( context, "test_topic2", handle );
+    }*/
 
     return LAYER_STATE_OK;
 }
