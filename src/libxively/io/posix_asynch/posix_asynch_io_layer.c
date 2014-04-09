@@ -34,8 +34,14 @@ layer_state_t posix_asynch_io_layer_data_ready(
 {
     XI_UNUSED( state );
 
-    posix_asynch_data_t* posix_asynch_data  = ( posix_asynch_data_t* ) CON_SELF( context )->user_data;
-    const const_data_descriptor_t* buffer   = ( const const_data_descriptor_t* ) data;
+    posix_asynch_data_t* posix_asynch_data  = CON_SELF( context )->user_data;
+    const_data_descriptor_t* buffer         = ( const_data_descriptor_t* ) data;
+
+    if( posix_asynch_data == 0 )
+    {
+        xi_debug_logger( "layer_data == 0\n" );
+        return CALL_ON_NEXT_DATA_READY( context, data, LAYER_STATE_ERROR );
+    }
 
     posix_asynch_data_t* layer_data
         = ( posix_asynch_data_t* ) CON_SELF( context )->user_data;
@@ -44,26 +50,49 @@ layer_state_t posix_asynch_io_layer_data_ready(
 
     if( buffer != 0 && buffer->data_size > 0 )
     {
-        int len = write( posix_asynch_data->socket_fd, buffer->data_ptr, buffer->data_size );
+        size_t left = buffer->data_size - buffer->curr_pos;
 
-        if( len < 0 )
+        if( left == 0 )
         {
-            int errval = errno;
-            if( errval == EAGAIN ) // that can happen
+            xi_debug_logger( "nothing left to send!\n" );
+        }
+
+        do {
+            int len = write(
+                  posix_asynch_data->socket_fd
+                , buffer->data_ptr + buffer->curr_pos
+                , buffer->data_size - buffer->curr_pos );
+
+            xi_debug_format( "written: %d\n", len );
+
+            if( len < 0 )
             {
-                YIELD( layer_data->cs, CALL_ON_NEXT_DATA_READY( context, data, LAYER_STATE_WANT_WRITE ) );
+                int errval = errno;
+                if( errval == EAGAIN ) // that can happen
+                {
+                    xi_debug_logger( "eagain....\n" );
+                    MAKE_HANDLE_H3( &posix_asynch_io_layer_data_ready, context, data, LAYER_STATE_OK );
+                    EXIT( layer_data->cs, xi_evtd_continue_when_evt( xi_evtd_instance
+                        , XI_EVENT_WANT_WRITE, handle, posix_asynch_data->socket_fd ) );
+                }
+
+                xi_debug_printf( "error writing: errno = %d \n", errval );
+                EXIT( layer_data->cs
+                    , CALL_ON_NEXT_DATA_READY( context, data, LAYER_STATE_ERROR ) );
             }
 
-            xi_debug_printf( "error writing: errno = %d \n", errval );
-            YIELD( layer_data->cs, CALL_ON_NEXT_DATA_READY( context, data, LAYER_STATE_ERROR ) );
-        }
+            if( len == 0 )
+            {
+                xi_debug_logger( "disconnection....\n" );
+                return EXIT( layer_data->cs, CALL_ON_SELF_CLOSE( context, 0, LAYER_STATE_OK ) );
+            }
 
-        if( len < buffer->data_size )
-        {
-            YIELD( layer_data->cs, CALL_ON_NEXT_DATA_READY( context, data, LAYER_STATE_WANT_WRITE ) );
-        }
+            buffer->curr_pos += len;
+            left = buffer->data_size - buffer->curr_pos;
+        } while( left > 0 );
     }
 
+    xi_debug_logger( "exit....\n" );
     EXIT( layer_data->cs, CALL_ON_NEXT_DATA_READY( context, data, LAYER_STATE_OK ) );
 
     END_CORO();
@@ -80,7 +109,12 @@ layer_state_t posix_asynch_io_layer_on_data_ready(
 
     //xi_debug_logger( "[posix_asynch_io_layer_on_data_ready]" );
 
-    posix_asynch_data_t* posix_asynch_data = ( posix_asynch_data_t* ) CON_SELF( context )->user_data;
+    posix_asynch_data_t* posix_asynch_data = CON_SELF( context )->user_data;
+
+    if( posix_asynch_data == 0 )
+    {
+        return CALL_ON_NEXT_ON_DATA_READY( context, data, LAYER_STATE_ERROR );
+    }
 
     data_descriptor_t* buffer = 0;
 
@@ -99,16 +133,28 @@ layer_state_t posix_asynch_io_layer_on_data_ready(
     memset( buffer->data_ptr, 0, buffer->data_size );
     int len = read( posix_asynch_data->socket_fd, buffer->data_ptr, buffer->data_size - 1 );
 
+    xi_debug_format( "read: %d\n", len );
+
     if( len < 0 )
     {
         int errval = errno;
-        if( errval == EAGAIN ) // that can happen
+        if( errval == EAGAIN ) // register for an event on that socket
         {
-            // return LAYER_STATE_WANT_READ;
+            {
+                MAKE_HANDLE_H3( &posix_asynch_io_layer_on_data_ready
+                    , context, data, in_state );
+                return xi_evtd_continue_when_evt( xi_evtd_instance
+                    , XI_EVENT_WANT_READ, handle, posix_asynch_data->socket_fd );
+            }
         }
 
         xi_debug_printf( "error reading: errno = %d \n", errval );
-        // return LAYER_STATE_ERROR;
+        return CALL_ON_NEXT_ON_DATA_READY( context, ( void*) 0, LAYER_STATE_ERROR );
+    }
+
+    if( len == 0 ) // we've been disconnected, so let's roll down
+    {
+        return CALL_ON_SELF_CLOSE( context, 0, LAYER_STATE_OK );
     }
 
     buffer->real_size = len;
@@ -124,13 +170,7 @@ layer_state_t posix_asynch_io_layer_close(
     , void* data
     , layer_state_t in_state )
 {
-    XI_UNUSED( data );
-    XI_UNUSED( in_state );
-
-    posix_asynch_data_t* posix_asynch_data = ( posix_asynch_data_t* ) CON_SELF( context )->user_data;
-
-    XI_UNUSED( posix_asynch_data );
-    return LAYER_STATE_OK;
+    return CALL_ON_SELF_ON_CLOSE( context, data, LAYER_STATE_OK );
 }
 
 layer_state_t posix_asynch_io_layer_on_close(
@@ -142,7 +182,7 @@ layer_state_t posix_asynch_io_layer_on_close(
     XI_UNUSED( data );
 
     //
-    posix_asynch_data_t* posix_asynch_data = ( posix_asynch_data_t* ) CON_SELF( context )->user_data;
+    posix_asynch_data_t* posix_asynch_data = CON_SELF( context )->user_data;
     layer_state_t ret = LAYER_STATE_OK;
 
     if( shutdown( posix_asynch_data->socket_fd, SHUT_RDWR ) == -1 )
@@ -165,9 +205,9 @@ err_handling:
     // unregister the fd
     xi_evtd_unregister_fd( xi_evtd_instance, posix_asynch_data->socket_fd );
     // cleanup the memory
-    if( posix_asynch_data ) { XI_SAFE_FREE( posix_asynch_data ); }
+    XI_SAFE_FREE( posix_asynch_data );
 
-    return ret;
+    return CALL_ON_NEXT_ON_CLOSE( context, data, ret );
 }
 
 layer_state_t posix_asynch_io_layer_init(
@@ -180,6 +220,7 @@ layer_state_t posix_asynch_io_layer_init(
 
     // PRECONDITIONS
     assert( context != 0 );
+    assert( CON_SELF( context )->user_data == 0 );
 
     xi_debug_logger( "[posix_io_layer_init]" );
 
