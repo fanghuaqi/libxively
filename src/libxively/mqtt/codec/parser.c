@@ -145,6 +145,8 @@ void mqtt_parser_buffer( mqtt_parser_t* parser, uint8_t* buffer, size_t buffer_l
 
 /**
  * @TODO add memory management so that the fields are allocated dynamically only when required
+ * @TODO pass our data descriptor instead of rhe data and len
+ * @TODO remove the nread since we don't use it anymore
  */
 layer_state_t mqtt_parser_execute(
       mqtt_parser_t* parser
