@@ -21,12 +21,12 @@ static layer_state_t run_next_task(
 
 static int8_t cmp_topics( void* a, void* b )
 {
-    struct data_t_subscribe_t* ca = ( struct data_t_subscribe_t* ) a; // this suppose to be the one from the vector
+    union data_t* ca = ( union data_t* ) a; // this suppose to be the one from the vector
     mqtt_buffer_t* cb = ( mqtt_buffer_t* ) b; // this suppose to be the one from the msg
 
     for( uint8_t i = 0; i < cb->length; ++i )
     {
-        if( ca->topic[ i ] != cb->data[ i ] )
+        if( ca->subscribe.topic[ i ] != cb->data[ i ] )
         {
             return 1;
         }
@@ -303,14 +303,14 @@ static inline layer_state_t recv_publish (
     if( index != -1 )
     {
         //
-        struct data_t_subscribe_t* subscribe_data
+        union data_t* subscribe_data
             = layer_data->handlers_for_topics->array[ index ].value;
 
-        subscribe_data->handler.handlers.h3.a2 = msg_memory;
+        subscribe_data->subscribe.handler.handlers.h3.a2 = msg_memory;
 
         xi_evtd_continue(
                xi_evtd_instance
-             , subscribe_data->handler
+             , subscribe_data->subscribe.handler
              , 0 );
     }
     else
@@ -328,6 +328,11 @@ static layer_state_t main_logic(
       , void* data
       , layer_state_t in_state )
 {
+    if( in_state == LAYER_STATE_ERROR )
+    {
+        xi_debug_logger( "There has been error\n" );
+    }
+
     layer_connectivity_t* context = ( layer_connectivity_t* ) in;
 
     xi_mqtt_logic_layer_data_t* layer_data
@@ -378,16 +383,24 @@ static layer_state_t main_logic(
 static layer_state_t run_next_task(
     layer_connectivity_t* context )
 {
+    xi_debug_logger( "run_next_task\n" );
+
     xi_mqtt_logic_layer_data_t* layer_data
         = ( xi_mqtt_logic_layer_data_t* ) CON_SELF( context )->user_data;
 
-    struct xi_mqtt_logic_queue_s* out = 0;
+    if( layer_data == 0 )
+    {
+        xi_debug_logger( "no layer_data" );
+        return LAYER_STATE_ERROR;
+    }
+
+    xi_mqtt_logic_queue_t* out = 0;
 
     XI_SAFE_FREE( layer_data->curr_task );
 
     if( layer_data->tasks_queue )
     {
-        POP( struct xi_mqtt_logic_queue_s
+        POP( xi_mqtt_logic_queue_t
            , layer_data->tasks_queue
            , out );
 
@@ -398,10 +411,30 @@ static layer_state_t run_next_task(
 
         XI_SAFE_FREE( out );
 
+        switch( layer_data->curr_task->data.mqtt_settings.scenario_t )
+        {
+            case XI_MQTT_NONE:
+                xi_debug_printf( "new task: XI_MQTT_NONE\n" );
+                break;
+            case XI_MQTT_CONNECT:
+                xi_debug_printf( "new task: XI_MQTT_CONNECT\n" );
+                break;
+            case XI_MQTT_PUBLISH:
+                xi_debug_printf( "new task: XI_MQTT_PUBLISH\n" );
+                break;
+            case XI_MQTT_SUBSCRIBE:
+                xi_debug_printf( "new task: XI_MQTT_SUBSCRIBE\n" );
+                break;
+        }
+
         {
             MAKE_HANDLE_H3( &main_logic, context, 0, state );
             xi_evtd_continue( xi_evtd_instance, handle, 0 );
         }
+    }
+    else
+    {
+        xi_debug_logger( "task queue empty!" );
     }
 
     return LAYER_STATE_OK;
@@ -418,6 +451,12 @@ layer_state_t xi_mqtt_logic_layer_data_ready(
 
     xi_mqtt_logic_layer_data_t* layer_data
         = ( xi_mqtt_logic_layer_data_t* ) CON_SELF( context )->user_data;
+
+    if( layer_data == 0 )
+    {
+        xi_debug_logger( "no layer_data" );
+        return LAYER_STATE_ERROR;
+    }
 
     xi_mqtt_logic_queue_t* tmp = 0;
 
@@ -438,6 +477,8 @@ layer_state_t xi_mqtt_logic_layer_data_ready(
             , layer_data->tasks_queue
             , tmp );
 
+        xi_debug_logger( "adding task to the queue...\n" );
+
         return LAYER_STATE_OK;
     }
 
@@ -448,6 +489,8 @@ layer_state_t xi_mqtt_logic_layer_data_ready(
     // the state that we are in
     // it's easy to determine if we are in the middle of
     // processing a single request or we are starting new one
+
+    xi_debug_logger( "calling task directly...\n" );
 
     return main_logic( context, data, in_state );
 
@@ -485,15 +528,25 @@ layer_state_t xi_mqtt_logic_layer_init(
     , void* data
     , layer_state_t in_state )
 {
+    assert( CON_SELF( context )->user_data == 0 );
+
+    CON_SELF( context )->user_data = xi_alloc( sizeof( xi_mqtt_logic_layer_data_t ) );
+    XI_CHECK_MEMORY( CON_SELF( context )->user_data );
+    memset( CON_SELF( context )->user_data, 0, sizeof( xi_mqtt_logic_layer_data_t ) );
+
     xi_mqtt_logic_layer_data_t* layer_data = CON_SELF( context )->user_data;
+
+    xi_connection_data_t* conn_data = data;
+    layer_data->on_connected = conn_data->on_connected;
 
     layer_data->handlers_for_topics = xi_static_vector_create( 4 );
 
-    XI_CHECK_MEMORY( layer_data );
+    XI_CHECK_MEMORY( layer_data->handlers_for_topics );
 
     return CALL_ON_PREV_INIT( context, data, in_state );
 
 err_handling:
+    XI_SAFE_FREE( CON_SELF( context )->user_data );
     return CALL_ON_PREV_INIT( context, data, LAYER_STATE_ERROR );
 }
 
@@ -551,7 +604,37 @@ layer_state_t xi_mqtt_logic_layer_on_close(
     XI_UNUSED( in_state );
 
     xi_mqtt_logic_layer_data_t* layer_data = CON_SELF( context )->user_data;
+
+    while( layer_data->handlers_for_topics->elem_no )
+    {
+        union data_t* sub
+            = layer_data->handlers_for_topics->array[ 0 ].value;
+
+        XI_SAFE_FREE( sub->subscribe.topic );
+        XI_SAFE_FREE( sub );
+
+        xi_static_vector_del( layer_data->handlers_for_topics, 0 );
+    }
+
     xi_static_vector_destroy( layer_data->handlers_for_topics );
+
+    while( layer_data->tasks_queue )
+    {
+        xi_mqtt_logic_queue_t* out = 0;
+
+        POP( xi_mqtt_logic_queue_t
+           , layer_data->tasks_queue
+           , out );
+
+        if( layer_data->curr_task != out->task )
+        {
+            XI_SAFE_FREE( out );
+        }
+    }
+
+    XI_SAFE_FREE( CON_SELF( context )->user_data );
+
+    run_next_task( context );
 
     return LAYER_STATE_OK;
 }
