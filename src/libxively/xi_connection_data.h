@@ -4,10 +4,13 @@
 #ifndef __XI_CONNECTION_DATA_H__
 #define __XI_CONNECTION_DATA_H__
 
+#include "xi_event_dispatcher_api.h"
+
 typedef struct
 {
-    const char* address;
-    int         port;
+    const char*         address;
+    int                 port;
+    xi_evtd_handle_t    on_connected;
 } xi_connection_data_t;
 
 #endif // __XI_CONNECTION_DATA_H__

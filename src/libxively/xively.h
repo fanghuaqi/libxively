@@ -516,8 +516,7 @@ extern const xi_response_t* xi_mqtt_publish(
  */
 extern layer_state_t xi_nob_mqtt_connect(
       xi_context_t* xi
-    , xi_connection_data_t* connection_data
-    , xi_evtd_handle_t callback );
+    , xi_connection_data_t* connection_data );
 
 /**
  * \brief   Connects to the given server and publishes the msg under choosed topic

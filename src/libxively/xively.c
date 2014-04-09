@@ -426,15 +426,7 @@ xi_context_t* xi_create_context(
         #else  // XI_MQTT_ENABLED
         case XI_MQTT:
             {
-                // allocate staticly
-                static xi_mqtt_layer_data_t         mqtt_layer_data;
-                static xi_mqtt_logic_layer_data_t   mqtt_logic_layer_data;
-
-                // clean the structures
-                memset( &mqtt_layer_data, 0, sizeof( xi_mqtt_layer_data_t ) );
-                memset( &mqtt_logic_layer_data, 0, sizeof( xi_mqtt_logic_layer_data_t ) );
-
-                void* user_datas[] = { 0, ( void* ) &mqtt_layer_data, ( void* ) &mqtt_logic_layer_data };
+                void* user_datas[] = { 0, 0, 0 };
                 ret->layer_chain = create_and_connect_layers( CONNECTION_SCHEME_2, user_datas, CONNECTION_SCHEME_LENGTH( CONNECTION_SCHEME_2 ) );
             }
             break;
@@ -1318,15 +1310,9 @@ extern const xi_response_t* xi_mqtt_publish(
 
 extern layer_state_t xi_nob_mqtt_connect(
       xi_context_t* xi
-    , xi_connection_data_t* connection_data
-    , xi_evtd_handle_t callback )
+    , xi_connection_data_t* connection_data )
 {
     layer_t* input_layer = xi->layer_chain.top;
-
-    xi_mqtt_logic_layer_data_t* layer_data
-        = ( xi_mqtt_logic_layer_data_t* ) input_layer->user_data;
-
-    layer_data->on_connected = callback;
 
     return CALL_ON_SELF_INIT( &input_layer->layer_connection
         , connection_data
@@ -1403,7 +1389,7 @@ layer_state_t xi_nob_mqtt_subscribe(
 
     xi_static_vector_push(
             layer_data->handlers_for_topics
-          , &task->data.data_u->subscribe );
+          , task->data.data_u );
 
     return CALL_ON_SELF_DATA_READY(
               &input_layer->layer_connection
@@ -1417,9 +1403,9 @@ err_handling:
         if( task->data.data_u )
         {
             XI_SAFE_FREE( task->data.data_u->subscribe.topic );
-            XI_SAFE_FREE( task );
+            XI_SAFE_FREE( task->data.data_u );
         }
-        XI_SAFE_FREE( task->data.data_u );
+        XI_SAFE_FREE( task );
     }
     return LAYER_STATE_ERROR;
 }
