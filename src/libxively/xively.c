@@ -1335,8 +1335,9 @@ extern layer_state_t xi_nob_mqtt_publish(
 
     xi_mqtt_logic_task_t* task
         = ( xi_mqtt_logic_task_t* ) xi_alloc( sizeof( xi_mqtt_logic_task_t ) );
-
     XI_CHECK_MEMORY( task );
+    memset( task, 0, sizeof( xi_mqtt_logic_task_t ) );
+
     task->data.mqtt_settings.scenario_t = XI_MQTT_PUBLISH;
     task->data.mqtt_settings.qos_t      = XI_MQTT_QOS_ZERO;
     task->data.data_u = ( union data_t* ) xi_alloc( sizeof( union data_t ) );
@@ -1377,8 +1378,9 @@ layer_state_t xi_nob_mqtt_subscribe(
 
     xi_mqtt_logic_task_t* task
         = ( xi_mqtt_logic_task_t* ) xi_alloc( sizeof( xi_mqtt_logic_task_t ) );
-
     XI_CHECK_MEMORY( task );
+    memset( task, 0, sizeof( xi_mqtt_logic_task_t ) );
+
     task->data.mqtt_settings.scenario_t = XI_MQTT_SUBSCRIBE;
     task->data.mqtt_settings.qos_t      = XI_MQTT_QOS_ONE;
     task->data.data_u = ( union data_t* ) xi_alloc( sizeof( union data_t ) );
