@@ -206,6 +206,8 @@ static layer_state_t publish_server_logic(
     //
     BEGIN_CORO( layer_data->data_ready_cs );
 
+    xi_debug_logger( "publish preparing message..." );
+
     msg_memory = xi_alloc( sizeof( mqtt_message_t ) );
     XI_CHECK_MEMORY( msg_memory );
     memset( msg_memory, 0, sizeof( mqtt_message_t ) );
@@ -219,11 +221,15 @@ static layer_state_t publish_server_logic(
     XI_SAFE_FREE( task->data.data_u->publish.msg );
     XI_SAFE_FREE( task->data.data_u );
 
+    xi_debug_logger( "publish sending message..." );
+
     YIELD( layer_data->data_ready_cs
         , CALL_ON_PREV_DATA_READY(
               context
             , msg_memory
             , LAYER_STATE_OK ) );
+
+    xi_debug_logger( "publish message sent..." );
 
     run_next_task( context );
 
@@ -260,14 +266,20 @@ static layer_state_t send_subscribe_logic(
           msg_memory
         , task->data.data_u->subscribe.topic );
 
+    xi_debug_logger( "message memory filled with subscribe data" );
+
     YIELD( layer_data->data_ready_cs
         , CALL_ON_PREV_DATA_READY(
               context
             , msg_memory
             , LAYER_STATE_OK ) );
 
+    xi_debug_logger( "subscribe message sent... waiting for response" );
+
     YIELD( layer_data->data_ready_cs
         , LAYER_STATE_OK );
+
+    xi_debug_logger( "suback received..." );
 
     run_next_task( context );
 
@@ -296,6 +308,8 @@ static inline layer_state_t recv_publish (
 
     xi_static_vector_index_type_t index = 0;
 
+    xi_debug_logger( "received publish message" );
+
     index = xi_static_vector_find( layer_data->handlers_for_topics,
           &msg_memory->publish.topic_name
         , cmp_topics );
@@ -315,7 +329,9 @@ static inline layer_state_t recv_publish (
     }
     else
     {
-        xi_debug_logger( "received topic not found!" );
+        xi_debug_logger( "received publish message for unregistered topic..." );
+        mqtt_message_dump( msg_memory );
+        XI_SAFE_FREE( msg_memory );
     }
 
     END_CORO()
@@ -330,7 +346,7 @@ static layer_state_t main_logic(
 {
     if( in_state == LAYER_STATE_ERROR )
     {
-        xi_debug_logger( "There has been error\n" );
+        xi_debug_logger( "There has been error" );
     }
 
     layer_connectivity_t* context = ( layer_connectivity_t* ) in;
@@ -341,40 +357,47 @@ static layer_state_t main_logic(
     xi_mqtt_logic_task_t* task
         = layer_data->curr_task;
 
-    switch( task->data.mqtt_settings.scenario_t )
+    if( task )
     {
-        case XI_MQTT_CONNECT:
+        switch( task->data.mqtt_settings.scenario_t )
         {
-            return connect_server_logic(
-                  context
-                , task
-                , data
-                , &in_state );
+            case XI_MQTT_CONNECT:
+            {
+                return connect_server_logic(
+                      context
+                    , task
+                    , data
+                    , &in_state );
+            }
+            case XI_MQTT_PUBLISH:
+            {
+                return publish_server_logic(
+                      context
+                    , task
+                    , data
+                    , &in_state );
+            }
+            case XI_MQTT_SUBSCRIBE:
+            {
+                return send_subscribe_logic(
+                      context
+                    , task
+                    , data
+                    , &in_state );
+            }
+            case XI_MQTT_NONE:
+            {
+                xi_debug_logger( "XI_MQTT_NONE reached!" );
+            }
+            default:
+            {
+                xi_debug_logger( "!default! reached!" );
+            }
         }
-        case XI_MQTT_PUBLISH:
-        {
-            return publish_server_logic(
-                  context
-                , task
-                , data
-                , &in_state );
-        }
-        case XI_MQTT_SUBSCRIBE:
-        {
-            return send_subscribe_logic(
-                  context
-                , task
-                , data
-                , &in_state );
-        }
-        case XI_MQTT_NONE:
-        {
-            xi_debug_logger( "XI_MQTT_NONE reached!" );
-        }
-        default:
-        {
-            xi_debug_logger( "!default! reached!" );
-        }
+    }
+    else
+    {
+        xi_debug_logger( "no task when received message... " );
     }
 
     return LAYER_STATE_ERROR;
@@ -383,7 +406,7 @@ static layer_state_t main_logic(
 static layer_state_t run_next_task(
     layer_connectivity_t* context )
 {
-    xi_debug_logger( "run_next_task\n" );
+    xi_debug_logger( "run_next_task" );
 
     xi_mqtt_logic_layer_data_t* layer_data
         = ( xi_mqtt_logic_layer_data_t* ) CON_SELF( context )->user_data;
@@ -414,16 +437,16 @@ static layer_state_t run_next_task(
         switch( layer_data->curr_task->data.mqtt_settings.scenario_t )
         {
             case XI_MQTT_NONE:
-                xi_debug_printf( "new task: XI_MQTT_NONE\n" );
+                xi_debug_logger( "new task: XI_MQTT_NONE" );
                 break;
             case XI_MQTT_CONNECT:
-                xi_debug_printf( "new task: XI_MQTT_CONNECT\n" );
+                xi_debug_logger( "new task: XI_MQTT_CONNECT" );
                 break;
             case XI_MQTT_PUBLISH:
-                xi_debug_printf( "new task: XI_MQTT_PUBLISH\n" );
+                xi_debug_logger( "new task: XI_MQTT_PUBLISH" );
                 break;
             case XI_MQTT_SUBSCRIBE:
-                xi_debug_printf( "new task: XI_MQTT_SUBSCRIBE\n" );
+                xi_debug_logger( "new task: XI_MQTT_SUBSCRIBE" );
                 break;
         }
 
@@ -477,7 +500,7 @@ layer_state_t xi_mqtt_logic_layer_data_ready(
             , layer_data->tasks_queue
             , tmp );
 
-        xi_debug_logger( "adding task to the queue...\n" );
+        xi_debug_logger( "adding task to the queue..." );
 
         return LAYER_STATE_OK;
     }
@@ -490,7 +513,7 @@ layer_state_t xi_mqtt_logic_layer_data_ready(
     // it's easy to determine if we are in the middle of
     // processing a single request or we are starting new one
 
-    xi_debug_logger( "calling task directly...\n" );
+    xi_debug_logger( "calling task directly..." );
 
     return main_logic( context, data, in_state );
 
@@ -511,13 +534,29 @@ layer_state_t xi_mqtt_logic_layer_on_data_ready(
     mqtt_message_t* recvd_msg
         = ( mqtt_message_t* ) data;
 
-    xi_mqtt_logic_layer_data_t* layer_data = CON_SELF( context )->user_data;
+    xi_mqtt_logic_layer_data_t* layer_data  = CON_SELF( context )->user_data;
+    xi_mqtt_logic_task_t* task              = layer_data->curr_task;
 
     // special case doesn't change the current logic settings
     // this way the state machine is always at the proper state
-    if( recvd_msg && recvd_msg->common.common_u.common_bits.type == MQTT_TYPE_PUBLISH )
+    if( recvd_msg != 0 )
     {
-        return recv_publish( context, data, recvd_msg, &in_state );
+        switch( recvd_msg->common.common_u.common_bits.type )
+        {
+            case MQTT_TYPE_PUBLISH:
+                return recv_publish( context, data, recvd_msg, &in_state );
+            case MQTT_TYPE_CONNACK:
+                return connect_server_logic( context, data, recvd_msg, &in_state );
+            case MQTT_TYPE_SUBACK:
+                return send_subscribe_logic(
+                              context
+                            , task
+                            , data
+                            , &in_state );
+            default:
+                xi_debug_logger( "unhandled message received: " );
+                mqtt_message_dump( recvd_msg );
+        };
     }
 
     return main_logic( context, data, in_state );
