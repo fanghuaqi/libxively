@@ -30,13 +30,18 @@ static layer_state_t read_string(
 
     YIELD_ON( cs, ( (src->curr_pos - src->real_size) == 0 ), LAYER_STATE_WANT_READ );
     parser->str_length = (src->data_ptr[ src->curr_pos ] << 8);
-    src->curr_pos += 1;
+    src->curr_pos += 1; parser->data_length += 1;
 
     YIELD_ON( cs, ( (src->curr_pos - src->real_size) == 0 ), LAYER_STATE_WANT_READ );
     parser->str_length += src->data_ptr[ src->curr_pos ];
-    src->curr_pos += 1;
+    src->curr_pos += 1; parser->data_length += 1;
 
     YIELD_ON( cs, ( (src->curr_pos - src->real_size) == 0 ), LAYER_STATE_WANT_READ );
+
+    if( parser->str_length > 15 )
+    {
+        int i = 0;
+    }
 
     dst->length     = parser->str_length;
 
@@ -49,11 +54,15 @@ static layer_state_t read_string(
         pat.real_size   = strlen( strpat );
         pat.curr_pos    = 0;
 
+        unsigned short prev     = src->curr_pos;
         sscanf_state = xi_stated_sscanf(
                       &(parser->sscanf_state)
                     , ( const_data_descriptor_t* ) &pat
                     , ( const_data_descriptor_t* ) src
                     , &dst_o );
+
+        unsigned short progress  = src->curr_pos - prev;
+        parser->data_length     += progress;
 
         YIELD_UNTIL( cs, ( sscanf_state == 0 ), LAYER_STATE_WANT_READ );
     }
@@ -92,11 +101,15 @@ static layer_state_t read_data(
         pat.real_size   = strlen( strpat );
         pat.curr_pos    = 0;
 
+        unsigned short prev     = src->curr_pos;
         sscanf_state = xi_stated_sscanf(
                       &(parser->sscanf_state)
                     , ( const_data_descriptor_t* ) &pat
                     , ( const_data_descriptor_t* ) src
                     , &dst_o );
+
+        unsigned short progress  = src->curr_pos - prev;
+        parser->data_length     += progress;
 
         YIELD_UNTIL( cs, ( sscanf_state == 0 ), LAYER_STATE_WANT_READ );
     }
@@ -154,10 +167,8 @@ layer_state_t mqtt_parser_execute(
     , data_descriptor_t* data_buffer_desc)
 {
     static uint16_t cs                      = 0; // local coroutine state to prereserve that better we should keep it outside that function
-    unsigned short old_curr_pos             = data_buffer_desc->curr_pos;
     data_descriptor_t* src                  = data_buffer_desc;
     static layer_state_t read_string_state  = LAYER_STATE_OK;
-    parser->data_length                    += data_buffer_desc->data_size - data_buffer_desc->curr_pos;
 
     BEGIN_CORO(cs)
 
@@ -166,7 +177,7 @@ layer_state_t mqtt_parser_execute(
     YIELD_ON( cs, ( ( src->curr_pos - src->real_size ) == 0 ), LAYER_STATE_WANT_READ );
 
     message->common.common_u.common_value = src->data_ptr[ src->curr_pos ];
-    src->curr_pos += 1;
+    src->curr_pos += 1; parser->data_length += 1;
 
     // remaining length
     parser->digit_bytes      = 0;
@@ -176,11 +187,11 @@ layer_state_t mqtt_parser_execute(
     do {
       parser->digit_bytes += 1;
 
-      YIELD_UNTIL( cs, ( (src->curr_pos - src->real_size) == 0 ), LAYER_STATE_WANT_READ )
+      YIELD_ON( cs, ( (src->curr_pos - src->real_size) == 0 ), LAYER_STATE_WANT_READ )
 
       parser->remaining_length += (src->data_ptr[ src->curr_pos ] & 0x7f) * parser->multiplier;
       parser->multiplier *= 128;
-      src->curr_pos += 1;
+      src->curr_pos += 1; parser->data_length += 1;
     } while ( ( uint8_t ) src->data_ptr[ src->curr_pos ] >= 0x80 && parser->digit_bytes < 4 );
 
     if ( ( uint8_t ) src->data_ptr[ src->curr_pos ] >= 0x80)
@@ -200,23 +211,23 @@ layer_state_t mqtt_parser_execute(
 
         message->connect.protocol_version = src->data_ptr[ src->curr_pos ];
 
-        src->curr_pos += 1;
+        src->curr_pos += 1; parser->data_length += 1;
 
         YIELD_ON( cs, ( (src->curr_pos - src->real_size) == 0 ), LAYER_STATE_WANT_READ );
 
         message->connect.flags_u.flags_value = src->data_ptr[ src->curr_pos ];
 
-        src->curr_pos += 1;
+        src->curr_pos += 1; parser->data_length += 1;
 
         YIELD_ON( cs, ( (src->curr_pos - src->real_size) == 0 ), LAYER_STATE_WANT_READ );
 
         message->connect.keep_alive = (src->data_ptr[ src->curr_pos ] << 8);
-        src->curr_pos += 1;
+        src->curr_pos += 1; parser->data_length += 1;
 
         YIELD_ON( cs, ( (src->curr_pos - src->real_size) == 0 ), LAYER_STATE_WANT_READ );
 
         message->connect.keep_alive += src->data_ptr[ src->curr_pos ];
-        src->curr_pos += 1;
+        src->curr_pos += 1; parser->data_length += 1;
 
         READ_STRING( message->connect.client_id );
 
@@ -247,17 +258,22 @@ layer_state_t mqtt_parser_execute(
         YIELD_ON( cs, ( (src->curr_pos - src->real_size) == 0 ), LAYER_STATE_WANT_READ );
 
         message->connack._unused     = src->data_ptr[ src->curr_pos ];
-        src->curr_pos += 1;
+        src->curr_pos += 1; parser->data_length += 1;
 
         YIELD_ON( cs, ( (src->curr_pos - src->real_size) == 0 ), LAYER_STATE_WANT_READ );
 
         message->connack.return_code = src->data_ptr[ src->curr_pos ];
-        src->curr_pos += 1;
+        src->curr_pos += 1; parser->data_length += 1;
 
         EXIT( cs, LAYER_STATE_OK );
     }
     else if ( message->common.common_u.common_bits.type == MQTT_TYPE_PUBLISH )
     {
+        if( data_buffer_desc->curr_pos == 0 )
+        {
+            int i = 0;
+        }
+
         READ_STRING( message->publish.topic_name );
 
         YIELD_ON( cs, ( (src->curr_pos - src->real_size) == 0 ), LAYER_STATE_WANT_READ );
@@ -265,17 +281,15 @@ layer_state_t mqtt_parser_execute(
         if( message->common.common_u.common_bits.qos > 0 )
         {
             message->publish.message_id = ( src->data_ptr[ src->curr_pos ] << 8 );
-            src->curr_pos += 1;
+            src->curr_pos += 1; parser->data_length += 1;
 
             YIELD_ON( cs, ( (src->curr_pos - src->real_size) == 0 ), LAYER_STATE_WANT_READ );
 
             message->publish.message_id += src->data_ptr[ src->curr_pos ];
-            src->curr_pos += 1;
+            src->curr_pos += 1; parser->data_length += 1;
         }
 
-        size_t readed = src->curr_pos - old_curr_pos;
-        size_t tmp = parser->data_length - ( data_buffer_desc->data_size - readed );
-        parser->str_length = ( parser->remaining_length + 2 ) - tmp;
+        parser->str_length = ( parser->remaining_length + 2 ) - parser->data_length;
 
         READ_DATA( message->publish.content );
 
@@ -286,12 +300,12 @@ layer_state_t mqtt_parser_execute(
         YIELD_ON( cs, ( (src->curr_pos - src->real_size) == 0 ), LAYER_STATE_WANT_READ )
 
         message->pubrec.message_id = ( src->data_ptr[ src->curr_pos ] << 8 );
-        src->curr_pos += 1;
+        src->curr_pos += 1; parser->data_length += 1;
 
         YIELD_ON( cs, ( (src->curr_pos - src->real_size) == 0 ), LAYER_STATE_WANT_READ )
 
         message->pubrec.message_id += src->data_ptr[ src->curr_pos ];
-        src->curr_pos += 1;
+        src->curr_pos += 1; parser->data_length += 1;
 
         EXIT( cs, LAYER_STATE_OK );
     }
@@ -300,12 +314,12 @@ layer_state_t mqtt_parser_execute(
         YIELD_ON( cs, ( (src->curr_pos - src->real_size) == 0 ), LAYER_STATE_WANT_READ );
 
         message->pubrel.message_id = ( src->data_ptr[ src->curr_pos ] << 8 );
-        src->curr_pos += 1;
+        src->curr_pos += 1; parser->data_length += 1;
 
         YIELD_ON( cs, ( (src->curr_pos - src->real_size) == 0 ), LAYER_STATE_WANT_READ );
 
         message->pubrel.message_id += src->data_ptr[ src->curr_pos ];
-        src->curr_pos += 1;
+        src->curr_pos += 1; parser->data_length += 1;
 
         EXIT( cs, LAYER_STATE_OK );
     }
@@ -314,29 +328,29 @@ layer_state_t mqtt_parser_execute(
         YIELD_ON( cs, ( (src->curr_pos - src->real_size) == 0 ), LAYER_STATE_WANT_READ );
 
         message->pubcomp.message_id = (src->data_ptr[ src->curr_pos ] << 8);
-        src->curr_pos += 1;
+        src->curr_pos += 1; parser->data_length += 1;
 
         YIELD_ON( cs, ( (src->curr_pos - src->real_size) == 0 ), LAYER_STATE_WANT_READ );
 
         message->pubcomp.message_id += src->data_ptr[ src->curr_pos ];
-        src->curr_pos += 1;
+        src->curr_pos += 1; parser->data_length += 1;
 
         EXIT( cs, LAYER_STATE_OK );
     }
     else if ( message->common.common_u.common_bits.type == MQTT_TYPE_SUBACK )
     {
         message->suback.message_id = ( src->data_ptr[ src->curr_pos ] << 8 );
-        src->curr_pos += 1;
+        src->curr_pos += 1; parser->data_length += 1;
 
         YIELD_ON( cs, ( (src->curr_pos - src->real_size) == 0 ), LAYER_STATE_WANT_READ );
 
         message->suback.message_id += src->data_ptr[ src->curr_pos ];
-        src->curr_pos += 1;
+        src->curr_pos += 1; parser->data_length += 1;
 
         YIELD_ON( cs, ( (src->curr_pos - src->real_size) == 0 ), LAYER_STATE_WANT_READ );
 
         message->suback.topics.qos = src->data_ptr[ src->curr_pos ];
-        src->curr_pos += 1;
+        src->curr_pos += 1; parser->data_length += 1;
 
         EXIT( cs, LAYER_STATE_OK );
     }
