@@ -55,17 +55,17 @@ layer_state_t xi_mqtt_layer_data_ready(
             , CALL_ON_NEXT_DATA_READY( context, 0, LAYER_STATE_ERROR ) );
     }
 
-    xi_debug_logger( "first... \n" );
+    xi_debug_logger( "sending message... " );
 
     YIELD( layer_data->cs
         , CALL_ON_PREV_DATA_READY( context, ( void* ) &data_descriptor, state ) );
 
-    xi_debug_logger( "second... \n" );
+    xi_debug_logger( "message sent... " );
 
     EXIT( layer_data->cs
         , CALL_ON_NEXT_ON_DATA_READY( context, 0, state ) );
 
-    xi_debug_logger( "third... \n" );
+    xi_debug_logger( "I'm not suppose to be here!" );
 
     END_CORO();
 
@@ -93,7 +93,7 @@ layer_state_t xi_mqtt_layer_on_data_ready(
     static layer_state_t local_state    = LAYER_STATE_OK; //
 
     // tmp variables for
-    const const_data_descriptor_t* data_descriptor = ( const const_data_descriptor_t* ) data;
+    data_descriptor_t* data_descriptor = ( data_descriptor_t* ) data;
 
     BEGIN_CORO( cs )
 
@@ -108,18 +108,33 @@ layer_state_t xi_mqtt_layer_on_data_ready(
         local_state = mqtt_parser_execute(
               &layer_data->parser
             , layer_data->msg
-            , ( const uint8_t* ) data_descriptor->data_ptr
-            , data_descriptor->real_size, 0 );
+            , data_descriptor );
 
-        YIELD_UNTIL( cs, ( local_state == LAYER_STATE_WANT_READ ), LAYER_STATE_WANT_READ );
+        YIELD_UNTIL( cs
+            , ( local_state == LAYER_STATE_WANT_READ )
+            , CALL_ON_PREV_ON_DATA_READY( context, data_descriptor, local_state ) );
     } while( local_state == LAYER_STATE_WANT_READ );
+
+    // delete the buffer if limit reached or previous call might have failed reading the message
+    if( data_descriptor->curr_pos == data_descriptor->real_size || local_state != LAYER_STATE_OK )
+    {
+        // delete buffer no longer needed
+        if( data_descriptor ) { XI_SAFE_FREE( data_descriptor->data_ptr ); }
+        XI_SAFE_FREE( data_descriptor );
+    }
+    else
+    {
+        // register another call to this function cause there might be next
+        // message
+        CALL_ON_SELF_ON_DATA_READY( context, data_descriptor, local_state );
+    }
 
     EXIT( cs, CALL_ON_NEXT_ON_DATA_READY( context, layer_data->msg, local_state ) );
 
     END_CORO();
 
 err_handling:
-    return LAYER_STATE_ERROR;
+    return CALL_ON_NEXT_ON_DATA_READY( context, layer_data->msg, LAYER_STATE_ERROR );
 }
 
 layer_state_t xi_mqtt_layer_init(
