@@ -67,6 +67,10 @@
 #define XI_CSV_BUFFER_SIZE                 128
 #endif
 
+#ifndef XI_IO_BUFFER_SIZE
+#define XI_IO_BUFFER_SIZE                   32
+#endif
+
 #ifndef XI_HOST
 #define XI_HOST                            "api.xively.com"
 #endif
