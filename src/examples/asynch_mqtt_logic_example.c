@@ -81,47 +81,6 @@ layer_state_t on_test_message2(
     return LAYER_STATE_OK;
 }
 
-
-uint8_t on_b( layer_t* layer, mqtt_message_t* message )
-{
-    // CONTINUE_ON( xi_mqtt_nob_publish( "/topic/A", "got A!" ) );
-    return 0;
-}
-
-uint8_t publish_tempreture( layer_t* layer )
-{
-    // CONTINUE_ON( xi_mqtt_nob_publish( "/topic/tempreture", "current tempreture is %s", tempreture_value ) );
-    return 0;
-}
-
-uint8_t publish_cpu( layer_t* layer )
-{
-    // CONTINUE_ON( xi_mqtt_nob_publish( "/topic/cpu", "current cpu is %s%%", cpu_value ) );
-    return 0;
-}
-
-uint8_t users_idle_loop( layer_t* layer )
-{
-    static uint16_t coro_state = 0;
-
-    BEGIN_CORO( coro_state );
-
-    // YIELD_AND_CONTINUE_ON( coro_state, xi_mqtt_nob_subscribe( "/topic/A", on_a ) );
-    // YIELD_AND_CONTINUE_ON( coro_state, xi_mqtt_nob_subscribe( "/topic/B", on_b ) );
-    // YIELD_AND_CONTINUE_ON( coro_state, xi_mqtt_nob_publish( "/topic/A", "Hi friends from A!" ) );
-    // YIELD_AND_CONTINUE_ON( coro_state, xi_mqtt_nob_publish( "/topic/B", "Hi friends from B!" ) );
-
-    while( 1 )
-    {
-        // YIELD_AND_CONTINUE_ON_IN( coro_state, 10, publish_tempreture );
-        // YIELD_AND_CONTINUE_ON_IN( coro_state, 20, publish_cpu );
-    }
-
-    END_CORO();
-
-    return 0;
-}
-
 uint8_t xi_mqtt_logic_loop( layer_t* layer )
 {
     static uint16_t state = 0;
@@ -248,17 +207,17 @@ layer_state_t on_connected(
 
     // sending the connect request
     xi_nob_mqtt_publish( context, "test_topic", "test_msg" );
-    xi_nob_mqtt_publish( context, "test_topic2", "test_msg2" );
-    xi_nob_mqtt_publish( context, "test_topic3", "test_msg3" );
+    //xi_nob_mqtt_publish( context, "test_topic2", "test_msg2" );
+    //xi_nob_mqtt_publish( context, "test_topic3", "test_msg3" );
 
     { // register delayed publish
-        MAKE_HANDLE_H1( &delayed_publish, in_context );
-        xi_evtd_continue( xi_evtd_instance, handle, 5 );
+        //MAKE_HANDLE_H1( &delayed_publish, in_context );
+        //xi_evtd_continue( xi_evtd_instance, handle, 2 );
     }
 
     { // register delayed publish
-        MAKE_HANDLE_H1( &delayed_publish, in_context );
-        xi_evtd_continue( xi_evtd_instance, handle, 3 );
+        //MAKE_HANDLE_H1( &delayed_publish, in_context );
+        //xi_evtd_continue( xi_evtd_instance, handle, 3 );
     }
 
     {
@@ -294,7 +253,10 @@ int main( int argc, char* argv[] )
     // check if everything works
     if( xi_context == 0 ) { return -1; }
 
-    xi_connection_data_t connection_data = { XI_HOST, XI_PORT };
+    xi_connection_data_t connection_data
+            = { XI_HOST, XI_PORT
+            //= { "localhost", 1883
+            , { XI_EVTD_HANDLE_0_ID, .handlers.h0 = { ( void* ) 0 } } };
 
     // @TODO replace with simple macro
     {
@@ -303,10 +265,11 @@ int main( int argc, char* argv[] )
             , ( void* ) xi_context
             , 0 );
 
+        connection_data.on_connected = handle;
+
         xi_nob_mqtt_connect(
                 xi_context
-              , &connection_data
-              , handle );
+              , &connection_data );
     }
 
     //xi_nob_mqtt_subscribe( xi, "/a/b/c/0", on_0 );
