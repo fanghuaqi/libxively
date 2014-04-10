@@ -177,7 +177,7 @@ void xi_evtd_step(
     evtd_instance->current_step  = new_step;
     const xi_heap_element_t* tmp = 0;
 
-    xi_debug_printf( "evtd_size: %d\n", evtd_instance->call_heap->first_free );
+    xi_debug_format( "size of event queue: %d", evtd_instance->call_heap->first_free );
 
     while( !xi_heap_is_empty( evtd_instance->call_heap ) )
     {
@@ -190,7 +190,9 @@ void xi_evtd_step(
         }
         else
         {
-            xi_debug_printf( "tmp: %d <= %d\n", tmp->key, evtd_instance->current_step );
+            xi_debug_format( "next key execution time: %d\tcurrent time: %d"
+                , tmp->key
+                , evtd_instance->current_step );
             break;
         }
     }
