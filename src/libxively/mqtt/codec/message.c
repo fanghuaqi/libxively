@@ -51,7 +51,11 @@ void mqtt_message_dump(mqtt_message_t* message) {
   }
   else if( message->common.common_u.common_bits.type == MQTT_TYPE_PUBLISH )
   {
-    printf( "content: " );
-    mqtt_buffer_dump( & ( message->publish.content ) );
+    printf( "topic_name: \n" );
+    mqtt_buffer_dump( &message->publish.topic_name );
+    printf("\n");
+    printf( "content: \n" );
+    mqtt_buffer_dump( &message->publish.content );
+    printf("\n");
   }
 }
