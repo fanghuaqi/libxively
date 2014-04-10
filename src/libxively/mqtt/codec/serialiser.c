@@ -1,7 +1,7 @@
 #include <string.h>
 
+#include "xi_debug.h"
 #include "message.h"
-
 #include "serialiser.h"
 
 #define WRITE_16( length ) { \
@@ -90,6 +90,11 @@ size_t mqtt_serialiser_size(
         // @TODO add support for multiple topics per request
         len += message->subscribe.topics.name.length;
         len += 1; // qos
+    }
+    else
+    {
+        xi_debug_logger( "unknown type of message to serialize!" );
+        assert( 0 == 1 );
     }
 
     int32_t remaining_length = len - 1;
