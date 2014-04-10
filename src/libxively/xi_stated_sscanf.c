@@ -126,9 +126,8 @@ signed char xi_stated_sscanf(
                 {                    
                     dst_desc.data_ptr   = ( char* ) variables[ s->vi ];
                     dst_desc.data_size  = s->max_len; 
-                    dst_desc.real_size  = s->max_len - 1;
+                    dst_desc.real_size  = s->max_len;
                     dst_desc.curr_pos   = 0;
-
 
                     switch( pattern->data_ptr[ s->p ] )
                     {
