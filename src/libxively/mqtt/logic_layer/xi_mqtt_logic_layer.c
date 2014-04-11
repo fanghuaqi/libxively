@@ -105,6 +105,7 @@ static inline void fill_with_subscribe_data(
     msg->common.remaining_length                = 0; // this is filled during the serialization
 
     msg->subscribe.topics.name.length           = strlen( topic );
+    msg->subscribe.message_id                   = 1; // just for now
     memcpy(
           msg->subscribe.topics.name.data
         , topic
