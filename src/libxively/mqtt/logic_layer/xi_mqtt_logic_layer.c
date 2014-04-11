@@ -99,7 +99,7 @@ static inline void fill_with_subscribe_data(
     memset( msg, 0, sizeof( mqtt_message_t ) );
 
     msg->common.common_u.common_bits.retain     = MQTT_RETAIN_FALSE;
-    msg->common.common_u.common_bits.qos        = MQTT_QOS_AT_LEAST_ONCE; // forced by the protocol
+    msg->common.common_u.common_bits.qos        = MQTT_QOS_EXACTLY_ONCE; // forced by the protocol
     msg->common.common_u.common_bits.dup        = MQTT_DUP_FALSE;
     msg->common.common_u.common_bits.type       = MQTT_TYPE_SUBSCRIBE;
     msg->common.remaining_length                = 0; // this is filled during the serialization
