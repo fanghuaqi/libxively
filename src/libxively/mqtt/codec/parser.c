@@ -192,7 +192,11 @@ layer_state_t mqtt_parser_execute(
       parser->remaining_length += (src->data_ptr[ src->curr_pos ] & 0x7f) * parser->multiplier;
       parser->multiplier *= 128;
       src->curr_pos += 1; parser->data_length += 1;
+
+      YIELD_ON( cs, ( (src->curr_pos - src->real_size) == 0 ), LAYER_STATE_WANT_READ )
     } while ( ( uint8_t ) src->data_ptr[ src->curr_pos ] >= 0x80 && parser->digit_bytes < 4 );
+
+    YIELD_ON( cs, ( (src->curr_pos - src->real_size) == 0 ), LAYER_STATE_WANT_READ )
 
     if ( ( uint8_t ) src->data_ptr[ src->curr_pos ] >= 0x80)
     {
