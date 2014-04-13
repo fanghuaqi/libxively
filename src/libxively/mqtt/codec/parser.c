@@ -273,11 +273,6 @@ layer_state_t mqtt_parser_execute(
     }
     else if ( message->common.common_u.common_bits.type == MQTT_TYPE_PUBLISH )
     {
-        if( data_buffer_desc->curr_pos == 0 )
-        {
-            int i = 0;
-        }
-
         READ_STRING( message->publish.topic_name );
 
         YIELD_ON( cs, ( (src->curr_pos - src->real_size) == 0 ), LAYER_STATE_WANT_READ );
