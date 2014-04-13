@@ -148,14 +148,14 @@ static layer_state_t connect_server_logic(
     {
         if( msg_memory->connack.return_code == 0 )
         {
-            layer_data->on_connected.handlers.h3.a3 = LAYER_STATE_OK;
+            layer_data->conn_data->on_connected.handlers.h3.a3 = LAYER_STATE_OK;
             xi_evtd_continue(
                   xi_evtd_instance
-                , layer_data->on_connected
+                , layer_data->conn_data->on_connected
                 , 0 );
 
             run_next_task( context );
-
+            layer_data->conn_data = 0;
             XI_SAFE_FREE( msg_memory );
 
             EXIT( layer_data->data_ready_cs, LAYER_STATE_OK );
@@ -164,15 +164,15 @@ static layer_state_t connect_server_logic(
         {
             xi_debug_format( "connack.return_code == %d\n", msg_memory->connack.return_code );
 
-            layer_data->on_connected.handlers.h3.a3 = LAYER_STATE_ERROR;
+            layer_data->conn_data->on_connected.handlers.h3.a3 = LAYER_STATE_ERROR;
 
             xi_evtd_continue(
                   xi_evtd_instance
-                , layer_data->on_connected
+                , layer_data->conn_data->on_connected
                 , 0 );
 
             run_next_task( context );
-
+            layer_data->conn_data = 0;
             XI_SAFE_FREE( msg_memory );
 
             EXIT( layer_data->data_ready_cs, LAYER_STATE_ERROR );
@@ -189,7 +189,7 @@ static layer_state_t connect_server_logic(
     return LAYER_STATE_ERROR;
 
 err_handling:
-
+    xi_free_connection_data( layer_data->conn_data );
     return LAYER_STATE_ERROR;
 }
 
@@ -577,7 +577,7 @@ layer_state_t xi_mqtt_logic_layer_init(
     xi_mqtt_logic_layer_data_t* layer_data = CON_SELF( context )->user_data;
 
     xi_connection_data_t* conn_data = data;
-    layer_data->on_connected = conn_data->on_connected;
+    layer_data->conn_data = conn_data;
 
     layer_data->handlers_for_topics = xi_static_vector_create( 4 );
 
@@ -599,9 +599,11 @@ layer_state_t xi_mqtt_logic_layer_connect(
     XI_UNUSED( data );
     XI_UNUSED( in_state );
 
-    xi_mqtt_logic_layer_data_t* layer_data = CON_SELF( context )->user_data;
+    xi_mqtt_logic_layer_data_t* layer_data
+        = CON_SELF( context )->user_data;
 
-    xi_mqtt_logic_task_t* task = xi_alloc( sizeof( xi_mqtt_logic_task_t ) );
+    xi_mqtt_logic_task_t* task = xi_alloc(
+        sizeof( xi_mqtt_logic_task_t ) );
     XI_CHECK_MEMORY( task );
     memset( task, 0, sizeof( xi_mqtt_logic_task_t ) );
 

@@ -59,9 +59,20 @@ layer_state_t on_test_message(
     // xi_mqtt_nob_publish( "/topic/B", "got B!" );
     mqtt_message_t* msg = ( mqtt_message_t* ) message;
     xi_debug_logger( "received message: " );
-    mqtt_message_dump( msg );
+    //mqtt_message_dump( msg );
     xi_debug_logger( "\n" );
+
+    for( int i = 0; i < msg->publish.content.length; ++i )
+    {
+        printf( "%c", msg->publish.content.data[ i ] );
+    }
+    printf( "\n" );
+
+    fflush( stdout );
+
+    //printf( "%s\n", msg->publish.content.data );
     //
+    XI_SAFE_FREE( msg );
 
     return LAYER_STATE_OK;
 }
@@ -200,13 +211,24 @@ layer_state_t delayed_publish(
 
 layer_state_t on_connected(
       void* in_context
-    , void* data )
+    , void* data
+    , layer_state_t state )
 {
     xi_context_t* context = ( xi_context_t* ) in_context;
-    printf( "connected\n!" );
+
+    if( state == LAYER_STATE_OK )
+    {
+        printf( "connected!\n" );
+    }
+    else
+    {
+        printf( "error while connecting!\n" );
+    }
+
+    xi_free_connection_data( ( xi_connection_data_t* ) data );
 
     // sending the connect request
-    xi_nob_mqtt_publish( context, "test_topic", "test_msg" );
+    //xi_nob_mqtt_publish( context, "test_topic", "test_msg" );
     //xi_nob_mqtt_publish( context, "test_topic2", "test_msg2" );
     //xi_nob_mqtt_publish( context, "test_topic3", "test_msg3" );
 
@@ -222,7 +244,7 @@ layer_state_t on_connected(
 
     {
         MAKE_HANDLE_H3( &on_test_message, context, 0, LAYER_STATE_OK );
-        xi_nob_mqtt_subscribe( context, "test_topic", handle );
+        xi_nob_mqtt_subscribe( context, "/olgierd/t1", handle );
     }
 
     /*{
@@ -253,23 +275,25 @@ int main( int argc, char* argv[] )
     // check if everything works
     if( xi_context == 0 ) { return -1; }
 
-    xi_connection_data_t connection_data
-            = { XI_HOST, XI_PORT
-            //= { "localhost", 1883
-            , { XI_EVTD_HANDLE_0_ID, .handlers.h0 = { ( void* ) 0 } } };
+    xi_connection_data_t* connection_data
+        = xi_alloc_connection_data(
+            "localhost"
+            , 1883 );
+
+    XI_CHECK_MEMORY( connection_data );
 
     // @TODO replace with simple macro
     {
-        MAKE_HANDLE_H2(
+        MAKE_HANDLE_H3(
               on_connected
             , ( void* ) xi_context
+            , connection_data
             , 0 );
-
-        connection_data.on_connected = handle;
 
         xi_nob_mqtt_connect(
                 xi_context
-              , &connection_data );
+              , connection_data
+              , handle );
     }
 
     //xi_nob_mqtt_subscribe( xi, "/a/b/c/0", on_0 );
@@ -284,6 +308,11 @@ int main( int argc, char* argv[] )
     main_loop();
 
     xi_delete_context( xi_context );
+
+    return 0;
+
+err_handling:
+    return 1;
 
 #endif
 

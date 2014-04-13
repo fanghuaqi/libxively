@@ -1310,9 +1310,12 @@ extern const xi_response_t* xi_mqtt_publish(
 
 extern layer_state_t xi_nob_mqtt_connect(
       xi_context_t* xi
-    , xi_connection_data_t* connection_data )
+    , xi_connection_data_t* connection_data
+    , xi_evtd_handle_t on_connected )
 {
     layer_t* input_layer = xi->layer_chain.top;
+
+    connection_data->on_connected = on_connected;
 
     return CALL_ON_SELF_INIT( &input_layer->layer_connection
         , connection_data

@@ -8,9 +8,16 @@
 
 typedef struct
 {
-    const char*         address;
+    char*               address;
     int                 port;
     xi_evtd_handle_t    on_connected;
 } xi_connection_data_t;
+
+extern xi_connection_data_t* xi_alloc_connection_data(
+      const char* host
+    , int port );
+
+extern void xi_free_connection_data(
+    xi_connection_data_t* data );
 
 #endif // __XI_CONNECTION_DATA_H__

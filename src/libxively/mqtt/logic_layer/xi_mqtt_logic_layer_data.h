@@ -7,6 +7,7 @@
 //#include "xi_static_vector.h"
 #include "xi_event_dispatcher_api.h"
 #include "message.h"
+#include "xi_connection_data.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -99,7 +100,7 @@ typedef struct
     //xi_user_idle_t*     user_idle_ptr;
     xi_mqtt_logic_queue_t*      tasks_queue;
     xi_static_vector_t*         handlers_for_topics;
-    xi_evtd_handle_t            on_connected;
+    xi_connection_data_t*       conn_data;
     xi_mqtt_logic_task_t*       curr_task;
     uint16_t                    data_ready_cs;
 } xi_mqtt_logic_layer_data_t;
