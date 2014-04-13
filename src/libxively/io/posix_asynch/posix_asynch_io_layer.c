@@ -155,6 +155,9 @@ layer_state_t posix_asynch_io_layer_on_data_ready(
     if( len < 0 )
     {
         int errval = errno;
+
+        xi_debug_format( "error reading: errno = %d", errval );
+
         if( errval == EAGAIN ) // register for an event on that socket
         {
             {
@@ -165,7 +168,6 @@ layer_state_t posix_asynch_io_layer_on_data_ready(
             }
         }
 
-        xi_debug_format( "error reading: errno = %d", errval );
         goto err_handling;
     }
 
