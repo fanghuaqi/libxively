@@ -225,8 +225,6 @@ layer_state_t on_connected(
         printf( "error while connecting!\n" );
     }
 
-    xi_free_connection_data( ( xi_connection_data_t* ) data );
-
     // sending the connect request
     //xi_nob_mqtt_publish( context, "test_topic", "test_msg" );
     //xi_nob_mqtt_publish( context, "test_topic2", "test_msg2" );
@@ -275,24 +273,20 @@ int main( int argc, char* argv[] )
     // check if everything works
     if( xi_context == 0 ) { return -1; }
 
-    xi_connection_data_t* connection_data
-        = xi_alloc_connection_data(
-            "localhost"
-            , 1883 );
-
-    XI_CHECK_MEMORY( connection_data );
-
     // @TODO replace with simple macro
     {
         MAKE_HANDLE_H3(
               on_connected
             , ( void* ) xi_context
-            , connection_data
+            , 0
             , 0 );
 
         xi_nob_mqtt_connect(
                 xi_context
-              , connection_data
+              , "localhost"
+              , 1883
+              , 0
+              , 0
               , handle );
     }
 

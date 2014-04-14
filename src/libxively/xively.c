@@ -28,6 +28,7 @@
 #include "xi_connection_data.h"
 #include "xi_static_vector.h"
 
+
 #if defined( XI_MQTT_ENABLED ) && defined( XI_NOB_ENABLED )
 #include "xi_event_dispatcher_global_instance.h"
 #endif
@@ -476,6 +477,9 @@ void xi_delete_context( xi_context_t* context )
     XI_SAFE_FREE( context->api_key );
 #endif
     XI_SAFE_FREE( context );
+
+    // free the connection data too
+    xi_free_connection_data( context->conn_data );
 
 #if defined( XI_MQTT_ENABLED ) && defined( XI_NOB_ENABLED )
     xi_evtd_ref_count -= 1;
@@ -1310,16 +1314,30 @@ extern const xi_response_t* xi_mqtt_publish(
 
 extern layer_state_t xi_nob_mqtt_connect(
       xi_context_t* xi
-    , xi_connection_data_t* connection_data
+    , const char* host
+    , int port
+    , const char* username
+    , const char* password
     , xi_evtd_handle_t on_connected )
 {
     layer_t* input_layer = xi->layer_chain.top;
 
-    connection_data->on_connected = on_connected;
+    xi_connection_data_t* conn_data
+        = xi_alloc_connection_data(
+              host, port
+            , username, password );
+
+    XI_CHECK_MEMORY( conn_data );
+
+    conn_data->on_connected = on_connected;
+    xi->conn_data = conn_data;
 
     return CALL_ON_SELF_INIT( &input_layer->layer_connection
-        , connection_data
+        , conn_data
         , LAYER_STATE_OK );
+
+err_handling:
+    return LAYER_STATE_ERROR;
 }
 
 extern layer_state_t xi_nob_mqtt_publish(

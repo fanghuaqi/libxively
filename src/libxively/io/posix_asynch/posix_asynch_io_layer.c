@@ -323,7 +323,7 @@ layer_state_t posix_asynch_io_layer_connect(
     struct hostent* hostinfo;
 
     // get the hostaddress
-    hostinfo = gethostbyname( connection_data->address );
+    hostinfo = gethostbyname( connection_data->host );
 
     // if null it means that the address has not been founded
     if( hostinfo == NULL )

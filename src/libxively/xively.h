@@ -68,13 +68,14 @@ typedef uint32_t xi_feed_id_t;
  *          that communicate with Xively API (_i.e. not helpers or utilities_)
  */
 typedef struct xi_context_s {
-    xi_protocol_t protocol;     /** Xively protocol */
-    layer_chain_t layer_chain;  /** Xively reference of layers */
+    xi_protocol_t protocol;             /** Xively protocol */
+    layer_chain_t layer_chain;          /** Xively reference of layers */
+    xi_connection_data_t* conn_data;    /** Xively connection data */
     #if !defined( XI_MQTT_ENABLED )
-        char *api_key;              /** Xively API key */
-        xi_feed_id_t feed_id;       /** Xively feed ID */
+        char *api_key;                  /** Xively API key */
+        xi_feed_id_t feed_id;           /** Xively feed ID */
     #endif
-    void*         input;        /** Xively ptr to the input data */
+    void*         input;                /** Xively ptr to the input data */
 } xi_context_t;
 
 
@@ -516,7 +517,10 @@ extern const xi_response_t* xi_mqtt_publish(
  */
 extern layer_state_t xi_nob_mqtt_connect(
       xi_context_t* xi
-    , xi_connection_data_t* connection_data
+    , const char* host
+    , int port
+    , const char* username
+    , const char* password
     , xi_evtd_handle_t on_connected );
 
 /**

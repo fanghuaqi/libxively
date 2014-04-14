@@ -35,7 +35,10 @@ static int8_t cmp_topics( void* a, void* b )
     return 0;
 }
 
-static inline void fill_with_connect_data( mqtt_message_t* msg )
+static inline void fill_with_connect_data(
+      mqtt_message_t* msg
+    , const char* username
+    , const char* password )
 {
     memset( msg, 0, sizeof( mqtt_message_t ) );
 
@@ -49,8 +52,28 @@ static inline void fill_with_connect_data( mqtt_message_t* msg )
     msg->connect.protocol_name.length                    = 6;
     msg->connect.protocol_version                        = 3;
 
-    msg->connect.flags_u.flags_bits.username_follows     = 0;
-    msg->connect.flags_u.flags_bits.password_follows     = 0;
+    if( username )
+    {
+        msg->connect.flags_u.flags_bits.username_follows     = 1;
+        size_t len                                           = strlen( username );
+        memcpy( msg->connect.username.data, username, len + 1 );
+    }
+    else
+    {
+        msg->connect.flags_u.flags_bits.username_follows     = 0;
+    }
+
+    if( password )
+    {
+        msg->connect.flags_u.flags_bits.password_follows     = 1;
+        size_t len                                           = strlen( password );
+        memcpy( msg->connect.password.data, password, len + 1 );
+    }
+    else
+    {
+        msg->connect.flags_u.flags_bits.password_follows     = 0;
+    }
+
     msg->connect.flags_u.flags_bits.will_retain          = 0;
     msg->connect.flags_u.flags_bits.will_qos             = 0;
     msg->connect.flags_u.flags_bits.will                 = 0;
@@ -133,7 +156,10 @@ static layer_state_t connect_server_logic(
     XI_CHECK_MEMORY( msg_memory );
     memset( msg_memory, 0, sizeof( mqtt_message_t ) );
 
-    fill_with_connect_data( msg_memory );
+    fill_with_connect_data( msg_memory
+        , layer_data->conn_data->username
+        , layer_data->conn_data->password );
+
     YIELD( layer_data->data_ready_cs
         , CALL_ON_PREV_DATA_READY(
               context
@@ -148,6 +174,7 @@ static layer_state_t connect_server_logic(
     {
         if( msg_memory->connack.return_code == 0 )
         {
+            layer_data->conn_data->on_connected.handlers.h3.a2 = layer_data->conn_data;
             layer_data->conn_data->on_connected.handlers.h3.a3 = LAYER_STATE_OK;
             xi_evtd_continue(
                   xi_evtd_instance
@@ -155,7 +182,6 @@ static layer_state_t connect_server_logic(
                 , 0 );
 
             run_next_task( context );
-            layer_data->conn_data = 0;
             XI_SAFE_FREE( msg_memory );
 
             EXIT( layer_data->data_ready_cs, LAYER_STATE_OK );
@@ -164,6 +190,7 @@ static layer_state_t connect_server_logic(
         {
             xi_debug_format( "connack.return_code == %d\n", msg_memory->connack.return_code );
 
+            layer_data->conn_data->on_connected.handlers.h3.a2 = layer_data->conn_data;
             layer_data->conn_data->on_connected.handlers.h3.a3 = LAYER_STATE_ERROR;
 
             xi_evtd_continue(
@@ -172,7 +199,6 @@ static layer_state_t connect_server_logic(
                 , 0 );
 
             run_next_task( context );
-            layer_data->conn_data = 0;
             XI_SAFE_FREE( msg_memory );
 
             EXIT( layer_data->data_ready_cs, LAYER_STATE_ERROR );
