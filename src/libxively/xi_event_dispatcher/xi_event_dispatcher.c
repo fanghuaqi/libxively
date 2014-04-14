@@ -106,12 +106,12 @@ int8_t xi_evtd_continue_when_evt(
     return -1;
 }
 
-void xi_evtd_continue(
+struct xi_evtd_heap_element_s* xi_evtd_continue(
       xi_evtd_instance_t* instance
     , xi_evtd_handle_t handle
     , xi_heap_key_type_t time_diff )
 {
-    xi_heap_element_add(
+    return xi_heap_element_add(
           instance->call_heap
         , instance->current_step + time_diff
         , handle );

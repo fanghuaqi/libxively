@@ -16,6 +16,7 @@
 //
 typedef int xi_fd_t;
 struct xi_heap_s;
+struct xi_heap_element_s;
 
 typedef struct
 {
@@ -48,10 +49,18 @@ extern int8_t xi_evtd_continue_when_evt(
     , xi_evtd_handle_t handle
     , xi_fd_t fd );
 
-extern void xi_evtd_continue(
+extern struct xi_evtd_heap_element_s* xi_evtd_continue(
       xi_evtd_instance_t* instance
     , xi_evtd_handle_t handle
     , xi_heap_key_type_t time_diff );
+
+extern void xi_evtd_cancel(
+      xi_evtd_instance_t* instance
+    , struct xi_heap_element_s* heap_element );
+
+extern void xi_evtd_restart(
+      xi_evtd_instance_t* instance
+    , struct xi_heap_element_s* heap_element );
 
 extern xi_evtd_instance_t* xi_evtd_create_instance();
 
