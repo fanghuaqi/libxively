@@ -224,6 +224,46 @@ xi_heap_element_t* xi_heap_element_add(
     return element;
 }
 
+void xi_heap_element_remove(
+      xi_heap_t* xi_heap
+    , xi_heap_element_t* elem )
+{
+    assert( xi_heap != 0 );
+    assert( elem != 0 );
+
+    xi_heap_index_type_t last_i = xi_heap->first_free - 1;
+
+    if( last_i != elem->index )
+    {
+        xi_heap_element_t** last_e  = &xi_heap->elements[ last_i ];
+        xi_heap_element_t** e       = &xi_heap->elements[ elem->index ];
+        xi_heap_index_type_t e_i    = ( *e )->index;
+
+        xi_heap_elements_swap( e, last_e );
+        xi_heap_fix_order_down( xi_heap, e_i );
+        xi_heap_fix_order_up( xi_heap, e_i );
+    }
+
+    xi_heap->first_free -= 1;
+}
+
+void xi_heap_element_update_key(
+      xi_heap_t* xi_heap
+    , xi_heap_element_t* elem
+    , xi_heap_key_type_t new_key )
+{
+    assert( xi_heap != 0 );
+    assert( elem != 0 );
+
+    elem->key = new_key;
+
+    xi_heap_element_t** e       = &xi_heap->elements[ elem->index ];
+    xi_heap_index_type_t e_i    = ( *e )->index;
+
+    xi_heap_fix_order_down( xi_heap, e_i );
+    xi_heap_fix_order_up( xi_heap, e_i );
+}
+
 xi_heap_element_t* xi_heap_get_top( xi_heap_t* xi_heap )
 {
     // PRECONDITIONS
@@ -238,7 +278,7 @@ xi_heap_element_t* xi_heap_get_top( xi_heap_t* xi_heap )
 
     xi_heap_element_t** last_e  = 0;
     xi_heap_element_t** e       = &xi_heap->elements[ 0 ];
-    xi_heap_index_type_t last_i   = xi_heap->first_free - 1;
+    xi_heap_index_type_t last_i = xi_heap->first_free - 1;
     xi_heap->first_free        -= 1;
 
     if( last_i != 0 )

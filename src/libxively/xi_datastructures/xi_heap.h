@@ -69,6 +69,15 @@ extern xi_heap_element_t* xi_heap_element_add_void(
     , xi_heap_key_type_t key
     , void* value );
 
+extern void xi_heap_element_remove(
+      xi_heap_t* xi_heap
+    , xi_heap_element_t* elem );
+
+extern void xi_heap_element_update_key(
+      xi_heap_t* xi_heap
+    , xi_heap_element_t* elem
+    , xi_heap_key_type_t key );
+
 extern xi_heap_element_t* xi_heap_get_top(
     xi_heap_t* xi_heap );
 

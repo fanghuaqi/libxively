@@ -102,6 +102,7 @@ typedef struct
     xi_static_vector_t*         handlers_for_topics;
     xi_connection_data_t*       conn_data;
     xi_mqtt_logic_task_t*       curr_task;
+    struct xi_heap_element_s*   keep_alive_event;
     uint16_t                    data_ready_cs;
 } xi_mqtt_logic_layer_data_t;
 

@@ -106,7 +106,7 @@ int8_t xi_evtd_continue_when_evt(
     return -1;
 }
 
-struct xi_evtd_heap_element_s* xi_evtd_continue(
+struct xi_heap_element_s* xi_evtd_continue(
       xi_evtd_instance_t* instance
     , xi_evtd_handle_t handle
     , xi_heap_key_type_t time_diff )
@@ -115,6 +115,24 @@ struct xi_evtd_heap_element_s* xi_evtd_continue(
           instance->call_heap
         , instance->current_step + time_diff
         , handle );
+}
+
+void xi_evtd_cancel(
+      xi_evtd_instance_t* instance
+    , struct xi_heap_element_s* heap_element )
+{
+    xi_heap_element_remove( instance->call_heap, heap_element );
+}
+
+void xi_evtd_restart(
+      xi_evtd_instance_t* instance
+    , struct xi_heap_element_s* heap_element
+    , xi_heap_key_type_t new_time )
+{
+    xi_heap_element_update_key(
+          instance->call_heap
+        , heap_element
+        , new_time );
 }
 
 xi_evtd_instance_t* xi_evtd_create_instance()

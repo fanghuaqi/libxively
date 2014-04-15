@@ -19,6 +19,31 @@ extern "C" {
 static layer_state_t run_next_task(
     layer_connectivity_t* context );
 
+static layer_state_t send_keep_alive(
+    void* data )
+{
+    layer_connectivity_t* context = data;
+
+    xi_mqtt_logic_layer_data_t* layer_data
+        = ( xi_mqtt_logic_layer_data_t* ) CON_SELF( context )->user_data;
+
+    xi_debug_logger( "send_keep_alive" );
+
+    {
+        MAKE_HANDLE_H1(
+              &send_keep_alive
+            , context );
+
+        layer_data->keep_alive_event
+            = xi_evtd_continue(
+                    xi_evtd_instance
+                  , handle
+                  , 10 );
+    }
+
+    return LAYER_STATE_OK;
+}
+
 static int8_t cmp_topics( void* a, void* b )
 {
     union data_t* ca = ( union data_t* ) a; // this suppose to be the one from the vector
@@ -183,6 +208,18 @@ static layer_state_t connect_server_logic(
 
             run_next_task( context );
             XI_SAFE_FREE( msg_memory );
+
+            {
+                MAKE_HANDLE_H1(
+                      &send_keep_alive
+                    , context );
+
+                layer_data->keep_alive_event
+                    = xi_evtd_continue(
+                            xi_evtd_instance
+                          , handle
+                          , 10 );
+            }
 
             EXIT( layer_data->data_ready_cs, LAYER_STATE_OK );
         }
