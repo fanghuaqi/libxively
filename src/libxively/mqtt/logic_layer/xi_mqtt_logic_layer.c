@@ -74,17 +74,18 @@ static int8_t cmp_topics( void* a, void* b )
     return 0;
 }
 
-static inline void fill_with_pingreq_data(
+static void fill_with_pingreq_data(
     mqtt_message_t* msg )
 {
     memset( msg, 0, sizeof( mqtt_message_t ) );
     msg->common.common_u.common_bits.type = MQTT_TYPE_PINGREQ;
 }
 
-static inline void fill_with_connect_data(
+static void fill_with_connect_data(
       mqtt_message_t* msg
     , const char* username
-    , const char* password )
+    , const char* password
+    , uint16_t keepalive_timeout )
 {
     memset( msg, 0, sizeof( mqtt_message_t ) );
 
@@ -127,7 +128,7 @@ static inline void fill_with_connect_data(
     msg->connect.flags_u.flags_bits.will                 = 0;
     msg->connect.flags_u.flags_bits.clean_session        = 0;
 
-    msg->connect.keep_alive                              = 0;
+    msg->connect.keep_alive                              = keepalive_timeout;
 
     {
         const char client_id[] = "xi_test_client";
@@ -206,7 +207,8 @@ static layer_state_t connect_server_logic(
 
     fill_with_connect_data( msg_memory
         , layer_data->conn_data->username
-        , layer_data->conn_data->password );
+        , layer_data->conn_data->password
+        , layer_data->conn_data->keepalive_timeout );
 
     YIELD( layer_data->data_ready_cs
         , CALL_ON_PREV_DATA_READY(
@@ -241,7 +243,7 @@ static layer_state_t connect_server_logic(
                     = xi_evtd_continue(
                             xi_evtd_instance
                           , handle
-                          , 10 );
+                          , layer_data->conn_data->keepalive_timeout );
             }
 
             EXIT( layer_data->data_ready_cs, LAYER_STATE_OK );
@@ -315,7 +317,7 @@ static layer_state_t publish_server_logic(
         xi_evtd_restart(
               xi_evtd_instance
             , layer_data->keep_alive_event
-            , 10 );
+            , layer_data->conn_data->keepalive_timeout );
     }
 
     YIELD( layer_data->data_ready_cs
@@ -488,7 +490,7 @@ static layer_state_t keepalive_logic (
             xi_evtd_continue(
                   xi_evtd_instance
                 , handle
-                , 10 );
+                , layer_data->conn_data->keepalive_timeout );
     }
 
     YIELD( layer_data->data_ready_cs
@@ -517,7 +519,7 @@ static layer_state_t keepalive_logic (
             = xi_evtd_continue(
                     xi_evtd_instance
                   , handle
-                  , 10 );
+                  , layer_data->conn_data->keepalive_timeout );
     }
 
     run_next_task( context );

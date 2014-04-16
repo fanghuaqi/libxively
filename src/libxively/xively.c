@@ -1316,6 +1316,7 @@ extern layer_state_t xi_nob_mqtt_connect(
       xi_context_t* xi
     , const char* host
     , int port
+    , uint16_t keepalive_timeout
     , const char* username
     , const char* password
     , xi_evtd_handle_t on_connected )
@@ -1324,7 +1325,7 @@ extern layer_state_t xi_nob_mqtt_connect(
 
     xi_connection_data_t* conn_data
         = xi_alloc_connection_data(
-              host, port
+              host, port, keepalive_timeout
             , username, password );
 
     XI_CHECK_MEMORY( conn_data );

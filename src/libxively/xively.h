@@ -519,6 +519,7 @@ extern layer_state_t xi_nob_mqtt_connect(
       xi_context_t* xi
     , const char* host
     , int port
+    , uint16_t keepalive_timeout
     , const char* username
     , const char* password
     , xi_evtd_handle_t on_connected );

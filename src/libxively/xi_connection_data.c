@@ -4,6 +4,7 @@
 xi_connection_data_t* xi_alloc_connection_data(
       const char* host
     , int port
+    , uint16_t keepalive_timeout
     , const char* username
     , const char* password )
 {
@@ -26,7 +27,8 @@ xi_connection_data_t* xi_alloc_connection_data(
         XI_CHECK_MEMORY( ret->password );
     }
 
-    ret->port = port;
+    ret->port               = port;
+    ret->keepalive_timeout  = keepalive_timeout;
 
     return ret;
 

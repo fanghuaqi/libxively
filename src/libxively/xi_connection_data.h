@@ -10,6 +10,7 @@ typedef struct
 {
     char*               host;
     int                 port;
+    uint16_t            keepalive_timeout;
     char*               username;
     char*               password;
     xi_evtd_handle_t    on_connected;
@@ -18,6 +19,7 @@ typedef struct
 extern xi_connection_data_t* xi_alloc_connection_data(
       const char* host
     , int port
+    , uint16_t keepalive_timeout
     , const char* username
     , const char* password );
 
