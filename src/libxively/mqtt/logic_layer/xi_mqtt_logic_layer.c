@@ -82,6 +82,7 @@ static inline void fill_with_connect_data(
         msg->connect.flags_u.flags_bits.username_follows     = 1;
         size_t len                                           = strlen( username );
         memcpy( msg->connect.username.data, username, len + 1 );
+        msg->connect.username.length = len;
     }
     else
     {
@@ -93,6 +94,7 @@ static inline void fill_with_connect_data(
         msg->connect.flags_u.flags_bits.password_follows     = 1;
         size_t len                                           = strlen( password );
         memcpy( msg->connect.password.data, password, len + 1 );
+        msg->connect.password.length = len;
     }
     else
     {
