@@ -27,21 +27,27 @@ static layer_state_t send_keep_alive(
     xi_mqtt_logic_layer_data_t* layer_data
         = ( xi_mqtt_logic_layer_data_t* ) CON_SELF( context )->user_data;
 
+    xi_mqtt_logic_task_t* task
+        = ( xi_mqtt_logic_task_t* ) xi_alloc( sizeof( xi_mqtt_logic_task_t ) );
+    XI_CHECK_MEMORY( task );
+    memset( task, 0, sizeof( xi_mqtt_logic_task_t ) );
+
+    task->data.mqtt_settings.scenario_t = XI_MQTT_KEEPALIVE;
+    task->data.mqtt_settings.qos_t      = XI_MQTT_QOS_ZERO;
+
+    CALL_ON_SELF_DATA_READY(
+          context
+        , task
+        , LAYER_STATE_OK );
+
     xi_debug_logger( "send_keep_alive" );
 
-    {
-        MAKE_HANDLE_H1(
-              &send_keep_alive
-            , context );
-
-        layer_data->keep_alive_event
-            = xi_evtd_continue(
-                    xi_evtd_instance
-                  , handle
-                  , 10 );
-    }
-
     return LAYER_STATE_OK;
+
+err_handling:
+    XI_SAFE_FREE( task );
+
+    return LAYER_STATE_ERROR;
 }
 
 static int8_t cmp_topics( void* a, void* b )
@@ -58,6 +64,13 @@ static int8_t cmp_topics( void* a, void* b )
     }
 
     return 0;
+}
+
+static inline void fill_with_pingreq_data(
+    mqtt_message_t* msg )
+{
+    memset( msg, 0, sizeof( mqtt_message_t ) );
+    msg->common.common_u.common_bits.type = MQTT_TYPE_PINGREQ;
 }
 
 static inline void fill_with_connect_data(
@@ -220,7 +233,7 @@ static layer_state_t connect_server_logic(
                     = xi_evtd_continue(
                             xi_evtd_instance
                           , handle
-                          , 10 );
+                          , 1 );
             }
 
             EXIT( layer_data->data_ready_cs, LAYER_STATE_OK );
@@ -346,9 +359,11 @@ static layer_state_t send_subscribe_logic(
         , LAYER_STATE_OK );
 
     xi_debug_logger( "suback received..." );
+    mqtt_message_dump( msg_memory );
 
     run_next_task( context );
 
+    XI_SAFE_FREE( msg_memory );
     EXIT( layer_data->data_ready_cs, LAYER_STATE_OK );
 
     END_CORO();
@@ -405,6 +420,64 @@ static inline layer_state_t recv_publish (
     return LAYER_STATE_OK;
 }
 
+static inline layer_state_t keepalive_logic (
+      layer_connectivity_t* context // should be the context of the logic layer
+    , xi_mqtt_logic_task_t* task
+    , mqtt_message_t* msg_memory
+    , layer_state_t* state )
+{
+    xi_mqtt_logic_layer_data_t* layer_data
+        = ( xi_mqtt_logic_layer_data_t* ) CON_SELF( context )->user_data;
+    //
+    BEGIN_CORO( layer_data->data_ready_cs );
+
+    msg_memory = xi_alloc( sizeof( mqtt_message_t ) );
+    XI_CHECK_MEMORY( msg_memory );
+    memset( msg_memory, 0, sizeof( mqtt_message_t ) );
+
+    fill_with_pingreq_data( msg_memory );
+
+    xi_debug_logger( "message memory filled with pingreq data" );
+
+    YIELD( layer_data->data_ready_cs
+        , CALL_ON_PREV_DATA_READY(
+              context
+            , msg_memory
+            , LAYER_STATE_OK ) );
+
+    xi_debug_logger( "pingreq message sent... waiting for response" );
+
+    YIELD( layer_data->data_ready_cs
+        , LAYER_STATE_OK );
+
+    xi_debug_logger( "pingresp received..." );
+
+    {
+        MAKE_HANDLE_H1(
+              &send_keep_alive
+            , context );
+
+        layer_data->keep_alive_event
+            = xi_evtd_continue(
+                    xi_evtd_instance
+                  , handle
+                  , 1 );
+    }
+
+    run_next_task( context );
+
+    XI_SAFE_FREE( msg_memory );
+
+    EXIT( layer_data->data_ready_cs, LAYER_STATE_OK );
+
+    END_CORO();
+
+    return LAYER_STATE_OK;
+
+err_handling:
+    return LAYER_STATE_ERROR;
+}
+
 static layer_state_t main_logic(
         void* in
       , void* data
@@ -446,6 +519,14 @@ static layer_state_t main_logic(
             case XI_MQTT_SUBSCRIBE:
             {
                 return send_subscribe_logic(
+                      context
+                    , task
+                    , data
+                    , &in_state );
+            }
+            case XI_MQTT_KEEPALIVE:
+            {
+                return keepalive_logic(
                       context
                     , task
                     , data
@@ -513,6 +594,9 @@ static layer_state_t run_next_task(
                 break;
             case XI_MQTT_SUBSCRIBE:
                 xi_debug_logger( "new task: XI_MQTT_SUBSCRIBE" );
+                break;
+            case XI_MQTT_KEEPALIVE:
+                xi_debug_logger( "new task: XI_MQTT_KEEPALIVE" );
                 break;
         }
 
@@ -614,11 +698,9 @@ layer_state_t xi_mqtt_logic_layer_on_data_ready(
             case MQTT_TYPE_CONNACK:
                 return connect_server_logic( context, data, recvd_msg, &in_state );
             case MQTT_TYPE_SUBACK:
-                return send_subscribe_logic(
-                              context
-                            , task
-                            , data
-                            , &in_state );
+                return send_subscribe_logic( context, task, data, &in_state );
+            case MQTT_TYPE_PINGRESP:
+                return keepalive_logic( context, data, recvd_msg, &in_state );
             default:
                 xi_debug_logger( "unhandled message received: " );
                 mqtt_message_dump( recvd_msg );

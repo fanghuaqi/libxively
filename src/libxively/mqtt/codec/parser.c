@@ -187,22 +187,23 @@ layer_state_t mqtt_parser_execute(
     do {
       parser->digit_bytes += 1;
 
-      YIELD_ON( cs, ( (src->curr_pos - src->real_size) == 0 ), LAYER_STATE_WANT_READ )
+      YIELD_ON( cs, ( (src->curr_pos - src->real_size) == 0 ), LAYER_STATE_WANT_READ );
 
       parser->remaining_length += (src->data_ptr[ src->curr_pos ] & 0x7f) * parser->multiplier;
       parser->multiplier *= 128;
       src->curr_pos += 1; parser->data_length += 1;
 
-      YIELD_ON( cs, ( (src->curr_pos - src->real_size) == 0 ), LAYER_STATE_WANT_READ )
+      if( ( uint8_t ) src->data_ptr[ src->curr_pos ] >= 0x80 && parser->digit_bytes < 4 )
+      {
+          YIELD_ON( cs, ( (src->curr_pos - src->real_size) == 0 ), LAYER_STATE_WANT_READ );
+      }
     } while ( ( uint8_t ) src->data_ptr[ src->curr_pos ] >= 0x80 && parser->digit_bytes < 4 );
-
-    YIELD_ON( cs, ( (src->curr_pos - src->real_size) == 0 ), LAYER_STATE_WANT_READ )
 
     if ( ( uint8_t ) src->data_ptr[ src->curr_pos ] >= 0x80)
     {
       parser->error = MQTT_ERROR_PARSER_INVALID_REMAINING_LENGTH;
 
-      EXIT( cs, LAYER_STATE_ERROR )
+      EXIT( cs, LAYER_STATE_ERROR );
     }
 
     message->common.remaining_length = parser->remaining_length;
@@ -351,6 +352,11 @@ layer_state_t mqtt_parser_execute(
         message->suback.topics.qos = src->data_ptr[ src->curr_pos ];
         src->curr_pos += 1; parser->data_length += 1;
 
+        EXIT( cs, LAYER_STATE_OK );
+    }
+    else if( message->common.common_u.common_bits.type == MQTT_TYPE_PINGRESP )
+    {
+        // nothing to parse
         EXIT( cs, LAYER_STATE_OK );
     }
     else

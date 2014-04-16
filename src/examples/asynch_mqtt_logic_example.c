@@ -199,7 +199,7 @@ layer_state_t delayed_publish(
     xi_context_t* context = ( xi_context_t* ) in_context;
 
     // sending the connect request
-    xi_nob_mqtt_publish( context, "test_topic", "test_msg" );
+    xi_nob_mqtt_publish( context, "test_topic", "test_msg_delayed" );
 
     { // register delayed publish again
         MAKE_HANDLE_H1( &delayed_publish, in_context );
@@ -226,13 +226,13 @@ layer_state_t on_connected(
     }
 
     // sending the connect request
-    //xi_nob_mqtt_publish( context, "test_topic", "test_msg" );
-    //xi_nob_mqtt_publish( context, "test_topic2", "test_msg2" );
-    //xi_nob_mqtt_publish( context, "test_topic3", "test_msg3" );
+    xi_nob_mqtt_publish( context, "test_topic", "test_msg" );
+    xi_nob_mqtt_publish( context, "test_topic", "test_msg2" );
+    xi_nob_mqtt_publish( context, "test_topic", "test_msg3" );
 
     { // register delayed publish
-        //MAKE_HANDLE_H1( &delayed_publish, in_context );
-        //xi_evtd_continue( xi_evtd_instance, handle, 2 );
+        MAKE_HANDLE_H1( &delayed_publish, in_context );
+        xi_evtd_continue( xi_evtd_instance, handle, 2 );
     }
 
     { // register delayed publish

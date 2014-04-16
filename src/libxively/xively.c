@@ -1380,9 +1380,9 @@ err_handling:
         {
             XI_SAFE_FREE( task->data.data_u->publish.msg );
             XI_SAFE_FREE( task->data.data_u->publish.topic );
-            XI_SAFE_FREE( task );
+            XI_SAFE_FREE( task->data.data_u );
         }
-        XI_SAFE_FREE( task->data.data_u );
+        XI_SAFE_FREE( task );
     }
     return LAYER_STATE_ERROR;
 }

@@ -25,6 +25,7 @@ typedef struct xi_mqtt_logic_task_data_s
             , XI_MQTT_CONNECT
             , XI_MQTT_PUBLISH
             , XI_MQTT_SUBSCRIBE
+            , XI_MQTT_KEEPALIVE
         } scenario_t;
 
         enum
