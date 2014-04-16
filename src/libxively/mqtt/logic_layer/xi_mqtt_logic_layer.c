@@ -27,6 +27,8 @@ static layer_state_t send_keep_alive(
     xi_mqtt_logic_layer_data_t* layer_data
         = ( xi_mqtt_logic_layer_data_t* ) CON_SELF( context )->user_data;
 
+    layer_data->keep_alive_event = 0;
+
     xi_mqtt_logic_task_t* task
         = ( xi_mqtt_logic_task_t* ) xi_alloc( sizeof( xi_mqtt_logic_task_t ) );
     XI_CHECK_MEMORY( task );
@@ -233,7 +235,7 @@ static layer_state_t connect_server_logic(
                     = xi_evtd_continue(
                             xi_evtd_instance
                           , handle
-                          , 1 );
+                          , 10 );
             }
 
             EXIT( layer_data->data_ready_cs, LAYER_STATE_OK );
@@ -301,6 +303,14 @@ static layer_state_t publish_server_logic(
     XI_SAFE_FREE( task->data.data_u );
 
     xi_debug_logger( "publish sending message..." );
+
+    if( layer_data->keep_alive_event )
+    {
+        xi_evtd_restart(
+              xi_evtd_instance
+            , layer_data->keep_alive_event
+            , 10 );
+    }
 
     YIELD( layer_data->data_ready_cs
         , CALL_ON_PREV_DATA_READY(
@@ -461,7 +471,7 @@ static inline layer_state_t keepalive_logic (
             = xi_evtd_continue(
                     xi_evtd_instance
                   , handle
-                  , 1 );
+                  , 10 );
     }
 
     run_next_task( context );
