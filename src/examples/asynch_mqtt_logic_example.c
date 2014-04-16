@@ -203,7 +203,7 @@ layer_state_t delayed_publish(
 
     { // register delayed publish again
         MAKE_HANDLE_H1( &delayed_publish, in_context );
-        xi_evtd_continue( xi_evtd_instance, handle, 5 );
+        xi_evtd_continue( xi_evtd_instance, handle, 11 );
     }
 
     return LAYER_STATE_OK;
