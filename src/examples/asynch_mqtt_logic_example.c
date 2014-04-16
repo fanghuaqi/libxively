@@ -285,6 +285,7 @@ int main( int argc, char* argv[] )
                 xi_context
               , "localhost"
               , 1883
+              , 10
               , 0
               , 0
               , handle );
