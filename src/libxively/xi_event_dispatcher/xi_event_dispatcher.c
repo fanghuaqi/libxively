@@ -117,11 +117,12 @@ struct xi_heap_element_s* xi_evtd_continue(
         , handle );
 }
 
-void xi_evtd_cancel(
+struct xi_heap_element_s* xi_evtd_cancel(
       xi_evtd_instance_t* instance
     , struct xi_heap_element_s* heap_element )
 {
     xi_heap_element_remove( instance->call_heap, heap_element );
+    return 0;
 }
 
 void xi_evtd_restart(

@@ -19,6 +19,12 @@ extern "C" {
 static layer_state_t run_next_task(
     layer_connectivity_t* context );
 
+static layer_state_t keepalive_logic (
+      layer_connectivity_t* context // should be the context of the logic layer
+    , xi_mqtt_logic_task_t* task
+    , mqtt_message_t* msg_memory
+    , layer_state_t* state );
+
 static layer_state_t send_keep_alive(
     void* data )
 {
@@ -430,7 +436,19 @@ static inline layer_state_t recv_publish (
     return LAYER_STATE_OK;
 }
 
-static inline layer_state_t keepalive_logic (
+static layer_state_t keepalive_timeout(
+      void* context )
+{
+    xi_mqtt_logic_layer_data_t* layer_data
+        = ( xi_mqtt_logic_layer_data_t* ) CON_SELF( context )->user_data;
+
+    layer_state_t state = LAYER_STATE_TIMEOUT;
+    keepalive_logic( context, 0, 0, &state );
+
+    return LAYER_STATE_OK;
+}
+
+static layer_state_t keepalive_logic (
       layer_connectivity_t* context // should be the context of the logic layer
     , xi_mqtt_logic_task_t* task
     , mqtt_message_t* msg_memory
@@ -438,6 +456,7 @@ static inline layer_state_t keepalive_logic (
 {
     xi_mqtt_logic_layer_data_t* layer_data
         = ( xi_mqtt_logic_layer_data_t* ) CON_SELF( context )->user_data;
+
     //
     BEGIN_CORO( layer_data->data_ready_cs );
 
@@ -457,8 +476,35 @@ static inline layer_state_t keepalive_logic (
 
     xi_debug_logger( "pingreq message sent... waiting for response" );
 
+    // wait for a interval of keepalive
+    {
+        MAKE_HANDLE_H1(
+              &keepalive_timeout
+            , context );
+
+        assert( layer_data->keep_alive_timeout == 0 );
+
+        layer_data->keep_alive_timeout =
+            xi_evtd_continue(
+                  xi_evtd_instance
+                , handle
+                , 10 );
+    }
+
     YIELD( layer_data->data_ready_cs
         , LAYER_STATE_OK );
+
+    if( *state != LAYER_STATE_TIMEOUT )
+    {
+        layer_data->keep_alive_timeout = xi_evtd_cancel( xi_evtd_instance
+            , layer_data->keep_alive_timeout );
+    }
+    else if( *state == LAYER_STATE_TIMEOUT )
+    {
+        xi_debug_logger( "keepalive timeout passed!" );
+        layer_data->keep_alive_timeout = 0;
+        EXIT( layer_data->data_ready_cs, LAYER_STATE_TIMEOUT );
+    }
 
     xi_debug_logger( "pingresp received..." );
 
