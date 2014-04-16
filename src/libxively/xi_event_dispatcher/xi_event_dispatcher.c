@@ -132,7 +132,7 @@ void xi_evtd_restart(
     xi_heap_element_update_key(
           instance->call_heap
         , heap_element
-        , new_time );
+        , instance->current_step + new_time );
 }
 
 xi_evtd_instance_t* xi_evtd_create_instance()
