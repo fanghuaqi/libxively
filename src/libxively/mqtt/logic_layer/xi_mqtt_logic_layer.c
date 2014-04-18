@@ -505,7 +505,7 @@ static layer_state_t keepalive_logic (
     {
         xi_debug_logger( "keepalive timeout passed!" );
         layer_data->keep_alive_timeout = 0;
-        EXIT( layer_data->data_ready_cs, LAYER_STATE_TIMEOUT );
+        EXIT( layer_data->data_ready_cs, CALL_ON_SELF_CLOSE( context, 0, LAYER_STATE_TIMEOUT ) );
     }
 
     xi_debug_logger( "pingresp received..." );
