@@ -91,6 +91,10 @@ size_t mqtt_serialiser_size(
         len += message->subscribe.topics.name.length;
         len += 1; // qos
     }
+    else if ( message->common.common_u.common_bits.type == MQTT_TYPE_PINGREQ )
+    {
+        // just a fixed header
+    }
     else
     {
         xi_debug_logger( "unknown type of message to serialize!" );
@@ -206,6 +210,12 @@ mqtt_serialiser_rc_t mqtt_serialiser_write(
 
 
         case MQTT_TYPE_DISCONNECT:
+        {
+            // empty
+            break;
+        }
+
+        case MQTT_TYPE_PINGREQ:
         {
             // empty
             break;

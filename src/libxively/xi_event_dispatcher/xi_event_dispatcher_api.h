@@ -54,7 +54,7 @@ extern struct xi_heap_element_s* xi_evtd_continue(
     , xi_evtd_handle_t handle
     , xi_heap_key_type_t time_diff );
 
-extern void xi_evtd_cancel(
+extern struct xi_heap_element_s* xi_evtd_cancel(
       xi_evtd_instance_t* instance
     , struct xi_heap_element_s* heap_element );
 

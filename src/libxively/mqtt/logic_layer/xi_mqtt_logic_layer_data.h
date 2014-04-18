@@ -25,6 +25,7 @@ typedef struct xi_mqtt_logic_task_data_s
             , XI_MQTT_CONNECT
             , XI_MQTT_PUBLISH
             , XI_MQTT_SUBSCRIBE
+            , XI_MQTT_KEEPALIVE
         } scenario_t;
 
         enum
@@ -103,6 +104,7 @@ typedef struct
     xi_connection_data_t*       conn_data;
     xi_mqtt_logic_task_t*       curr_task;
     struct xi_heap_element_s*   keep_alive_event;
+    struct xi_heap_element_s*   keep_alive_timeout;
     uint16_t                    data_ready_cs;
 } xi_mqtt_logic_layer_data_t;
 
