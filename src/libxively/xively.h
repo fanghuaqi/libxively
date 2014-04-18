@@ -21,15 +21,15 @@
 extern "C" {
 #endif
 
-#if 1 && !defined( XI_NOB_ENABLED )
+#if 0 && !defined( XI_NOB_ENABLED )
 #define XI_NOB_ENABLED 1
 #endif
 
-#if 1 && !defined( XI_MQTT_ENABLED )
+#if 0 && !defined( XI_MQTT_ENABLED )
 #define XI_MQTT_ENABLED 1
 #endif
 
-#if 1 && !defined( XI_IO_LAYER )
+#if 0 && !defined( XI_IO_LAYER )
 #define XI_IO_LAYER XI_IO_POSIX_ASYNCH
 #endif
 

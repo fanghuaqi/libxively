@@ -140,25 +140,27 @@ void test_register_fd( void* data )
 
     evtd_g_i  = xi_evtd_create_instance();
 
-    tt_assert( xi_evtd_register_fd( evtd_g_i, 15 ) != 0 );
+    xi_evtd_handle_t handle;
+
+    tt_assert( xi_evtd_register_fd( evtd_g_i, 15, handle ) != 0 );
     {
         xi_evtd_triplet_t* tmp = ( xi_evtd_triplet_t* ) evtd_g_i->handles_and_fd->array[ 0 ].value;
         tt_assert( tmp->fd == 15 );
-        tt_assert( tmp->event_type == XI_EVTD_NO_EVENT );
+        tt_assert( tmp->event_type == XI_EVENT_WANT_READ );
     }
 
-    tt_assert( xi_evtd_register_fd( evtd_g_i, 14 ) );
+    tt_assert( xi_evtd_register_fd( evtd_g_i, 14, handle ) );
     {
         xi_evtd_triplet_t* tmp = ( xi_evtd_triplet_t* ) evtd_g_i->handles_and_fd->array[ 1 ].value;
         tt_assert( tmp->fd == 14 );
-        tt_assert( tmp->event_type == XI_EVTD_NO_EVENT );
+        tt_assert( tmp->event_type == XI_EVENT_WANT_READ );
     }
 
-    tt_assert( xi_evtd_register_fd( evtd_g_i, 12 ) );
+    tt_assert( xi_evtd_register_fd( evtd_g_i, 12, handle ) );
     {
         xi_evtd_triplet_t* tmp = ( xi_evtd_triplet_t* ) evtd_g_i->handles_and_fd->array[ 2 ].value;
         tt_assert( tmp->fd == 12 );
-        tt_assert( tmp->event_type == XI_EVTD_NO_EVENT );
+        tt_assert( tmp->event_type == XI_EVENT_WANT_READ );
     }
 
 
@@ -178,9 +180,13 @@ void test_evtd_updates( void* data )
 
     evtd_g_i    = xi_evtd_create_instance();
 
-    tt_assert( xi_evtd_register_fd( evtd_g_i, 15 ) != 0 );
-    tt_assert( xi_evtd_register_fd( evtd_g_i, 14 ) != 0 );
-    tt_assert( xi_evtd_register_fd( evtd_g_i, 12 ) != 0 );
+    {
+        xi_evtd_handle_t evtd_handle = { XI_EVTD_HANDLE_1_ID, .handlers.h1 = { &continuation1_1, &counter } };
+
+        tt_assert( xi_evtd_register_fd( evtd_g_i, 15, evtd_handle ) != 0 );
+        tt_assert( xi_evtd_register_fd( evtd_g_i, 14, evtd_handle ) != 0 );
+        tt_assert( xi_evtd_register_fd( evtd_g_i, 12, evtd_handle ) != 0 );
+    }
 
     {
         xi_evtd_handle_t evtd_handle = { XI_EVTD_HANDLE_1_ID, .handlers.h1 = { &continuation1_1, &counter } };
@@ -225,12 +231,26 @@ void test_evtd_updates( void* data )
 
     counter = 0;
 
+    {
+        xi_evtd_handle_t evtd_handle = { XI_EVTD_HANDLE_1_ID, .handlers.h1 = { &continuation1_5, &counter } };
+        xi_evtd_continue_when_evt( evtd_g_i, XI_EVENT_CLOSE, evtd_handle, 12 );
+    }
+
     tt_assert( counter == 0 );
     xi_evtd_update_event( evtd_g_i, 12 );
     xi_evtd_update_event( evtd_g_i, 15 );
     tt_assert( counter == 6 );
 
     counter = 0;
+
+    {
+        xi_evtd_handle_t evtd_handle = { XI_EVTD_HANDLE_1_ID, .handlers.h1 = { &continuation1_5, &counter } };
+        xi_evtd_continue_when_evt( evtd_g_i, XI_EVENT_CLOSE, evtd_handle, 12 );
+    }
+    {
+        xi_evtd_handle_t evtd_handle = { XI_EVTD_HANDLE_1_ID, .handlers.h1 = { &continuation1_3, &counter } };
+        xi_evtd_continue_when_evt( evtd_g_i, XI_EVENT_WANT_WRITE, evtd_handle, 14 );
+    }
 
     tt_assert( counter == 0 );
     xi_evtd_update_event( evtd_g_i, 12 );
