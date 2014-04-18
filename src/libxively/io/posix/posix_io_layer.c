@@ -88,8 +88,6 @@ layer_state_t posix_io_layer_on_data_ready(
         buffer = &buffer_descriptor;
     }
 
-    layer_state_t tmp_state = LAYER_STATE_OK;
-
     do
     {
         memset( buffer->data_ptr, 0, buffer->data_size );
@@ -110,7 +108,7 @@ layer_state_t posix_io_layer_on_data_ready(
         buffer->real_size = len;
         buffer->data_ptr[ buffer->real_size ] = '\0'; // put guard
         buffer->curr_pos = 0;
-        tmp_state = CALL_ON_NEXT_ON_DATA_READY( context, ( void* ) buffer, LAYER_STATE_OK );
+        CALL_ON_NEXT_ON_DATA_READY( context, ( void* ) buffer, LAYER_STATE_OK );
     } while( state == LAYER_STATE_WANT_READ );
 
     return LAYER_STATE_OK;
@@ -133,6 +131,8 @@ layer_state_t posix_io_layer_on_close(
     , void* data
     , layer_state_t state )
 {
+    XI_UNUSED( state );
+
     posix_data_t* posix_data = ( posix_data_t* ) CON_SELF( context )->user_data;
 
     // shutdown the communication
@@ -242,7 +242,7 @@ layer_state_t posix_io_layer_connect(
     xi_debug_logger( "Getting host by name..." );
 
     // get the hostaddress
-    hostinfo = gethostbyname( connection_data->address );
+    hostinfo = gethostbyname( connection_data->host );
 
     // if null it means that the address has not been founded
     if( hostinfo == NULL )

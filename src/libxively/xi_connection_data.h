@@ -4,7 +4,14 @@
 #ifndef __XI_CONNECTION_DATA_H__
 #define __XI_CONNECTION_DATA_H__
 
+#include <stdint.h>
+
+#include "xi_macros.h"
+#include "xi_allocator.h"
+
+#if defined(XI_MQTT_ENABLED)
 #include "xi_event_dispatcher_api.h"
+#endif
 
 typedef struct
 {
@@ -13,7 +20,9 @@ typedef struct
     uint16_t            keepalive_timeout;
     char*               username;
     char*               password;
+#if defined(XI_MQTT_ENABLED)
     xi_evtd_handle_t    on_connected;
+#endif
 } xi_connection_data_t;
 
 extern xi_connection_data_t* xi_alloc_connection_data(

@@ -26,10 +26,10 @@
 #include "xi_layer_factory_conf.h"
 #include "xi_layer_default_allocators.h"
 #include "xi_connection_data.h"
-#include "xi_static_vector.h"
 
 
 #if defined( XI_MQTT_ENABLED ) && defined( XI_NOB_ENABLED )
+#include "xi_static_vector.h"
 #include "xi_event_dispatcher_global_instance.h"
 #endif
 
@@ -473,13 +473,14 @@ void xi_delete_context( xi_context_t* context )
             assert( 0 && "not yet implemented!" );
             break;
     }
+
+    // free the connection data too
+    xi_free_connection_data( context->conn_data );
+
 #ifndef XI_MQTT_ENABLED
     XI_SAFE_FREE( context->api_key );
 #endif
     XI_SAFE_FREE( context );
-
-    // free the connection data too
-    xi_free_connection_data( context->conn_data );
 
 #if defined( XI_MQTT_ENABLED ) && defined( XI_NOB_ENABLED )
     xi_evtd_ref_count -= 1;
@@ -509,7 +510,7 @@ const xi_response_t* xi_feed_get(
         state = CALL_ON_SELF_INIT( io_layer, 0, LAYER_STATE_OK );
         if( state != LAYER_STATE_OK ) { return 0; }
 
-        xi_connection_data_t conn_data = { XI_HOST, XI_PORT };
+        xi_connection_data_t conn_data = { XI_HOST, XI_PORT, 0, 0, 0 };
 
         state = CALL_ON_SELF_CONNECT( io_layer, ( void *) &conn_data, LAYER_STATE_OK );
         if( state != LAYER_STATE_OK ) { return 0; }
@@ -554,7 +555,7 @@ const xi_response_t* xi_feed_get_all(
         state = CALL_ON_SELF_INIT( io_layer, 0, LAYER_STATE_OK );
         if( state != LAYER_STATE_OK ) { return 0; }
 
-        xi_connection_data_t conn_data = { XI_HOST, XI_PORT };
+        xi_connection_data_t conn_data = { XI_HOST, XI_PORT, 0, 0, 0 };
 
         state = CALL_ON_SELF_CONNECT( io_layer, ( void *) &conn_data, LAYER_STATE_OK );
         if( state != LAYER_STATE_OK ) { return 0; }
@@ -600,7 +601,7 @@ const xi_response_t* xi_feed_update(
         state = CALL_ON_SELF_INIT( io_layer, 0, LAYER_STATE_OK );
         if( state != LAYER_STATE_OK ) { return 0; }
 
-        xi_connection_data_t conn_data = { XI_HOST, XI_PORT };
+        xi_connection_data_t conn_data = { XI_HOST, XI_PORT, 0, 0, 0 };
 
         state = CALL_ON_SELF_CONNECT( io_layer, ( void *) &conn_data, LAYER_STATE_OK );
         if( state != LAYER_STATE_OK ) { return 0; }
@@ -647,7 +648,7 @@ const xi_response_t* xi_datastream_get(
         state = CALL_ON_SELF_INIT( io_layer, 0, LAYER_STATE_OK );
         if( state != LAYER_STATE_OK ) { return 0; }
 
-        xi_connection_data_t conn_data = { XI_HOST, XI_PORT };
+        xi_connection_data_t conn_data = { XI_HOST, XI_PORT, 0, 0, 0 };
 
         state = CALL_ON_SELF_CONNECT( io_layer, ( void *) &conn_data, LAYER_STATE_OK );
         if( state != LAYER_STATE_OK ) { return 0; }
@@ -696,7 +697,7 @@ const xi_response_t* xi_datastream_create(
         state = CALL_ON_SELF_INIT( io_layer, 0, LAYER_STATE_OK );
         if( state != LAYER_STATE_OK ) { return 0; }
 
-        xi_connection_data_t conn_data = { XI_HOST, XI_PORT };
+        xi_connection_data_t conn_data = { XI_HOST, XI_PORT, 0, 0, 0 };
 
         state = CALL_ON_SELF_CONNECT( io_layer, ( void *) &conn_data, LAYER_STATE_OK );
         if( state != LAYER_STATE_OK ) { return 0; }
@@ -744,7 +745,7 @@ const xi_response_t* xi_datastream_update(
         state = CALL_ON_SELF_INIT( io_layer, 0, LAYER_STATE_OK );
         if( state != LAYER_STATE_OK ) { return 0; }
 
-        xi_connection_data_t conn_data = { XI_HOST, XI_PORT };
+        xi_connection_data_t conn_data = { XI_HOST, XI_PORT, 0, 0, 0 };
 
         state = CALL_ON_SELF_CONNECT( io_layer, ( void *) &conn_data, LAYER_STATE_OK );
         if( state != LAYER_STATE_OK ) { return 0; }
@@ -791,7 +792,7 @@ const xi_response_t* xi_datastream_delete(
         state = CALL_ON_SELF_INIT( io_layer, 0, LAYER_STATE_OK );
         if( state != LAYER_STATE_OK ) { return 0; }
 
-        xi_connection_data_t conn_data = { XI_HOST, XI_PORT };
+        xi_connection_data_t conn_data = { XI_HOST, XI_PORT, 0, 0, 0 };
 
         state = CALL_ON_SELF_CONNECT( io_layer, ( void *) &conn_data, LAYER_STATE_OK );
         if( state != LAYER_STATE_OK ) { return 0; }
@@ -839,7 +840,7 @@ const xi_response_t* xi_datapoint_delete(
         state = CALL_ON_SELF_INIT( io_layer, 0, LAYER_STATE_OK );
         if( state != LAYER_STATE_OK ) { return 0; }
 
-        xi_connection_data_t conn_data = { XI_HOST, XI_PORT };
+        xi_connection_data_t conn_data = { XI_HOST, XI_PORT, 0, 0, 0 };
 
         state = CALL_ON_SELF_CONNECT( io_layer, ( void *) &conn_data, LAYER_STATE_OK );
         if( state != LAYER_STATE_OK ) { return 0; }
@@ -888,7 +889,7 @@ extern const xi_response_t* xi_datapoint_delete_range(
         state = CALL_ON_SELF_INIT( io_layer, 0, LAYER_STATE_OK );
         if( state != LAYER_STATE_OK ) { return 0; }
 
-        xi_connection_data_t conn_data = { XI_HOST, XI_PORT };
+        xi_connection_data_t conn_data = { XI_HOST, XI_PORT, 0, 0, 0 };
 
         state = CALL_ON_SELF_CONNECT( io_layer, ( void *) &conn_data, LAYER_STATE_OK );
         if( state != LAYER_STATE_OK ) { return 0; }
