@@ -17,16 +17,7 @@
 #include <stdlib.h>
 #include <sys/select.h>
 
-void print_usage()
-{
-    static const char usage[] = "This is example_mqtt_publish of xi library\n"
-    "to get publish value at certain topic: \n"
-    "mqtt_connect_and_publish topic msg\n";
-
-    printf( "%s", usage );
-}
-
-#define REQUIRED_ARGS 3
+static char* test_topic = NULL;
 
 // logic loop for the mqtt processing in python like pseudocode
 //
@@ -199,7 +190,7 @@ layer_state_t delayed_publish(
     xi_context_t* context = ( xi_context_t* ) in_context;
 
     // sending the connect request
-    xi_nob_mqtt_publish( context, "test_topic", "test_msg_delayed" );
+    xi_nob_mqtt_publish( context, test_topic, "test_msg_delayed" );
 
     { // register delayed publish again
         MAKE_HANDLE_H1( &delayed_publish, in_context );
@@ -226,9 +217,9 @@ layer_state_t on_connected(
     }
 
     // sending the connect request
-    xi_nob_mqtt_publish( context, "test_topic", "test_msg" );
-    xi_nob_mqtt_publish( context, "test_topic", "test_msg2" );
-    xi_nob_mqtt_publish( context, "test_topic", "test_msg3" );
+    xi_nob_mqtt_publish( context, test_topic, "test_msg" );
+    xi_nob_mqtt_publish( context, test_topic, "test_msg2" );
+    xi_nob_mqtt_publish( context, test_topic, "test_msg3" );
 
     { // register delayed publish
         MAKE_HANDLE_H1( &delayed_publish, in_context );
@@ -242,7 +233,7 @@ layer_state_t on_connected(
 
     {
         MAKE_HANDLE_H3( &on_test_message, context, 0, LAYER_STATE_OK );
-        xi_nob_mqtt_subscribe( context, "/olgierd/t1", handle );
+        xi_nob_mqtt_subscribe( context, test_topic, handle );
     }
 
     /*{
@@ -253,6 +244,7 @@ layer_state_t on_connected(
     return LAYER_STATE_OK;
 }
 
+
 int main( int argc, char* argv[] )
 {
 
@@ -260,12 +252,8 @@ int main( int argc, char* argv[] )
     XI_UNUSED( argc );
     XI_UNUSED( argv );
 #else
-    if( argc < REQUIRED_ARGS )
-    {
-        print_usage();
-        exit( 0 );
-    }
 
+    const char* local_test_topic = "test_topic";
     // create the xi library context
     xi_context_t* xi_context
         = xi_create_context( XI_MQTT, 0, 0 );
@@ -281,14 +269,30 @@ int main( int argc, char* argv[] )
             , 0
             , 0 );
 
-        xi_nob_mqtt_connect(
-                xi_context
-              , "localhost"
-              , 1883
-              , 10
-              , 0
-              , 0
-              , handle );
+        if(argc != 5)
+        {
+            test_topic = local_test_topic;
+            xi_nob_mqtt_connect(
+                    xi_context
+                  , "localhost"
+                  , 1883
+                  , 10
+                  , 0
+                  , 0
+                  , handle );
+        }
+        else
+        {
+            test_topic = argv[4];
+            xi_nob_mqtt_connect(
+                    xi_context
+                  , argv[1]
+                  , 1883
+                  , 10
+                  , argv[2]
+                  , argv[3]
+                  , handle );
+        }
     }
 
     //xi_nob_mqtt_subscribe( xi, "/a/b/c/0", on_0 );
