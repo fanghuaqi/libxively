@@ -39,6 +39,10 @@ update_mbed_repo:
 	git archive $(MBED_REV) \
 		"src/libxively/*.[ch]" \
 		"src/libxively/io/mbed/" \
+		"src/libxively/xi_datastructures/" \
+		"src/libxively/xi_event_dispatcher/" \
+		"src/libxively/nob/" \
+		"src/libxively/mqtt/" \
 		| tar x -C $(MBED_TEMP)
 	echo "#define XI_VERSION \"0.1.x-$(MBED_REV)\"" \
 		> $(MBED_TEMP)/src/libxively/xi_version.h
