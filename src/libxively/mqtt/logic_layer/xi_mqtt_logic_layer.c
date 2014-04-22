@@ -95,9 +95,9 @@ static void fill_with_connect_data(
     msg->common.common_u.common_bits.type       = MQTT_TYPE_CONNECT;
     msg->common.remaining_length                = 0; // this is filled during the serialization
 
-    memcpy( msg->connect.protocol_name.data, "MQIsdp", 6 );
-    msg->connect.protocol_name.length                    = 6;
-    msg->connect.protocol_version                        = 3;
+    memcpy( msg->connect.protocol_name.data, "MQTT", 4 );
+    msg->connect.protocol_name.length                    = 4;
+    msg->connect.protocol_version                        = 4;
 
     if( username )
     {
