@@ -16,8 +16,13 @@ else
     XI_LAYER_DIRS += csv http
 endif
 
-XI_CFLAGS += -I./ \
-	$(foreach layerdir,$(XI_LAYER_DIRS),-I./$(layerdir))
+XI_INCLUDE_DIRS := ./ $(XI_LAYER_DIRS)
+
+ifeq ($(MAKECMDGOALS),flags)
+    XI_CFLAGS += $(foreach layerdir,$(XI_INCLUDE_DIRS),-I$(realpath ./$(layerdir)))
+else
+    XI_CFLAGS += $(foreach layerdir,$(XI_INCLUDE_DIRS),-I./$(layerdir))
+endif
 
 XI_SOURCES += $(foreach layerdir,$(XI_LAYER_DIRS),\
 	$(wildcard $(layerdir)/*.c $(layerdir)/*.cpp))
