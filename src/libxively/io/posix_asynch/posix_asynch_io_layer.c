@@ -1,15 +1,23 @@
-// c
+// Copyright (c) 2003-2014, LogMeIn, Inc. All rights reserved.
+// This is part of Xively C library, it is under the BSD 3-Clause license.
+
 #include <stdio.h>
+#if (!defined(XI_IO_LAYER_POSIX_COMPAT)) || (XI_IO_LAYER_POSIX_COMPAT == 0)
 #include <netdb.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#elif XI_IO_LAYER_POSIX_COMPAT == 1
+#define LWIP_COMPAT_SOCKETS 1
+#define LWIP_POSIX_SOCKETS_IO_NAMES 1
+#include <lwip/netdb.h>
+#include <lwip/sockets.h>
+#endif
 #include <string.h>
 #include <stdint.h>
 #include <fcntl.h>
 #include <errno.h>
 
-// local
 #include "posix_asynch_io_layer.h"
 #include "posix_asynch_data.h"
 #include "xi_allocator.h"
