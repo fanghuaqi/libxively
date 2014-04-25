@@ -27,3 +27,6 @@ $(XI_OBJDIR)/%.d : %.cpp
 clean:
 	$(RM) -rf $(XI_BINDIR)
 	$(RM) -rf $(XI_OBJDIR)
+
+flags:
+	@echo $(XI_CFLAGS)
