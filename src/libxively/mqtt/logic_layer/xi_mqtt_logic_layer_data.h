@@ -55,6 +55,7 @@ typedef struct xi_mqtt_logic_task_data_s
 typedef struct xi_mqtt_logic_task_s
 {
     xi_mqtt_logic_task_data_t   data;
+    uint16_t                    cs;
 } xi_mqtt_logic_task_t;
 
 #define PUSH_BACK( type, list, elem ) { \
@@ -85,8 +86,9 @@ typedef struct xi_mqtt_logic_queue_s
 {
     layer_connectivity_t*           context;
     xi_mqtt_logic_task_t*           task;
-    mqtt_message_t*                 msg;
     layer_state_t                   state;
+    uint16_t                        message_id;
+    xi_evtd_handle_t                logic;
     struct xi_mqtt_logic_queue_s* __next;
 } xi_mqtt_logic_queue_t;
 
@@ -99,6 +101,7 @@ typedef struct
 
     // handle to the user idle function that suppose to
     //xi_user_idle_t*     user_idle_ptr;
+    xi_mqtt_logic_queue_t*      msg_demux;
     xi_mqtt_logic_queue_t*      tasks_queue;
     xi_static_vector_t*         handlers_for_topics;
     xi_connection_data_t*       conn_data;
