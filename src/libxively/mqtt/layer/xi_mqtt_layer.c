@@ -36,8 +36,9 @@ layer_state_t xi_mqtt_layer_data_ready(
 
     BEGIN_CORO( layer_data->cs );
 
-    uint8_t* buffer = NULL;
     size_t msg_contents_size = mqtt_serialiser_size(NULL, msg);
+    
+    uint8_t* buffer = NULL;
     buffer = xi_alloc( msg_contents_size );
     XI_CHECK_MEMORY( msg_contents_size );
     memset( buffer, 0, msg_contents_size );
@@ -46,8 +47,8 @@ layer_state_t xi_mqtt_layer_data_ready(
     data_descriptor = xi_alloc( sizeof( data_descriptor_t ) );
     XI_CHECK_MEMORY( data_descriptor );
     memset( data_descriptor, 0, sizeof( data_descriptor_t ) );
-    data_descriptor->data_ptr = (char*) buffer;
-
+    
+    data_descriptor->data_ptr  = (char*) buffer;
     data_descriptor->data_size = (unsigned short) msg_contents_size;
     data_descriptor->real_size = (unsigned short) msg_contents_size;
     data_descriptor->curr_pos  = 0;
