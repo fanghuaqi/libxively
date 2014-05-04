@@ -122,8 +122,8 @@ void main_loop()
         xi_static_vector_index_type_t i = 0;
         int max_fd                      = 0;
 
-        tv.tv_sec   = 0;
-        tv.tv_usec  = 250000;
+        tv.tv_sec   = 1;
+        tv.tv_usec  = 0;
 
         FD_ZERO( &rfds );
         FD_ZERO( &wfds );
