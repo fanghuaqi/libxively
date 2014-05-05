@@ -352,7 +352,6 @@ layer_state_t posix_asynch_io_layer_connect(
     socklen_t lon                           = sizeof( int );
     int errval                              = 0;
 
-
     BEGIN_CORO( cs )
 
     xi_debug_format( "Connecting layer [%d] to the endpoint", layer->layer_type_id );
@@ -423,7 +422,13 @@ layer_state_t posix_asynch_io_layer_connect(
         }
     }
 
-    getsockopt( posix_asynch_data->socket_fd, SOL_SOCKET, SO_ERROR, ( void* )( &valopt ), &lon );
+    // @TODO add error handling for that one
+    // getsocktopt may fail in some cases
+    if( getsockopt( posix_asynch_data->socket_fd, SOL_SOCKET, SO_ERROR, ( void* )( &valopt ), &lon ) < 0 )
+    {
+        xi_debug_format( "Error while getsockopt %s\n", strerror( errno ) );
+        EXIT( cs, CALL_ON_NEXT_CONNECT( context, data, LAYER_STATE_ERROR ) );
+    }
 
     if ( valopt )
     {
