@@ -92,7 +92,7 @@ layer_state_t posix_asynch_io_layer_data_ready(
             if( len == 0 )
             {
                 xi_debug_logger( "connection reset by peer" );
-                return EXIT( layer_data->cs, posix_asynch_io_layer_on_close( context, 0, LAYER_STATE_ERROR ) );
+                return EXIT( layer_data->cs, CALL_ON_SELF_ON_CLOSE( context, 0, LAYER_STATE_ERROR ) );
             }
 
             buffer->curr_pos += len;
@@ -182,7 +182,9 @@ layer_state_t posix_asynch_io_layer_on_data_ready(
     if( len == 0 ) // we've been disconnected, so let's roll down
     {
         xi_debug_logger( "connection reset by peer" );
-        return posix_asynch_io_layer_on_close( context, 0, LAYER_STATE_ERROR );
+        XI_SAFE_FREE( data_buffer );
+        XI_SAFE_FREE( buffer_descriptor );
+        return CALL_ON_SELF_ON_CLOSE( context, 0, LAYER_STATE_ERROR );
     }
 
     buffer_descriptor->real_size    = len;
