@@ -140,16 +140,13 @@ xi_evtd_instance_t* xi_evtd_create_instance()
 {
     xi_evtd_instance_t* evtd_instance = ( xi_evtd_instance_t* ) xi_alloc( sizeof( xi_evtd_instance_t ) );
 
-    XI_CHECK_MEMORY( evtd_instance );
-
+    XI_CHECK_MEMORY( evtd_instance );    
     memset( evtd_instance, 0, sizeof( xi_evtd_instance_t ) );
 
     evtd_instance->call_heap = xi_heap_create( 16 );
-
     XI_CHECK_MEMORY( evtd_instance->call_heap );
 
     evtd_instance->handles_and_fd = xi_static_vector_create( 16 );
-
     XI_CHECK_MEMORY( evtd_instance->handles_and_fd );
 
     return evtd_instance;

@@ -48,7 +48,7 @@ layer_state_t posix_asynch_io_layer_data_ready(
     if( posix_asynch_data == 0 )
     {
         xi_debug_logger( "layer_data == 0" );
-        return CALL_ON_NEXT_DATA_READY( context, data, LAYER_STATE_ERROR );
+        return CALL_ON_NEXT_DATA_READY( context, 0, LAYER_STATE_ERROR );
     }
 
     posix_asynch_data_t* layer_data
@@ -92,7 +92,7 @@ layer_state_t posix_asynch_io_layer_data_ready(
             if( len == 0 )
             {
                 xi_debug_logger( "connection reset by peer" );
-                return EXIT( layer_data->cs, CALL_ON_SELF_CLOSE( context, 0, LAYER_STATE_OK ) );
+                return EXIT( layer_data->cs, posix_asynch_io_layer_on_close( context, 0, LAYER_STATE_ERROR ) );
             }
 
             buffer->curr_pos += len;
@@ -181,7 +181,8 @@ layer_state_t posix_asynch_io_layer_on_data_ready(
 
     if( len == 0 ) // we've been disconnected, so let's roll down
     {
-        return CALL_ON_SELF_CLOSE( context, 0, LAYER_STATE_OK );
+        xi_debug_logger( "connection reset by peer" );
+        return posix_asynch_io_layer_on_close( context, 0, LAYER_STATE_ERROR );
     }
 
     buffer_descriptor->real_size    = len;
@@ -202,6 +203,8 @@ layer_state_t posix_asynch_io_layer_close(
     , void* data
     , layer_state_t in_state )
 {
+    posix_asynch_data_t* posix_asynch_data = CON_SELF( context )->user_data;
+
     return CALL_ON_SELF_ON_CLOSE( context, data, LAYER_STATE_OK );
 }
 
@@ -215,6 +218,12 @@ layer_state_t posix_asynch_io_layer_on_close(
 
     //
     posix_asynch_data_t* posix_asynch_data = CON_SELF( context )->user_data;
+
+    if( posix_asynch_data == 0 )
+    {
+        return LAYER_STATE_ERROR;
+    }
+
     layer_state_t ret = LAYER_STATE_OK;
 
     if( shutdown( posix_asynch_data->socket_fd, SHUT_RDWR ) == -1 )
@@ -237,7 +246,7 @@ err_handling:
     // unregister the fd
     xi_evtd_unregister_fd( xi_evtd_instance, posix_asynch_data->socket_fd );
     // cleanup the memory
-    XI_SAFE_FREE( posix_asynch_data );
+    XI_SAFE_FREE( CON_SELF( context )->user_data );
 
     return CALL_ON_NEXT_ON_CLOSE( context, data, ret );
 }
@@ -321,6 +330,10 @@ layer_state_t posix_asynch_io_layer_connect(
     xi_connection_data_t* connection_data   = ( xi_connection_data_t* ) data;
     layer_t* layer                          = ( layer_t* ) CON_SELF( context );
     posix_asynch_data_t* posix_asynch_data  = ( posix_asynch_data_t* ) layer->user_data;
+    int valopt                              = 0;
+    socklen_t lon                           = sizeof( int );
+    int errval                              = 0;
+
 
     BEGIN_CORO( cs )
 
@@ -365,7 +378,9 @@ layer_state_t posix_asynch_io_layer_connect(
 
     if( connect( posix_asynch_data->socket_fd, ( struct sockaddr* ) &name, sizeof( struct sockaddr ) ) == -1 )
     {
-        if( errno != EINPROGRESS )
+        errval = errno;
+
+        if( errval != EINPROGRESS )
         {
             xi_debug_printf( "errno: %d", errno );
             xi_debug_logger( "Connecting to the endpoint [failed]" );
@@ -374,11 +389,6 @@ layer_state_t posix_asynch_io_layer_connect(
         }
         else
         {
-            // @TODO
-            // think about that... maybe some new macro
-            // to wrap it with some nice call
-            // cause that won't work in asynch word
-            // ....
             MAKE_HANDLE_H3(
                   &posix_asynch_io_layer_connect
                 , ( void* ) context
@@ -393,6 +403,14 @@ layer_state_t posix_asynch_io_layer_connect(
 
             YIELD( cs, LAYER_STATE_OK ); // return here whenever we can write
         }
+    }
+
+    getsockopt( posix_asynch_data->socket_fd, SOL_SOCKET, SO_ERROR, ( void* )( &valopt ), &lon );
+
+    if ( valopt )
+    {
+         xi_debug_format( "Error while connecting %s\n", strerror( valopt ) );
+         EXIT( cs, CALL_ON_NEXT_CONNECT( context, data, LAYER_STATE_ERROR ) );
     }
 
     EXIT( cs, CALL_ON_NEXT_CONNECT( context, data, LAYER_STATE_OK ););
