@@ -616,7 +616,6 @@ static layer_state_t main_logic(
     if( in_state == LAYER_STATE_ERROR )
     {
         xi_debug_logger( "There has been error" );
-
     }
 
     layer_connectivity_t* context = ( layer_connectivity_t* ) in;
@@ -720,12 +719,6 @@ static layer_state_t run_next_task(
                     , out );
 
                 assert( layer_data->tasks_queue != 0 );
-
-                // register self to execute in that case
-                /*{
-                    MAKE_HANDLE_H1( &run_next_task, context );
-                    xi_evtd_continue( xi_evtd_instance, handle, 1 );
-                }*/
 
                 return LAYER_STATE_OK;
             }
@@ -867,7 +860,6 @@ layer_state_t xi_mqtt_logic_layer_on_data_ready(
     // this way the state machine is always at the proper state
     if( recvd_msg != 0 )
     {
-
         switch( recvd_msg->common.common_u.common_bits.type )
         {
             case MQTT_TYPE_PUBLISH:
@@ -1017,6 +1009,8 @@ layer_state_t xi_mqtt_logic_layer_on_close(
     {
         union data_t* sub
             = layer_data->handlers_for_topics->array[ 0 ].value;
+
+        assert( sub != 0 );
 
         XI_SAFE_FREE( sub->subscribe.topic );
         XI_SAFE_FREE( sub );
