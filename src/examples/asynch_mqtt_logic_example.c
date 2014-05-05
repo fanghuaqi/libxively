@@ -18,6 +18,7 @@
 #include <sys/select.h>
 
 static char* test_topic = NULL;
+static uint8_t connected  = 0;
 
 // logic loop for the mqtt processing in python like pseudocode
 //
@@ -226,9 +227,11 @@ layer_state_t on_connected(
         xi_evtd_continue( xi_evtd_instance, handle, 2 );
     }
 
+    if( connected == 0 ) // we want to call it only once
     { // register delayed publish
-        //MAKE_HANDLE_H1( &delayed_publish, in_context );
-        //xi_evtd_continue( xi_evtd_instance, handle, 3 );
+        MAKE_HANDLE_H1( &delayed_publish, in_context );
+        xi_evtd_continue( xi_evtd_instance, handle, 3 );
+        connected = 1;
     }
 
     {

@@ -555,6 +555,7 @@ static layer_state_t keepalive_logic (
     else if( *state == LAYER_STATE_TIMEOUT )
     {
         xi_debug_logger( "keepalive timeout passed!" );
+
         layer_data->keep_alive_timeout = 0;
         EXIT( layer_data->data_ready_cs, xi_mqtt_logic_layer_reconnect( context, 0, LAYER_STATE_TIMEOUT ) );
     }
@@ -573,6 +574,7 @@ static layer_state_t keepalive_logic (
     else
     {
         xi_debug_logger( "unexpected error" );
+
         if( layer_data->keep_alive_timeout != 0 )
         {
             layer_data->keep_alive_timeout = xi_evtd_cancel( xi_evtd_instance
@@ -689,11 +691,7 @@ static layer_state_t run_next_task(
     xi_mqtt_logic_layer_data_t* layer_data
         = ( xi_mqtt_logic_layer_data_t* ) CON_SELF( context )->user_data;
 
-    if( layer_data == 0 )
-    {
-        xi_debug_logger( "no layer_data" );
-        return LAYER_STATE_ERROR;
-    }
+    assert( layer_data != 0 );
 
     xi_mqtt_logic_queue_t* out = 0;
 
@@ -1020,7 +1018,9 @@ layer_state_t xi_mqtt_logic_layer_on_close(
 
     xi_static_vector_destroy( layer_data->handlers_for_topics );
 
-    while( layer_data->tasks_queue )
+    // Temporarily disabled until decission about the
+    // strategy while being disconnected
+    /*while( layer_data->tasks_queue )
     {
         xi_mqtt_logic_queue_t* out = 0;
 
@@ -1032,7 +1032,7 @@ layer_state_t xi_mqtt_logic_layer_on_close(
 
         XI_SAFE_FREE( out->task );
         XI_SAFE_FREE( out );
-    }
+    }*/
 
     if( layer_data->curr_task != 0 )
     {
