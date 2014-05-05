@@ -51,14 +51,9 @@ static layer_state_t send_keep_alive(
     task->data.mqtt_settings.scenario_t = XI_MQTT_KEEPALIVE;
     task->data.mqtt_settings.qos_t      = XI_MQTT_QOS_ZERO;
 
-    CALL_ON_SELF_DATA_READY(
-          context
-        , task
-        , LAYER_STATE_OK );
-
     xi_debug_logger( "send_keep_alive" );
 
-    return LAYER_STATE_OK;
+    return xi_mqtt_logic_layer_data_ready( context, task, LAYER_STATE_OK );
 
 err_handling:
     XI_SAFE_FREE( task );
@@ -501,6 +496,9 @@ static layer_state_t keepalive_logic (
         = ( xi_mqtt_logic_layer_data_t* ) CON_SELF( context )->user_data;
 
     //
+    assert( task != 0 );
+
+    //
     BEGIN_CORO( task->cs );
 
     msg_memory = xi_alloc( sizeof( mqtt_message_t ) );
@@ -546,9 +544,9 @@ static layer_state_t keepalive_logic (
     YIELD( task->cs
         , LAYER_STATE_OK );
 
-    if( *state == LAYER_STATE_TIMEOUT )
+    if( *state == LAYER_STATE_OK )
     {
-        if( layer_data->keep_alive_timeout )
+        if( layer_data->keep_alive_timeout != 0 )
         {
             layer_data->keep_alive_timeout = xi_evtd_cancel( xi_evtd_instance
                 , layer_data->keep_alive_timeout );
@@ -564,7 +562,18 @@ static layer_state_t keepalive_logic (
     {
         xi_debug_logger( "error while waiting for pingresp!" );
 
-        if( layer_data->keep_alive_timeout )
+        if( layer_data->keep_alive_timeout != 0 )
+        {
+            layer_data->keep_alive_timeout = xi_evtd_cancel( xi_evtd_instance
+                , layer_data->keep_alive_timeout );
+        }
+
+        EXIT( task->cs, run_next_task( context ) );
+    }
+    else
+    {
+        xi_debug_logger( "unexpected error" );
+        if( layer_data->keep_alive_timeout != 0 )
         {
             layer_data->keep_alive_timeout = xi_evtd_cancel( xi_evtd_instance
                 , layer_data->keep_alive_timeout );
@@ -702,6 +711,8 @@ static layer_state_t run_next_task(
         // prevent execution of other tasks while connecting
         if( layer_data->the_state == XI_MLLS_CONNECTING )
         {
+            // we only allows connect to happen
+            // while client is connecting
             if( out->task->data.mqtt_settings.scenario_t != XI_MQTT_CONNECT )
             {
                 PUSH_BACK( xi_mqtt_logic_queue_t
@@ -711,10 +722,10 @@ static layer_state_t run_next_task(
                 assert( layer_data->tasks_queue != 0 );
 
                 // register self to execute in that case
-                {
+                /*{
                     MAKE_HANDLE_H1( &run_next_task, context );
                     xi_evtd_continue( xi_evtd_instance, handle, 1 );
-                }
+                }*/
 
                 return LAYER_STATE_OK;
             }
@@ -803,10 +814,25 @@ layer_state_t xi_mqtt_logic_layer_data_ready(
 
     assert( tmp->task->data.mqtt_settings.scenario_t <= XI_MQTT_KEEPALIVE );
 
-    PUSH_BACK(
-          xi_mqtt_logic_queue_t
-        , layer_data->tasks_queue
-        , tmp );
+    if( tmp->task->priority == XI_MQTT_LOGIC_TASK_NORMAL )
+    {
+        PUSH_BACK(
+              xi_mqtt_logic_queue_t
+            , layer_data->tasks_queue
+            , tmp );
+    }
+    else if( tmp->task->priority == XI_MQTT_LOGIC_TASK_IMMEDIATE )
+    {
+        PUSH_FRONT(
+              xi_mqtt_logic_queue_t
+            , layer_data->tasks_queue
+            , tmp );
+    }
+    else
+    {
+        xi_debug_logger( "Unknown task priority!" );
+        return LAYER_STATE_ERROR;
+    }
 
     xi_debug_logger( "added task to the queue..." );
 
@@ -944,16 +970,10 @@ layer_state_t xi_mqtt_logic_layer_connect(
 
     task->data.mqtt_settings.scenario_t = XI_MQTT_CONNECT;
     task->data.mqtt_settings.qos_t      = XI_MQTT_QOS_ZERO;
+    task->priority                      = XI_MQTT_LOGIC_TASK_IMMEDIATE;
 
-    MAKE_HANDLE_H3(
-          &xi_mqtt_logic_layer_data_ready
-        , context
-        , task
-        , LAYER_STATE_OK );
-
-    xi_evtd_continue( xi_evtd_instance, handle, 0 );
-
-    return LAYER_STATE_OK;
+    // push the task directly
+    return xi_mqtt_logic_layer_data_ready( context, task, LAYER_STATE_OK );
 
 err_handling:
     return LAYER_STATE_ERROR;

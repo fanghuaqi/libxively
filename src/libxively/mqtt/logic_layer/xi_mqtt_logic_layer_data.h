@@ -52,11 +52,17 @@ typedef struct xi_mqtt_logic_task_data_s
     } *data_u;
 } xi_mqtt_logic_task_data_t;
 
+typedef enum {
+    XI_MQTT_LOGIC_TASK_NORMAL = 0,
+    XI_MQTT_LOGIC_TASK_IMMEDIATE
+} xi_mqtt_logic_task_priority_t;
+
 typedef struct xi_mqtt_logic_task_s
 {
-    xi_mqtt_logic_task_data_t   data;
-    uint16_t                    cs;
-    struct xi_heap_element_s*   task_timeout;
+    xi_mqtt_logic_task_data_t       data;
+    xi_mqtt_logic_task_priority_t   priority;
+    uint16_t                        cs;
+    struct xi_heap_element_s*       task_timeout;
 } xi_mqtt_logic_task_t;
 
 #define PUSH_BACK( type, list, elem ) { \
@@ -70,6 +76,15 @@ typedef struct xi_mqtt_logic_task_s
         list = elem; \
     } else { \
         prev->__next = elem; \
+    } \
+}
+
+#define PUSH_FRONT( type, list, elem ) { \
+    if( list != 0 ) { \
+        elem->__next = list; \
+        list = elem; \
+    } else { \
+        list = elem; \
     } \
 }
 
