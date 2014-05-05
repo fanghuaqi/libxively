@@ -436,16 +436,10 @@ layer_state_t posix_asynch_io_layer_connect(
          EXIT( cs, CALL_ON_NEXT_CONNECT( context, data, LAYER_STATE_ERROR ) );
     }
 
-    EXIT( cs, CALL_ON_NEXT_CONNECT( context, data, LAYER_STATE_OK ););
+    EXIT( cs, CALL_ON_NEXT_CONNECT( context, data, LAYER_STATE_OK ) );
 
 err_handling:
-    // cleanup the memory
-    xi_evtd_unregister_fd( xi_evtd_instance, posix_asynch_data->socket_fd );
-
-    if( posix_asynch_data )     { close( posix_asynch_data->socket_fd ); }
-    if( layer->user_data )      { XI_SAFE_FREE( layer->user_data ); }
-
-    EXIT( cs, CALL_ON_NEXT_CONNECT( CON_SELF( context ), data, LAYER_STATE_ERROR ) );
+    EXIT( cs, CALL_ON_NEXT_CONNECT( context, data, LAYER_STATE_ERROR ) );
 
     END_CORO()
 }
