@@ -124,6 +124,17 @@ layer_state_t posix_asynch_io_layer_on_data_ready(
 
     if( posix_asynch_data == 0 )
     {
+        if( data ) // let's clean the memory
+        {
+            buffer_descriptor = ( data_descriptor_t* ) data;
+            data_buffer       = buffer_descriptor->data_ptr;
+
+            assert( data_buffer != 0 );
+
+            XI_SAFE_FREE( data_buffer );
+            XI_SAFE_FREE( buffer_descriptor );
+        }
+
         return CALL_ON_NEXT_ON_DATA_READY( context, data, LAYER_STATE_ERROR );
     }
 
@@ -134,8 +145,13 @@ layer_state_t posix_asynch_io_layer_on_data_ready(
 
         assert( buffer_descriptor->data_size == XI_IO_BUFFER_SIZE ); // sanity check
 
+        data_buffer                     = buffer_descriptor->data_ptr;
+
+        assert( data_buffer != 0 );
+
         buffer_descriptor->curr_pos     = 0;
         buffer_descriptor->real_size    = 0;
+
     }
     else
     {
