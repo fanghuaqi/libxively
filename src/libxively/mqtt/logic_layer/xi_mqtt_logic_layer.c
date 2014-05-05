@@ -713,7 +713,7 @@ static layer_state_t run_next_task(
                 // register self to execute in that case
                 {
                     MAKE_HANDLE_H1( &run_next_task, context );
-                    xi_evtd_continue( xi_evtd_instance, handle, 0 );
+                    xi_evtd_continue( xi_evtd_instance, handle, 1 );
                 }
 
                 return LAYER_STATE_OK;
@@ -1014,8 +1014,9 @@ layer_state_t xi_mqtt_logic_layer_on_close(
            , layer_data->tasks_queue
            , out );
 
-        assert( layer_data->curr_task == out->task );
+        assert( layer_data->curr_task != out->task );
 
+        XI_SAFE_FREE( out->task );
         XI_SAFE_FREE( out );
     }
 
