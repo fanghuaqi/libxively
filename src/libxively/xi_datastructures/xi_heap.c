@@ -240,11 +240,15 @@ void xi_heap_element_remove(
         xi_heap_index_type_t e_i    = ( *e )->index;
 
         xi_heap_elements_swap( e, last_e );
+        xi_heap->first_free -= 1;
+
         xi_heap_fix_order_down( xi_heap, e_i );
         xi_heap_fix_order_up( xi_heap, e_i );
     }
-
-    xi_heap->first_free -= 1;
+    else
+    {
+        xi_heap->first_free -= 1;
+    }
 }
 
 void xi_heap_element_update_key(

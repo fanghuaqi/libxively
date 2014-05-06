@@ -23,12 +23,13 @@ layer_state_t xi_mqtt_layer_data_ready(
     xi_mqtt_layer_data_t* layer_data
         = ( xi_mqtt_layer_data_t* ) CON_SELF( context )->user_data;
 
+    mqtt_message_t* msg = ( mqtt_message_t* ) data;
+
     if( layer_data == 0 )
     {
+        if( msg ) { XI_SAFE_FREE( msg ); }
         return CALL_ON_NEXT_DATA_READY( context, data, LAYER_STATE_ERROR );
     }
-
-    mqtt_message_t* msg = ( mqtt_message_t* ) data;
 
     mqtt_serialiser_t serializer;
     mqtt_serialiser_init( & serializer );
@@ -60,7 +61,14 @@ layer_state_t xi_mqtt_layer_data_ready(
     YIELD( layer_data->cs
         , CALL_ON_PREV_DATA_READY( context, ( void* ) &data_descriptor, state ) );
 
-    xi_debug_logger( "message sent... " );
+    if( state == LAYER_STATE_ERROR )
+    {
+        xi_debug_logger( "message not sent... " );
+    }
+    else
+    {
+        xi_debug_logger( "message sent... " );
+    }
 
     EXIT( layer_data->cs
         , CALL_ON_NEXT_ON_DATA_READY( context, 0, state ) );
@@ -97,6 +105,11 @@ layer_state_t xi_mqtt_layer_on_data_ready(
 
     BEGIN_CORO( cs )
 
+    if( in_state == LAYER_STATE_ERROR )
+    {
+        goto err_handling;
+    }
+
     layer_data->msg = ( mqtt_message_t* ) xi_alloc( sizeof( mqtt_message_t ) );
     XI_CHECK_MEMORY( layer_data->msg );
     memset( layer_data->msg, 0, sizeof( mqtt_message_t ) );
@@ -113,7 +126,12 @@ layer_state_t xi_mqtt_layer_on_data_ready(
         YIELD_UNTIL( cs
             , ( local_state == LAYER_STATE_WANT_READ )
             , CALL_ON_PREV_ON_DATA_READY( context, data_descriptor, local_state ) );
-    } while( local_state == LAYER_STATE_WANT_READ );
+    } while( in_state != LAYER_STATE_ERROR && local_state == LAYER_STATE_WANT_READ );
+
+    if( in_state == LAYER_STATE_ERROR )
+    {
+        goto err_handling;
+    }
 
     // delete the buffer if limit reached or previous call might have failed reading the message
     if( data_descriptor->curr_pos == data_descriptor->real_size || local_state != LAYER_STATE_OK )

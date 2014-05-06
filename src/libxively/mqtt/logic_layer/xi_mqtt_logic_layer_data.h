@@ -52,9 +52,17 @@ typedef struct xi_mqtt_logic_task_data_s
     } *data_u;
 } xi_mqtt_logic_task_data_t;
 
+typedef enum {
+    XI_MQTT_LOGIC_TASK_NORMAL = 0,
+    XI_MQTT_LOGIC_TASK_IMMEDIATE
+} xi_mqtt_logic_task_priority_t;
+
 typedef struct xi_mqtt_logic_task_s
 {
-    xi_mqtt_logic_task_data_t   data;
+    xi_mqtt_logic_task_data_t       data;
+    xi_mqtt_logic_task_priority_t   priority;
+    uint16_t                        cs;
+    struct xi_heap_element_s*       task_timeout;
 } xi_mqtt_logic_task_t;
 
 #define PUSH_BACK( type, list, elem ) { \
@@ -68,6 +76,15 @@ typedef struct xi_mqtt_logic_task_s
         list = elem; \
     } else { \
         prev->__next = elem; \
+    } \
+}
+
+#define PUSH_FRONT( type, list, elem ) { \
+    if( list != 0 ) { \
+        elem->__next = list; \
+        list = elem; \
+    } else { \
+        list = elem; \
     } \
 }
 
@@ -85,10 +102,19 @@ typedef struct xi_mqtt_logic_queue_s
 {
     layer_connectivity_t*           context;
     xi_mqtt_logic_task_t*           task;
-    mqtt_message_t*                 msg;
     layer_state_t                   state;
+    uint16_t                        message_id;
+    xi_evtd_handle_t                logic;
     struct xi_mqtt_logic_queue_s* __next;
 } xi_mqtt_logic_queue_t;
+
+
+typedef enum {
+    XI_MLLS_NONE = 0,
+    XI_MLLS_CONNECTING,
+    XI_MLLS_CONNECTED,
+    XI_MLLS_SHUTTING_DOWN
+} xi_mqtt_logic_layer_state_t;
 
 typedef struct
 {
@@ -99,6 +125,7 @@ typedef struct
 
     // handle to the user idle function that suppose to
     //xi_user_idle_t*     user_idle_ptr;
+    xi_mqtt_logic_queue_t*      msg_demux;
     xi_mqtt_logic_queue_t*      tasks_queue;
     xi_static_vector_t*         handlers_for_topics;
     xi_connection_data_t*       conn_data;
@@ -106,6 +133,7 @@ typedef struct
     struct xi_heap_element_s*   keep_alive_event;
     struct xi_heap_element_s*   keep_alive_timeout;
     uint16_t                    data_ready_cs;
+    xi_mqtt_logic_layer_state_t the_state;
 } xi_mqtt_logic_layer_data_t;
 
 #ifdef __cplusplus

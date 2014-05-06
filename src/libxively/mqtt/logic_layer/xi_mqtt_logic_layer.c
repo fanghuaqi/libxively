@@ -17,7 +17,10 @@ extern "C" {
 
 
 static layer_state_t run_next_task(
-    layer_connectivity_t* context );
+    void* data );
+
+static layer_state_t xi_mqtt_logic_layer_reconnect(
+    void*, void*, layer_state_t );
 
 static layer_state_t keepalive_logic (
       layer_connectivity_t* context // should be the context of the logic layer
@@ -33,6 +36,11 @@ static layer_state_t send_keep_alive(
     xi_mqtt_logic_layer_data_t* layer_data
         = ( xi_mqtt_logic_layer_data_t* ) CON_SELF( context )->user_data;
 
+    if( layer_data == 0 )
+    {
+        return LAYER_STATE_ERROR;
+    }
+
     layer_data->keep_alive_event = 0;
 
     xi_mqtt_logic_task_t* task
@@ -43,14 +51,9 @@ static layer_state_t send_keep_alive(
     task->data.mqtt_settings.scenario_t = XI_MQTT_KEEPALIVE;
     task->data.mqtt_settings.qos_t      = XI_MQTT_QOS_ZERO;
 
-    CALL_ON_SELF_DATA_READY(
-          context
-        , task
-        , LAYER_STATE_OK );
-
     xi_debug_logger( "send_keep_alive" );
 
-    return LAYER_STATE_OK;
+    return xi_mqtt_logic_layer_data_ready( context, task, LAYER_STATE_OK );
 
 err_handling:
     XI_SAFE_FREE( task );
@@ -189,7 +192,7 @@ static inline void fill_with_subscribe_data(
  */
 static layer_state_t connect_server_logic(
       layer_connectivity_t* context // should be the context of the logic layer
-    , void* data
+    , xi_mqtt_logic_task_t* task
     , mqtt_message_t* msg_memory
     , layer_state_t* state )
 {
@@ -199,7 +202,7 @@ static layer_state_t connect_server_logic(
         = ( xi_mqtt_logic_layer_data_t* ) CON_SELF( context )->user_data;
 
     //
-    BEGIN_CORO( layer_data->data_ready_cs );
+    BEGIN_CORO( task->cs );
 
     msg_memory = xi_alloc( sizeof( mqtt_message_t ) );
     XI_CHECK_MEMORY( msg_memory );
@@ -210,13 +213,19 @@ static layer_state_t connect_server_logic(
         , layer_data->conn_data->password
         , layer_data->conn_data->keepalive_timeout );
 
-    YIELD( layer_data->data_ready_cs
+    YIELD( task->cs
         , CALL_ON_PREV_DATA_READY(
               context
             , msg_memory
             , LAYER_STATE_OK ) );
 
-    YIELD( layer_data->data_ready_cs
+    if( *state != LAYER_STATE_OK )
+    {
+        xi_debug_logger( "error during connection!" );
+        EXIT( task->cs, run_next_task( context ) );
+    }
+
+    YIELD( task->cs
         , LAYER_STATE_OK );
 
     // parse the response
@@ -226,14 +235,15 @@ static layer_state_t connect_server_logic(
         {
             layer_data->conn_data->on_connected.handlers.h3.a2 = layer_data->conn_data;
             layer_data->conn_data->on_connected.handlers.h3.a3 = LAYER_STATE_OK;
+
             xi_evtd_continue(
                   xi_evtd_instance
                 , layer_data->conn_data->on_connected
                 , 0 );
 
-            run_next_task( context );
             XI_SAFE_FREE( msg_memory );
 
+            if( layer_data->conn_data->keepalive_timeout > 0 )
             {
                 MAKE_HANDLE_H1(
                       &send_keep_alive
@@ -246,7 +256,9 @@ static layer_state_t connect_server_logic(
                           , layer_data->conn_data->keepalive_timeout );
             }
 
-            EXIT( layer_data->data_ready_cs, LAYER_STATE_OK );
+            // now the layer is fully connected to the server
+            layer_data->the_state = XI_MLLS_CONNECTED;
+            EXIT( task->cs, run_next_task( context ) );
         }
         else
         {
@@ -260,18 +272,13 @@ static layer_state_t connect_server_logic(
                 , layer_data->conn_data->on_connected
                 , 0 );
 
-            run_next_task( context );
             XI_SAFE_FREE( msg_memory );
-
-            EXIT( layer_data->data_ready_cs, LAYER_STATE_ERROR );
+            EXIT( task->cs, run_next_task( context ) );
         }
     }
 
     XI_SAFE_FREE( msg_memory );
-
-    run_next_task( context );
-
-    EXIT( layer_data->data_ready_cs, LAYER_STATE_ERROR );
+    EXIT( layer_data->data_ready_cs, run_next_task( context ); );
     END_CORO();
 
     return LAYER_STATE_ERROR;
@@ -293,7 +300,13 @@ static layer_state_t publish_server_logic(
         = ( xi_mqtt_logic_layer_data_t* ) CON_SELF( context )->user_data;
 
     //
-    BEGIN_CORO( layer_data->data_ready_cs );
+    BEGIN_CORO( task->cs );
+
+    //
+    if( *state == LAYER_STATE_ERROR )
+    {
+        EXIT( task->cs, run_next_task( context ) );
+    }
 
     xi_debug_logger( "publish preparing message..." );
 
@@ -320,17 +333,21 @@ static layer_state_t publish_server_logic(
             , layer_data->conn_data->keepalive_timeout );
     }
 
-    YIELD( layer_data->data_ready_cs
+    YIELD( task->cs
         , CALL_ON_PREV_DATA_READY(
               context
             , msg_memory
             , LAYER_STATE_OK ) );
 
+    if( *state == LAYER_STATE_ERROR )
+    {
+        xi_debug_logger( "publish message not sent..." );
+        EXIT( task->cs, run_next_task( context ) );
+    }
+
     xi_debug_logger( "publish message sent..." );
 
-    run_next_task( context );
-
-    EXIT( layer_data->data_ready_cs, LAYER_STATE_OK );
+    EXIT( task->cs, run_next_task( context ) );
 
     END_CORO();
 
@@ -342,18 +359,22 @@ err_handling:
 }
 
 static layer_state_t send_subscribe_logic(
-      layer_connectivity_t* context // should be the context of the logic layer
-    , xi_mqtt_logic_task_t* task
-    , mqtt_message_t* msg_memory
-    , layer_state_t* state )
+      void* ctx // asd a should be the context of the logic layer
+    , void* data
+    , layer_state_t state
+    , void* msg )
 {
+    layer_connectivity_t* context = ctx;
+    xi_mqtt_logic_task_t* task = data;
+    mqtt_message_t* msg_memory = msg;
+
     XI_UNUSED( state );
 
     xi_mqtt_logic_layer_data_t* layer_data
         = ( xi_mqtt_logic_layer_data_t* ) CON_SELF( context )->user_data;
 
     //
-    BEGIN_CORO( layer_data->data_ready_cs );
+    BEGIN_CORO( task->cs );
 
     msg_memory = xi_alloc( sizeof( mqtt_message_t ) );
     XI_CHECK_MEMORY( msg_memory );
@@ -365,24 +386,36 @@ static layer_state_t send_subscribe_logic(
 
     xi_debug_logger( "message memory filled with subscribe data" );
 
-    YIELD( layer_data->data_ready_cs
+    YIELD( task->cs
         , CALL_ON_PREV_DATA_READY(
               context
             , msg_memory
             , LAYER_STATE_OK ) );
 
+    if( state == LAYER_STATE_ERROR )
+    {
+        xi_debug_logger( "subscribe message not sent... properly" );
+        EXIT( task->cs, run_next_task( context ) );
+    }
+
     xi_debug_logger( "subscribe message sent... waiting for response" );
 
-    YIELD( layer_data->data_ready_cs
+    YIELD( task->cs
         , LAYER_STATE_OK );
 
-    xi_debug_logger( "suback received..." );
-    mqtt_message_dump( msg_memory );
+    if( state == LAYER_STATE_OK )
+    {
+        xi_debug_logger( "msg received..." );
+        mqtt_message_dump( msg_memory );
 
-    run_next_task( context );
+        XI_SAFE_FREE( msg_memory );
+    }
+    else
+    {
+        xi_debug_logger( "suback errored" );
+    }
 
-    XI_SAFE_FREE( msg_memory );
-    EXIT( layer_data->data_ready_cs, LAYER_STATE_OK );
+    EXIT( task->cs, run_next_task( context ) );
 
     END_CORO();
 
@@ -403,7 +436,7 @@ static inline layer_state_t recv_publish (
         = ( xi_mqtt_logic_layer_data_t* ) CON_SELF( context )->user_data;
 
     //
-    BEGIN_CORO( layer_data->data_ready_cs );
+    BEGIN_CORO( task->cs );
 
     xi_static_vector_index_type_t index = 0;
 
@@ -439,13 +472,16 @@ static inline layer_state_t recv_publish (
 }
 
 static layer_state_t keepalive_timeout(
-      void* context )
+      void* context
+    , void* task
+    , layer_state_t state
+    , void* msg_memory )
 {
     xi_mqtt_logic_layer_data_t* layer_data
         = ( xi_mqtt_logic_layer_data_t* ) CON_SELF( context )->user_data;
 
-    layer_state_t state = LAYER_STATE_TIMEOUT;
-    keepalive_logic( context, 0, 0, &state );
+    state = LAYER_STATE_TIMEOUT;
+    keepalive_logic( context, task, msg_memory, &state );
 
     return LAYER_STATE_OK;
 }
@@ -460,7 +496,10 @@ static layer_state_t keepalive_logic (
         = ( xi_mqtt_logic_layer_data_t* ) CON_SELF( context )->user_data;
 
     //
-    BEGIN_CORO( layer_data->data_ready_cs );
+    assert( task != 0 );
+
+    //
+    BEGIN_CORO( task->cs );
 
     msg_memory = xi_alloc( sizeof( mqtt_message_t ) );
     XI_CHECK_MEMORY( msg_memory );
@@ -470,19 +509,28 @@ static layer_state_t keepalive_logic (
 
     xi_debug_logger( "message memory filled with pingreq data" );
 
-    YIELD( layer_data->data_ready_cs
+    YIELD( task->cs
         , CALL_ON_PREV_DATA_READY(
               context
             , msg_memory
             , LAYER_STATE_OK ) );
 
+    if( *state == LAYER_STATE_ERROR )
+    {
+        xi_debug_logger( "pingreq message not sent..." );
+        EXIT( task->cs, run_next_task( context ) );
+    }
+
     xi_debug_logger( "pingreq message sent... waiting for response" );
 
     // wait for a interval of keepalive
     {
-        MAKE_HANDLE_H1(
+        MAKE_HANDLE_H4(
               &keepalive_timeout
-            , context );
+            , context
+            , task
+            , *state
+            , msg_memory );
 
         assert( layer_data->keep_alive_timeout == 0 );
 
@@ -493,19 +541,47 @@ static layer_state_t keepalive_logic (
                 , layer_data->conn_data->keepalive_timeout );
     }
 
-    YIELD( layer_data->data_ready_cs
+    YIELD( task->cs
         , LAYER_STATE_OK );
 
-    if( *state != LAYER_STATE_TIMEOUT )
+    if( *state == LAYER_STATE_OK )
     {
-        layer_data->keep_alive_timeout = xi_evtd_cancel( xi_evtd_instance
-            , layer_data->keep_alive_timeout );
+        if( layer_data->keep_alive_timeout != 0 )
+        {
+            layer_data->keep_alive_timeout = xi_evtd_cancel( xi_evtd_instance
+                , layer_data->keep_alive_timeout );
+        }
     }
     else if( *state == LAYER_STATE_TIMEOUT )
     {
         xi_debug_logger( "keepalive timeout passed!" );
+
         layer_data->keep_alive_timeout = 0;
-        EXIT( layer_data->data_ready_cs, CALL_ON_SELF_CLOSE( context, 0, LAYER_STATE_TIMEOUT ) );
+        EXIT( layer_data->data_ready_cs, xi_mqtt_logic_layer_reconnect( context, 0, LAYER_STATE_TIMEOUT ) );
+    }
+    else if( *state == LAYER_STATE_ERROR )
+    {
+        xi_debug_logger( "error while waiting for pingresp!" );
+
+        if( layer_data->keep_alive_timeout != 0 )
+        {
+            layer_data->keep_alive_timeout = xi_evtd_cancel( xi_evtd_instance
+                , layer_data->keep_alive_timeout );
+        }
+
+        EXIT( task->cs, run_next_task( context ) );
+    }
+    else
+    {
+        xi_debug_logger( "unexpected error" );
+
+        if( layer_data->keep_alive_timeout != 0 )
+        {
+            layer_data->keep_alive_timeout = xi_evtd_cancel( xi_evtd_instance
+                , layer_data->keep_alive_timeout );
+        }
+
+        EXIT( task->cs, run_next_task( context ) );
     }
 
     xi_debug_logger( "pingresp received..." );
@@ -522,11 +598,9 @@ static layer_state_t keepalive_logic (
                   , layer_data->conn_data->keepalive_timeout );
     }
 
-    run_next_task( context );
-
     XI_SAFE_FREE( msg_memory );
 
-    EXIT( layer_data->data_ready_cs, LAYER_STATE_OK );
+    EXIT( task->cs, run_next_task( context ) );
 
     END_CORO();
 
@@ -579,8 +653,8 @@ static layer_state_t main_logic(
                 return send_subscribe_logic(
                       context
                     , task
-                    , data
-                    , &in_state );
+                    , in_state
+                    , data );
             }
             case XI_MQTT_KEEPALIVE:
             {
@@ -609,31 +683,46 @@ static layer_state_t main_logic(
 }
 
 static layer_state_t run_next_task(
-    layer_connectivity_t* context )
+    void* data )
 {
+    layer_connectivity_t* context = data;
     xi_debug_logger( "run_next_task" );
 
     xi_mqtt_logic_layer_data_t* layer_data
         = ( xi_mqtt_logic_layer_data_t* ) CON_SELF( context )->user_data;
 
-    if( layer_data == 0 )
-    {
-        xi_debug_logger( "no layer_data" );
-        return LAYER_STATE_ERROR;
-    }
+    assert( layer_data != 0 );
 
     xi_mqtt_logic_queue_t* out = 0;
 
     XI_SAFE_FREE( layer_data->curr_task );
 
-    if( layer_data->tasks_queue )
+    if( layer_data->tasks_queue != 0 )
     {
+        assert( layer_data->tasks_queue != 0 );
+
         POP( xi_mqtt_logic_queue_t
            , layer_data->tasks_queue
            , out );
 
-        layer_data->curr_task = out->task;
+        // prevent execution of other tasks while connecting
+        if( layer_data->the_state == XI_MLLS_CONNECTING )
+        {
+            // we only allows connect to happen
+            // while client is connecting
+            if( out->task->data.mqtt_settings.scenario_t != XI_MQTT_CONNECT )
+            {
+                PUSH_BACK( xi_mqtt_logic_queue_t
+                    , layer_data->tasks_queue
+                    , out );
 
+                assert( layer_data->tasks_queue != 0 );
+
+                return LAYER_STATE_OK;
+            }
+        }
+
+        layer_data->curr_task           = out->task;
         layer_connectivity_t* context   = out->context;
         layer_state_t state             = out->state;
 
@@ -656,6 +745,19 @@ static layer_state_t run_next_task(
             case XI_MQTT_KEEPALIVE:
                 xi_debug_logger( "new task: XI_MQTT_KEEPALIVE" );
                 break;
+            default:
+                assert( 1 == 0 );
+                break;
+        }
+
+        {
+            // @TODO
+            // For Qos 1 and 2 here we are going to assign the proper
+            // id, we shall have few options how to generate them
+            // my initial idea is to create a list of ranges, so that
+            // we always be able to reuse the id's that will return to the pool
+            // the other solution is just a simple int that we will increment
+            // less memory, but no reusage the choice must be disscussed
         }
 
         {
@@ -691,39 +793,46 @@ layer_state_t xi_mqtt_logic_layer_data_ready(
 
     xi_mqtt_logic_queue_t* tmp = 0;
 
-    if( layer_data->curr_task != 0 )
+    tmp = ( xi_mqtt_logic_queue_t* )
+            xi_alloc( sizeof( xi_mqtt_logic_queue_t ) );
+    XI_CHECK_MEMORY( tmp );
+    memset( tmp, 0, sizeof( xi_mqtt_logic_queue_t ) );
+
+    tmp->context        = context;
+    tmp->task           = ( xi_mqtt_logic_task_t* ) data;
+    tmp->state          = in_state;
+    tmp->__next         = 0;
+
+    assert( tmp->task->data.mqtt_settings.scenario_t <= XI_MQTT_KEEPALIVE );
+
+    if( tmp->task->priority == XI_MQTT_LOGIC_TASK_NORMAL )
     {
-        tmp = ( xi_mqtt_logic_queue_t* )
-                xi_alloc( sizeof( xi_mqtt_logic_queue_t ) );
-
-        XI_CHECK_MEMORY( tmp );
-
-        tmp->context        = context;
-        tmp->task           = ( xi_mqtt_logic_task_t* ) data;
-        tmp->state          = in_state;
-        tmp->__next         = 0;
-
         PUSH_BACK(
               xi_mqtt_logic_queue_t
             , layer_data->tasks_queue
             , tmp );
-
-        xi_debug_logger( "adding task to the queue..." );
-
-        return LAYER_STATE_OK;
+    }
+    else if( tmp->task->priority == XI_MQTT_LOGIC_TASK_IMMEDIATE )
+    {
+        PUSH_FRONT(
+              xi_mqtt_logic_queue_t
+            , layer_data->tasks_queue
+            , tmp );
+    }
+    else
+    {
+        xi_debug_logger( "Unknown task priority!" );
+        return LAYER_STATE_ERROR;
     }
 
-    layer_data->curr_task = ( xi_mqtt_logic_task_t* ) data;
+    xi_debug_logger( "added task to the queue..." );
 
-    // sending request
-    // type of the request depends on
-    // the state that we are in
-    // it's easy to determine if we are in the middle of
-    // processing a single request or we are starting new one
+    if( layer_data->curr_task == 0 )
+    {
+        return run_next_task( context );
+    }
 
-    xi_debug_logger( "calling task directly..." );
-
-    return main_logic( context, data, in_state );
+    return LAYER_STATE_OK;
 
 err_handling:
     XI_SAFE_FREE( tmp );
@@ -752,16 +861,18 @@ layer_state_t xi_mqtt_logic_layer_on_data_ready(
         switch( recvd_msg->common.common_u.common_bits.type )
         {
             case MQTT_TYPE_PUBLISH:
-                return recv_publish( context, data, recvd_msg, &in_state );
+                return recv_publish( context, task, recvd_msg, &in_state );
             case MQTT_TYPE_CONNACK:
-                return connect_server_logic( context, data, recvd_msg, &in_state );
+                return connect_server_logic( context, task, recvd_msg, &in_state );
             case MQTT_TYPE_SUBACK:
-                return send_subscribe_logic( context, task, data, &in_state );
+                return send_subscribe_logic( context, task, in_state, data );
             case MQTT_TYPE_PINGRESP:
-                return keepalive_logic( context, data, recvd_msg, &in_state );
+                return keepalive_logic( context, task, recvd_msg, &in_state );
             default:
                 xi_debug_logger( "unhandled message received: " );
                 mqtt_message_dump( recvd_msg );
+                XI_SAFE_FREE( recvd_msg );
+                return LAYER_STATE_ERROR;
         };
     }
 
@@ -773,26 +884,55 @@ layer_state_t xi_mqtt_logic_layer_init(
     , void* data
     , layer_state_t in_state )
 {
-    assert( CON_SELF( context )->user_data == 0 );
+    xi_mqtt_logic_layer_data_t* layer_data
+        = CON_SELF( context )->user_data;
 
-    CON_SELF( context )->user_data = xi_alloc( sizeof( xi_mqtt_logic_layer_data_t ) );
-    XI_CHECK_MEMORY( CON_SELF( context )->user_data );
-    memset( CON_SELF( context )->user_data, 0, sizeof( xi_mqtt_logic_layer_data_t ) );
+    // only if the layer_data has been wiped out
+    // that means that we are connecting for the
+    // first time
+    if( layer_data == 0 )
+    {
+        CON_SELF( context )->user_data = xi_alloc( sizeof( xi_mqtt_logic_layer_data_t ) );
+        XI_CHECK_MEMORY( CON_SELF( context )->user_data );
+        memset( CON_SELF( context )->user_data, 0, sizeof( xi_mqtt_logic_layer_data_t ) );
 
-    xi_mqtt_logic_layer_data_t* layer_data = CON_SELF( context )->user_data;
+        layer_data = CON_SELF( context )->user_data;
 
-    xi_connection_data_t* conn_data = data;
-    layer_data->conn_data = conn_data;
+        xi_connection_data_t* conn_data = data;
+        layer_data->conn_data = conn_data;
+    }
+
+    assert( layer_data != 0 );
+
+    layer_data->the_state = XI_MLLS_CONNECTING;
 
     layer_data->handlers_for_topics = xi_static_vector_create( 4 );
-
     XI_CHECK_MEMORY( layer_data->handlers_for_topics );
 
     return CALL_ON_PREV_INIT( context, data, in_state );
 
 err_handling:
     XI_SAFE_FREE( CON_SELF( context )->user_data );
-    return CALL_ON_PREV_INIT( context, data, LAYER_STATE_ERROR );
+    return LAYER_STATE_ERROR;
+}
+
+layer_state_t xi_mqtt_logic_layer_reconnect(
+      void* context
+    , void* data
+    , layer_state_t in_state )
+{
+    XI_UNUSED( data );
+    XI_UNUSED( in_state );
+
+    xi_mqtt_logic_layer_data_t* layer_data
+        = CON_SELF( context )->user_data;
+
+    // PRECONDITIONS
+    assert( layer_data != 0 );
+
+    layer_data->the_state = XI_MLLS_CONNECTING;
+
+    return CALL_ON_PREV_CLOSE( context, data, in_state );
 }
 
 layer_state_t xi_mqtt_logic_layer_connect(
@@ -807,6 +947,12 @@ layer_state_t xi_mqtt_logic_layer_connect(
     xi_mqtt_logic_layer_data_t* layer_data
         = CON_SELF( context )->user_data;
 
+    if( in_state == LAYER_STATE_ERROR )
+    {
+        xi_debug_logger( "error while io connection" );
+        return xi_mqtt_logic_layer_reconnect( context, 0, LAYER_STATE_OK );
+    }
+
     xi_mqtt_logic_task_t* task = xi_alloc(
         sizeof( xi_mqtt_logic_task_t ) );
     XI_CHECK_MEMORY( task );
@@ -814,16 +960,10 @@ layer_state_t xi_mqtt_logic_layer_connect(
 
     task->data.mqtt_settings.scenario_t = XI_MQTT_CONNECT;
     task->data.mqtt_settings.qos_t      = XI_MQTT_QOS_ZERO;
+    task->priority                      = XI_MQTT_LOGIC_TASK_IMMEDIATE;
 
-    MAKE_HANDLE_H3(
-          &xi_mqtt_logic_layer_data_ready
-        , context
-        , task
-        , LAYER_STATE_OK );
-
-    xi_evtd_continue( xi_evtd_instance, handle, 0 );
-
-    return LAYER_STATE_OK;
+    // push the task directly
+    return xi_mqtt_logic_layer_data_ready( context, task, LAYER_STATE_OK );
 
 err_handling:
     return LAYER_STATE_ERROR;
@@ -834,9 +974,17 @@ layer_state_t xi_mqtt_logic_layer_close(
     , void* data
     , layer_state_t in_state )
 {
-    XI_UNUSED( context );
     XI_UNUSED( data );
     XI_UNUSED( in_state );
+
+    xi_mqtt_logic_layer_data_t* layer_data
+        = CON_SELF( context )->user_data;
+
+    // PRECONDITIONS
+    assert( layer_data != 0 );
+
+    // if close has been called from here we know that we want to perform shutdown
+    layer_data->the_state = XI_MLLS_SHUTTING_DOWN;
 
     return CALL_ON_PREV_CLOSE( context, data, in_state );
 }
@@ -852,10 +1000,15 @@ layer_state_t xi_mqtt_logic_layer_on_close(
 
     xi_mqtt_logic_layer_data_t* layer_data = CON_SELF( context )->user_data;
 
+    // PRECONDITIONS
+    assert( layer_data != 0 );
+
     while( layer_data->handlers_for_topics->elem_no )
     {
         union data_t* sub
             = layer_data->handlers_for_topics->array[ 0 ].value;
+
+        assert( sub != 0 );
 
         XI_SAFE_FREE( sub->subscribe.topic );
         XI_SAFE_FREE( sub );
@@ -865,7 +1018,9 @@ layer_state_t xi_mqtt_logic_layer_on_close(
 
     xi_static_vector_destroy( layer_data->handlers_for_topics );
 
-    while( layer_data->tasks_queue )
+    // Temporarily disabled until decission about the
+    // strategy while being disconnected
+    /*while( layer_data->tasks_queue )
     {
         xi_mqtt_logic_queue_t* out = 0;
 
@@ -873,15 +1028,57 @@ layer_state_t xi_mqtt_logic_layer_on_close(
            , layer_data->tasks_queue
            , out );
 
-        if( layer_data->curr_task != out->task )
+        assert( layer_data->curr_task != out->task );
+
+        XI_SAFE_FREE( out->task );
+        XI_SAFE_FREE( out );
+    }*/
+
+    if( layer_data->curr_task != 0 )
+    {
+        main_logic( context, 0, LAYER_STATE_ERROR );
+    }
+
+    // unregister keepalives
+    {
+        if( layer_data->keep_alive_event )
         {
-            XI_SAFE_FREE( out );
+            layer_data->keep_alive_event = xi_evtd_cancel( xi_evtd_instance
+                , layer_data->keep_alive_event );
+        }
+
+        if( layer_data->keep_alive_timeout )
+        {
+            layer_data->keep_alive_timeout = xi_evtd_cancel( xi_evtd_instance
+                , layer_data->keep_alive_timeout );
         }
     }
 
-    XI_SAFE_FREE( CON_SELF( context )->user_data );
+    // if shutdown perform full memory cleaning on all qos levels
+    if( layer_data->the_state == XI_MLLS_SHUTTING_DOWN )
+    {
+        XI_SAFE_FREE( CON_SELF( context )->user_data );
+    }
+    else
+    {
+        // mark the layer as disconnected
+        layer_data->the_state = XI_MLLS_CONNECTING;
 
-    run_next_task( context );
+        // this will add a reconnect task to the task queue
+        {
+            MAKE_HANDLE_H3( &xi_mqtt_logic_layer_init
+                , context
+                , layer_data->conn_data
+                , LAYER_STATE_OK );
+
+            xi_evtd_continue( xi_evtd_instance, handle, 1 ); // try in 1 sec
+        }
+
+        if( layer_data->curr_task == 0 )
+        {
+            run_next_task( context );
+        }
+    }
 
     return LAYER_STATE_OK;
 }
