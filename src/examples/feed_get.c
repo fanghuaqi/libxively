@@ -51,7 +51,10 @@ static inline void print_datapoint( const xi_datapoint_t* p )
 
 int main( int argc, const char* argv[] )
 {
-
+#ifdef XI_NOB_ENABLED
+    XI_UNUSED( argc );
+    XI_UNUSED( argv );
+#else
     if( argc < REQUIRED_ARGS )
     {
         print_usage();
@@ -100,6 +103,8 @@ int main( int argc, const char* argv[] )
 
     xi_feed_get( xi_context, &f );
 
+    printf( "\n" );
+
     for( size_t i = 0; i < f.datastream_count; ++i )
     {
         xi_datastream_t* d = &f.datastreams[ i ];
@@ -114,6 +119,6 @@ int main( int argc, const char* argv[] )
 
     // destroy the context cause we don't need it anymore
     xi_delete_context( xi_context );
-
+#endif
     return 0;
 }

@@ -31,6 +31,10 @@ void print_usage()
 
 int main( int argc, const char* argv[] )
 {
+#ifdef XI_NOB_ENABLED
+    XI_UNUSED( argc );
+    XI_UNUSED( argv );
+#else
     if( argc < 5 )
     {
         print_usage();
@@ -66,6 +70,6 @@ int main( int argc, const char* argv[] )
 
     // destroy the context cause we don't need it anymore
     xi_delete_context( xi_context );
-
+#endif
     return 0;
 }

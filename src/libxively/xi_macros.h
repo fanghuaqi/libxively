@@ -1,16 +1,11 @@
-// Copyright (c) 2003-2013, LogMeIn, Inc. All rights reserved.
+// Copyright (c) 2003-2014, LogMeIn, Inc. All rights reserved.
 // This is part of Xively C library, it is under the BSD 3-Clause license.
-
-/**
- * \file    xi_macros.h
- * \author  Olgierd Humenczuk
- * \brief   General macros used by the library
- */
 
 #ifndef __XI_MACROS_H__
 #define __XI_MACROS_H__
 
 #include <string.h>
+#include "xi_err.h"
 
 #define XI_STR_EXPAND(tok) #tok
 #define XI_STR(tok) XI_STR_EXPAND(tok)

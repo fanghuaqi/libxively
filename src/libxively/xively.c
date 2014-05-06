@@ -1,4 +1,4 @@
-// Copyright (c) 2003-2013, LogMeIn, Inc. All rights reserved.
+// Copyright (c) 2003-2014, LogMeIn, Inc. All rights reserved.
 // This is part of Xively C library, it is under the BSD 3-Clause license.
 
 /**
@@ -12,77 +12,31 @@
 
 #include "xi_allocator.h"
 #include "xively.h"
-#include "http_transport.h"
-#include "csv_data_layer.h"
 #include "xi_macros.h"
 #include "xi_debug.h"
 #include "xi_helpers.h"
 #include "xi_err.h"
 #include "xi_globals.h"
+#include "xi_common.h"
+#include "xi_layer_api.h"
+#include "xi_layer_interface.h"
+#include "xi_layer_connection.h"
+#include "xi_layer_types_conf.h"
+#include "xi_layer_factory.h"
+#include "xi_layer_factory_conf.h"
+#include "xi_layer_default_allocators.h"
+#include "xi_http_layer.h"
+#include "xi_http_layer_data.h"
+#include "xi_csv_layer.h"
+#include "xi_connection_data.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/**
- * \brief   Get instance of _communication layer_
- *
- * \note    Although the interface is of the _communication layer_ should
- *          stay the same, some implemantation may differ.
- *
- * \return  Pointer to the communication layer interface
- */
-const comm_layer_t* get_comm_layer( void );
-
-#include "comm_layer.h"
-
 //-----------------------------------------------------------------------
 // HELPER MACROS
 //-----------------------------------------------------------------------
-
-#define XI_FUNCTION_VARIABLES connection_t* conn = 0;\
-    const comm_layer_t* comm_layer = 0;\
-    const transport_layer_t* transport_layer = 0;\
-    const data_layer_t* data_layer = 0;\
-    char  buffer[ XI_HTTP_MAX_CONTENT_SIZE ];\
-    const xi_response_t* response = 0;\
-    int sent = 0;\
-    int recv = 0;
-
-#define XI_FUNCTION_PROLOGUE  XI_FUNCTION_VARIABLES\
-    xi_debug_logger( "Getting the comm layer..." );\
-    comm_layer = get_comm_layer();\
-    xi_debug_logger( "Getting the transport layer..." );\
-    transport_layer = get_http_transport_layer();\
-    xi_debug_logger( "Getting the data layer...");\
-    data_layer = get_csv_data_layer();\
-
-#define XI_FUNCTION_GET_RESPONSE if( data == 0 ) { goto err_handling; }\
-    xi_debug_logger( "Connecting to the endpoint..." );\
-    conn = comm_layer->open_connection( XI_HOST, XI_PORT );\
-    if( conn == 0 ) { goto err_handling; }\
-    xi_debug_logger( "Sending data:" );\
-    xi_debug_printf( "%s\r\n", data );\
-    sent = comm_layer->send_data( conn, data, strlen( data ) );\
-    if( sent == -1 ) { goto err_handling; }\
-    xi_debug_printf( "Sent: %d\r\n", ( int ) sent );\
-    xi_debug_logger( "Reading data..." );\
-    recv = comm_layer->read_data( conn, buffer, XI_HTTP_MAX_CONTENT_SIZE );\
-    if( recv == -1 ) { goto err_handling; }\
-    xi_debug_printf( "Received: %d\r\n", ( int ) recv );\
-    xi_debug_logger( "Response:" );\
-    xi_debug_printf( "%s\r\n", buffer );\
-    response = transport_layer->decode_reply(\
-        data_layer, buffer );\
-    if( response == 0 ) { goto err_handling; }\
-
-#define XI_FUNCTION_EPILOGUE xi_debug_logger( "Closing connection..." );\
-err_handling:\
-    if( conn )\
-    {\
-        comm_layer->close_connection( conn );\
-    }\
-    return response;\
 
 //-----------------------------------------------------------------------
 // HELPER FUNCTIONS
@@ -217,6 +171,109 @@ uint32_t xi_get_network_timeout( void )
 }
 
 //-----------------------------------------------------------------------
+// LAYERS SETTINGS
+//-----------------------------------------------------------------------
+
+#define XI_IO_POSIX           0
+#define XI_IO_DUMMY           1
+#define XI_IO_MBED            2
+#define XI_IO_POSIX_ASYNCH    3
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief The LAYERS_ID enum
+///
+enum LAYERS_ID
+{
+      IO_LAYER = 0
+    , HTTP_LAYER
+    , CSV_LAYER
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#define CONNECTION_SCHEME_1_DATA IO_LAYER, HTTP_LAYER, CSV_LAYER
+DEFINE_CONNECTION_SCHEME( CONNECTION_SCHEME_1, CONNECTION_SCHEME_1_DATA );
+
+#if XI_IO_LAYER == XI_IO_POSIX
+
+    // posix io layer
+    #include "posix_io_layer.h"
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    BEGIN_LAYER_TYPES_CONF()
+          LAYER_TYPE( IO_LAYER, &posix_io_layer_data_ready, &posix_io_layer_on_data_ready
+                                , &posix_io_layer_close, &posix_io_layer_on_close
+                                , &posix_io_layer_init, &posix_io_layer_connect )
+        , LAYER_TYPE( HTTP_LAYER, &http_layer_data_ready, &http_layer_on_data_ready
+                                , &http_layer_close, &http_layer_on_close, 0, 0 )
+        , LAYER_TYPE( CSV_LAYER, &csv_layer_data_ready, &csv_layer_on_data_ready
+                            , &csv_layer_close, &csv_layer_on_close, 0, 0 )
+    END_LAYER_TYPES_CONF()
+
+#elif XI_IO_LAYER == XI_IO_DUMMY
+    // dummy io layer
+    #include "dummy_io_layer.h"
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    BEGIN_LAYER_TYPES_CONF()
+          LAYER_TYPE( IO_LAYER, &dummy_io_layer_data_ready, &dummy_io_layer_on_data_ready
+                              , &dummy_io_layer_close, &dummy_io_layer_on_close
+                              , &dummy_io_layer_init, &dummy_io_layer_connect )
+        , LAYER_TYPE( HTTP_LAYER, &http_layer_data_ready, &http_layer_on_data_ready
+                                , &http_layer_close, &http_layer_on_close, 0, 0 )
+        , LAYER_TYPE( CSV_LAYER, &csv_layer_data_ready, &csv_layer_on_data_ready
+                            , &csv_layer_close, &csv_layer_on_close, 0, 0 )
+    END_LAYER_TYPES_CONF()
+
+#elif XI_IO_LAYER == XI_IO_MBED
+    // mbed io layer
+    #include "mbed_io_layer.h"
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    BEGIN_LAYER_TYPES_CONF()
+          LAYER_TYPE( IO_LAYER, &mbed_io_layer_data_ready, &mbed_io_layer_on_data_ready
+                              , &mbed_io_layer_close, &mbed_io_layer_on_close )
+        , LAYER_TYPE( HTTP_LAYER, &http_layer_data_ready, &http_layer_on_data_ready
+                                , &http_layer_close, &http_layer_on_close )
+        , LAYER_TYPE( CSV_LAYER, &csv_layer_data_ready, &csv_layer_on_data_ready
+                            , &csv_layer_close, &csv_layer_on_close )
+    END_LAYER_TYPES_CONF()
+
+#elif XI_IO_LAYER == XI_IO_POSIX_ASYNCH
+    // mbed io layer
+    #include "posix_asynch_io_layer.h"
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    BEGIN_LAYER_TYPES_CONF()
+          LAYER_TYPE( IO_LAYER, &posix_asynch_io_layer_data_ready, &posix_asynch_io_layer_on_data_ready
+                              , &posix_asynch_io_layer_close, &posix_asynch_io_layer_on_close
+                              , &posix_asynch_io_layer_init, &posix_asynch_io_layer_connect )
+        , LAYER_TYPE( HTTP_LAYER, &http_layer_data_ready, &http_layer_on_data_ready
+                                , &http_layer_close, &http_layer_on_close, 0, 0 )
+        , LAYER_TYPE( CSV_LAYER, &csv_layer_data_ready, &csv_layer_on_data_ready
+                            , &csv_layer_close, &csv_layer_on_close, 0, 0 )
+    END_LAYER_TYPES_CONF()
+#endif
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BEGIN_FACTORY_CONF()
+      FACTORY_ENTRY( IO_LAYER, &placement_layer_pass_create, &placement_layer_pass_delete
+                             , &default_layer_heap_alloc, &default_layer_heap_free )
+    , FACTORY_ENTRY( HTTP_LAYER, &placement_layer_pass_create, &placement_layer_pass_delete
+                               , &default_layer_heap_alloc, &default_layer_heap_free )
+    , FACTORY_ENTRY( CSV_LAYER, &placement_layer_pass_create, &placement_layer_pass_delete
+                           , &default_layer_heap_alloc, &default_layer_heap_free )
+END_FACTORY_CONF()
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+//-----------------------------------------------------------------------
 // MAIN LIBRARY FUNCTIONS
 //-----------------------------------------------------------------------
 
@@ -246,11 +303,48 @@ xi_context_t* xi_create_context(
         ret->api_key  = 0;
     }
 
+    switch( protocol )
+    {
+        case XI_HTTP:
+            {
+                // @TODO make a configurable pool of these
+                // static structures allocated statically
+                static http_layer_data_t    http_layer_data;
+                static csv_layer_data_t     csv_layer_data;
+                static xi_response_t        xi_response;
+
+
+                // clean the structures
+                memset( &http_layer_data, 0, sizeof( http_layer_data_t ) );
+                memset( &csv_layer_data, 0, sizeof( csv_layer_data_t ) );
+                memset( &xi_response, 0, sizeof( xi_response_t ) );
+
+                // the response pointer
+                http_layer_data.response    = &xi_response;
+                csv_layer_data.response     = &xi_response;
+
+                // prepare user data description
+                void* user_datas[] = { 0, ( void* ) &http_layer_data, ( void* ) &csv_layer_data };
+
+                // create and connect layers store the information in layer_chain member
+                ret->layer_chain = create_and_connect_layers( CONNECTION_SCHEME_1, user_datas, CONNECTION_SCHEME_LENGTH( CONNECTION_SCHEME_1 ) );
+            }
+            break;
+        default:
+            goto err_handling;
+    }
+
+
     return ret;
 
 err_handling:
     if( ret )
     {
+        if( ret->api_key )
+        {
+            XI_SAFE_FREE( ret->api_key );
+        }
+
         XI_SAFE_FREE( ret );
     }
 
@@ -259,68 +353,204 @@ err_handling:
 
 void xi_delete_context( xi_context_t* context )
 {
-    if( context )
+    assert( context != 0 && "context must not be null!" );
+
+    switch( context->protocol )
     {
-        XI_SAFE_FREE( context->api_key );
+        case XI_HTTP:
+            destroy_and_disconnect_layers( &( context->layer_chain ), CONNECTION_SCHEME_LENGTH( CONNECTION_SCHEME_1 ) );
+            break;
+        default:
+            assert( 0 && "not yet implemented!" );
+            break;
     }
+
+    XI_SAFE_FREE( context->api_key );
     XI_SAFE_FREE( context );
 }
 
+#ifndef XI_NOB_ENABLED
 const xi_response_t* xi_feed_get(
           xi_context_t* xi
         , xi_feed_t* feed )
 {
-    XI_FUNCTION_PROLOGUE
+    // we shall need it later
+    layer_state_t state = LAYER_STATE_OK;
 
-    const char* data = transport_layer->encode_get_feed(
-              data_layer
-            , xi->api_key
-            , feed );
+    // extract the input layer
+    layer_t* input_layer    = xi->layer_chain.top;
+    layer_t* io_layer       = xi->layer_chain.bottom;
 
-    XI_FUNCTION_GET_RESPONSE
+    { // init & connect
+        state = CALL_ON_SELF_INIT( io_layer, 0, LAYER_HINT_NONE );
+        if( state != LAYER_STATE_OK ) { return 0; }
 
-    feed = data_layer->decode_feed( response->http.http_content, feed );
-    if( feed == 0 ) { goto err_handling; }
+        xi_connection_data_t conn_data = { XI_HOST, XI_PORT };
 
-    XI_FUNCTION_EPILOGUE
+        state = CALL_ON_SELF_CONNECT( io_layer, ( void *) &conn_data, LAYER_HINT_NONE );
+        if( state != LAYER_STATE_OK ) { return 0; }
+    }
+
+    // clean the response before writing to it
+    memset( ( ( csv_layer_data_t* ) input_layer->user_data )->response, 0, sizeof( xi_response_t ) );
+
+    // create the input parameter
+    http_layer_input_t http_layer_input =
+    {
+          HTTP_LAYER_INPUT_FEED_GET
+        , xi
+        , 0
+        , { .xi_get_feed = { .feed = feed } }
+    };
+
+    state = CALL_ON_SELF_DATA_READY( input_layer, ( void *) &http_layer_input, LAYER_HINT_NONE );
+
+    if( state == LAYER_STATE_OK )
+    {
+        CALL_ON_SELF_ON_DATA_READY( io_layer, ( void *) 0, LAYER_HINT_NONE );
+    }
+    
+    CALL_ON_SELF_CLOSE( input_layer );
+
+    return ( ( csv_layer_data_t* ) input_layer->user_data )->response;
 }
+
+const xi_response_t* xi_feed_get_all(
+          xi_context_t* xi
+        , xi_feed_t* feed )
+{
+    // we shall need it later
+    layer_state_t state = LAYER_STATE_OK;
+
+    // extract the input layer
+    layer_t* input_layer    = xi->layer_chain.top;
+    layer_t* io_layer       = xi->layer_chain.bottom;
+
+    { // init & connect
+        state = CALL_ON_SELF_INIT( io_layer, 0, LAYER_HINT_NONE );
+        if( state != LAYER_STATE_OK ) { return 0; }
+
+        xi_connection_data_t conn_data = { XI_HOST, XI_PORT };
+
+        state = CALL_ON_SELF_CONNECT( io_layer, ( void *) &conn_data, LAYER_HINT_NONE );
+        if( state != LAYER_STATE_OK ) { return 0; }
+    }
+
+    // clean the response before writing to it
+    memset( ( ( csv_layer_data_t* ) input_layer->user_data )->response, 0, sizeof( xi_response_t ) );
+
+    // create the input parameter
+    http_layer_input_t http_layer_input =
+    {
+          HTTP_LAYER_INPUT_FEED_GET_ALL
+        , xi
+        , 0
+        , { .xi_get_feed = { .feed = feed } }
+    };
+
+    state = CALL_ON_SELF_DATA_READY( input_layer, ( void *) &http_layer_input, LAYER_HINT_NONE );
+
+    if( state == LAYER_STATE_OK )
+    {
+        CALL_ON_SELF_ON_DATA_READY( io_layer, ( void *) 0, LAYER_HINT_NONE );
+    }
+    
+    CALL_ON_SELF_CLOSE( input_layer );
+
+    return ( ( csv_layer_data_t* ) input_layer->user_data )->response;
+}
+
 
 const xi_response_t* xi_feed_update(
           xi_context_t* xi
         , const xi_feed_t* feed )
 {
-    XI_FUNCTION_PROLOGUE
+    // we shall need it later
+    layer_state_t state = LAYER_STATE_OK;
 
-    const char* data = transport_layer->encode_update_feed(
-              data_layer
-            , xi->api_key
-            , feed );
+    // extract the input layer
+    layer_t* input_layer    = xi->layer_chain.top;
+    layer_t* io_layer       = xi->layer_chain.bottom;
 
-    XI_FUNCTION_GET_RESPONSE
+    { // init & connect
+        state = CALL_ON_SELF_INIT( io_layer, 0, LAYER_HINT_NONE );
+        if( state != LAYER_STATE_OK ) { return 0; }
 
-    XI_FUNCTION_EPILOGUE
+        xi_connection_data_t conn_data = { XI_HOST, XI_PORT };
+
+        state = CALL_ON_SELF_CONNECT( io_layer, ( void *) &conn_data, LAYER_HINT_NONE );
+        if( state != LAYER_STATE_OK ) { return 0; }
+    }
+
+    // clean the response before writing to it
+    memset( ( ( csv_layer_data_t* ) input_layer->user_data )->response, 0, sizeof( xi_response_t ) );
+
+    // create the input parameter
+    http_layer_input_t http_layer_input =
+    {
+          HTTP_LAYER_INPUT_FEED_UPDATE
+        , xi
+        , 0
+        , { .xi_update_feed = { ( xi_feed_t * ) feed } }
+    };
+
+    state = CALL_ON_SELF_DATA_READY( input_layer, ( void *) &http_layer_input, LAYER_HINT_NONE );
+
+    if( state == LAYER_STATE_OK )
+    {
+        CALL_ON_SELF_ON_DATA_READY( io_layer, ( void *) 0, LAYER_HINT_NONE );
+    }
+    
+    CALL_ON_SELF_CLOSE( input_layer );
+
+    return ( ( csv_layer_data_t* ) input_layer->user_data )->response;
 }
 
 const xi_response_t* xi_datastream_get(
             xi_context_t* xi, xi_feed_id_t feed_id
           , const char * datastream_id, xi_datapoint_t* o )
 {
-    XI_FUNCTION_PROLOGUE
+    XI_UNUSED( feed_id );
 
-    const char* data = transport_layer->encode_get_datastream(
-              data_layer
-            , xi->api_key
-            , feed_id
-            , datastream_id );
+    // we shall need it later
+    layer_state_t state = LAYER_STATE_OK;
 
-    XI_FUNCTION_GET_RESPONSE
+    // extract the input layer
+    layer_t* input_layer    = xi->layer_chain.top;
+    layer_t* io_layer       = xi->layer_chain.bottom;
 
-    o = data_layer->decode_datapoint(
-        response->http.http_content, o );
+    { // init & connect
+        state = CALL_ON_SELF_INIT( io_layer, 0, LAYER_HINT_NONE );
+        if( state != LAYER_STATE_OK ) { return 0; }
 
-    if( o == 0 ) { goto err_handling; }
+        xi_connection_data_t conn_data = { XI_HOST, XI_PORT };
 
-    XI_FUNCTION_EPILOGUE
+        state = CALL_ON_SELF_CONNECT( io_layer, ( void *) &conn_data, LAYER_HINT_NONE );
+        if( state != LAYER_STATE_OK ) { return 0; }
+    }
+
+    // clean the response before writing to it
+    memset( ( ( csv_layer_data_t* ) input_layer->user_data )->response, 0, sizeof( xi_response_t ) );
+
+    // create the input parameter
+    http_layer_input_t http_layer_input =
+    {
+          HTTP_LAYER_INPUT_DATASTREAM_GET
+        , xi
+        , 0
+        , { ( struct xi_get_datastream_t ) { datastream_id, o } }
+    };
+
+    state = CALL_ON_SELF_DATA_READY( input_layer, ( void *) &http_layer_input, LAYER_HINT_NONE );
+
+    if( state == LAYER_STATE_OK )
+    {
+        CALL_ON_SELF_ON_DATA_READY( io_layer, ( void *) 0, LAYER_HINT_NONE );
+    }
+    
+    CALL_ON_SELF_CLOSE( input_layer );
+
+    return ( ( csv_layer_data_t* ) input_layer->user_data )->response;
 }
 
 
@@ -329,18 +559,47 @@ const xi_response_t* xi_datastream_create(
           , const char * datastream_id
           , const xi_datapoint_t* datapoint )
 {
-    XI_FUNCTION_PROLOGUE
+    XI_UNUSED( feed_id );
 
-    const char* data = transport_layer->encode_create_datastream(
-              data_layer
-            , xi->api_key
-            , feed_id
-            , datastream_id
-            , datapoint );
+    // we shall need it later
+    layer_state_t state = LAYER_STATE_OK;
 
-    XI_FUNCTION_GET_RESPONSE
+    // extract the input layer
+    layer_t* input_layer    = xi->layer_chain.top;
+    layer_t* io_layer       = xi->layer_chain.bottom;
 
-    XI_FUNCTION_EPILOGUE
+    { // init & connect
+        state = CALL_ON_SELF_INIT( io_layer, 0, LAYER_HINT_NONE );
+        if( state != LAYER_STATE_OK ) { return 0; }
+
+        xi_connection_data_t conn_data = { XI_HOST, XI_PORT };
+
+        state = CALL_ON_SELF_CONNECT( io_layer, ( void *) &conn_data, LAYER_HINT_NONE );
+        if( state != LAYER_STATE_OK ) { return 0; }
+    }
+
+    // clean the response before writing to it
+    memset( ( ( csv_layer_data_t* ) input_layer->user_data )->response, 0, sizeof( xi_response_t ) );
+
+    // create the input parameter
+    http_layer_input_t http_layer_input =
+    {
+          HTTP_LAYER_INPUT_DATASTREAM_CREATE
+        , xi
+        , 0
+        , { .xi_create_datastream = { ( char* ) datastream_id, ( xi_datapoint_t* ) datapoint } }
+    };
+
+    state = CALL_ON_SELF_DATA_READY( input_layer, ( void *) &http_layer_input, LAYER_HINT_NONE );
+
+    if( state == LAYER_STATE_OK )
+    {
+        CALL_ON_SELF_ON_DATA_READY( io_layer, ( void *) 0, LAYER_HINT_NONE );
+    }
+    
+    CALL_ON_SELF_CLOSE( input_layer );
+
+    return ( ( csv_layer_data_t* ) input_layer->user_data )->response;
 }
 
 const xi_response_t* xi_datastream_update(
@@ -348,34 +607,94 @@ const xi_response_t* xi_datastream_update(
         , const char * datastream_id
         , const xi_datapoint_t* datapoint )
 {
-    XI_FUNCTION_PROLOGUE
+    XI_UNUSED( feed_id );
 
-    const char* data = transport_layer->encode_update_datastream(
-              data_layer
-            , xi->api_key
-            , feed_id
-            , datastream_id
-            , datapoint );
+    // we shall need it later
+    layer_state_t state = LAYER_STATE_OK;
 
-    XI_FUNCTION_GET_RESPONSE
+    // extract the input layer
+    layer_t* input_layer    = xi->layer_chain.top;
+    layer_t* io_layer       = xi->layer_chain.bottom;
 
-    XI_FUNCTION_EPILOGUE
+    { // init & connect
+        state = CALL_ON_SELF_INIT( io_layer, 0, LAYER_HINT_NONE );
+        if( state != LAYER_STATE_OK ) { return 0; }
+
+        xi_connection_data_t conn_data = { XI_HOST, XI_PORT };
+
+        state = CALL_ON_SELF_CONNECT( io_layer, ( void *) &conn_data, LAYER_HINT_NONE );
+        if( state != LAYER_STATE_OK ) { return 0; }
+    }
+
+    // clean the response before writing to it
+    memset( ( ( csv_layer_data_t* ) input_layer->user_data )->response, 0, sizeof( xi_response_t ) );
+
+    // create the input parameter
+    http_layer_input_t http_layer_input =
+    {
+          HTTP_LAYER_INPUT_DATASTREAM_UPDATE
+        , xi
+        , 0
+        , { .xi_update_datastream = { ( char* ) datastream_id, ( xi_datapoint_t* ) datapoint } }
+    };
+
+    state = CALL_ON_SELF_DATA_READY( input_layer, ( void *) &http_layer_input, LAYER_HINT_NONE );
+
+    if( state == LAYER_STATE_OK )
+    {
+        CALL_ON_SELF_ON_DATA_READY( io_layer, ( void *) 0, LAYER_HINT_NONE );
+    }
+    
+    CALL_ON_SELF_CLOSE( input_layer );
+
+    return ( ( csv_layer_data_t* ) input_layer->user_data )->response;
 }
+
 const xi_response_t* xi_datastream_delete(
             xi_context_t* xi, xi_feed_id_t feed_id
           , const char * datastream_id )
 {
-    XI_FUNCTION_PROLOGUE
+    XI_UNUSED( feed_id );
 
-    const char* data = transport_layer->encode_delete_datastream(
-              data_layer
-            , xi->api_key
-            , feed_id
-            , datastream_id );
+    // we shall need it later
+    layer_state_t state = LAYER_STATE_OK;
 
-    XI_FUNCTION_GET_RESPONSE
+    // extract the input layer
+    layer_t* input_layer    = xi->layer_chain.top;
+    layer_t* io_layer       = xi->layer_chain.bottom;
 
-    XI_FUNCTION_EPILOGUE
+    { // init & connect
+        state = CALL_ON_SELF_INIT( io_layer, 0, LAYER_HINT_NONE );
+        if( state != LAYER_STATE_OK ) { return 0; }
+
+        xi_connection_data_t conn_data = { XI_HOST, XI_PORT };
+
+        state = CALL_ON_SELF_CONNECT( io_layer, ( void *) &conn_data, LAYER_HINT_NONE );
+        if( state != LAYER_STATE_OK ) { return 0; }
+    }
+
+    // clean the response before writing to it
+    memset( ( ( csv_layer_data_t* ) input_layer->user_data )->response, 0, sizeof( xi_response_t ) );
+
+    // create the input parameter
+    http_layer_input_t http_layer_input =
+    {
+          HTTP_LAYER_INPUT_DATASTREAM_DELETE
+        , xi
+        , 0
+        , { .xi_delete_datastream = { datastream_id } }
+    };
+
+    state = CALL_ON_SELF_DATA_READY( input_layer, ( void *) &http_layer_input, LAYER_HINT_NONE );
+
+    if( state == LAYER_STATE_OK )
+    {
+        CALL_ON_SELF_ON_DATA_READY( io_layer, ( void *) 0, LAYER_HINT_NONE );
+    }
+    
+    CALL_ON_SELF_CLOSE( input_layer );
+
+    return ( ( csv_layer_data_t* ) input_layer->user_data )->response;
 }
 
 const xi_response_t* xi_datapoint_delete(
@@ -383,18 +702,47 @@ const xi_response_t* xi_datapoint_delete(
         , const char * datastream_id
         , const xi_datapoint_t* o )
 {
-    XI_FUNCTION_PROLOGUE
+    XI_UNUSED( feed_id );
 
-    const char* data = transport_layer->encode_delete_datapoint(
-              data_layer
-            , xi->api_key
-            , feed_id
-            , datastream_id
-            , o );
+    // we shall need it later
+    layer_state_t state = LAYER_STATE_OK;
 
-    XI_FUNCTION_GET_RESPONSE
+    // extract the input layer
+    layer_t* input_layer    = xi->layer_chain.top;
+    layer_t* io_layer       = xi->layer_chain.bottom;
 
-    XI_FUNCTION_EPILOGUE
+    { // init & connect
+        state = CALL_ON_SELF_INIT( io_layer, 0, LAYER_HINT_NONE );
+        if( state != LAYER_STATE_OK ) { return 0; }
+
+        xi_connection_data_t conn_data = { XI_HOST, XI_PORT };
+
+        state = CALL_ON_SELF_CONNECT( io_layer, ( void *) &conn_data, LAYER_HINT_NONE );
+        if( state != LAYER_STATE_OK ) { return 0; }
+    }
+
+    // clean the response before writing to it
+    memset( ( ( csv_layer_data_t* ) input_layer->user_data )->response, 0, sizeof( xi_response_t ) );
+
+    // create the input parameter
+    http_layer_input_t http_layer_input =
+    {
+          HTTP_LAYER_INPUT_DATAPOINT_DELETE
+        , ( xi_context_t* ) xi
+        , 0
+        , { .xi_delete_datapoint = { ( char* ) datastream_id, ( xi_datapoint_t* ) o } }
+    };
+
+    state = CALL_ON_SELF_DATA_READY( input_layer, ( void *) &http_layer_input, LAYER_HINT_NONE );
+
+    if( state == LAYER_STATE_OK )
+    {
+        CALL_ON_SELF_ON_DATA_READY( io_layer, ( void *) 0, LAYER_HINT_NONE );
+    }
+    
+    CALL_ON_SELF_CLOSE( input_layer );
+
+    return ( ( csv_layer_data_t* ) input_layer->user_data )->response;
 }
 
 extern const xi_response_t* xi_datapoint_delete_range(
@@ -403,21 +751,350 @@ extern const xi_response_t* xi_datapoint_delete_range(
           , const xi_timestamp_t* start
           , const xi_timestamp_t* end )
 {
-    XI_FUNCTION_PROLOGUE
+    XI_UNUSED( feed_id );
 
-    const char* data = transport_layer->encode_datapoint_delete_range(
-              data_layer
-            , xi->api_key
-            , feed_id
-            , datastream_id
-            , start
-            , end );
+    // we shall need it later
+    layer_state_t state = LAYER_STATE_OK;
 
-    XI_FUNCTION_GET_RESPONSE
+    // extract the input layer
+    layer_t* input_layer    = xi->layer_chain.top;
+    layer_t* io_layer       = xi->layer_chain.bottom;
 
-    XI_FUNCTION_EPILOGUE
+    { // init & connect
+        state = CALL_ON_SELF_INIT( io_layer, 0, LAYER_HINT_NONE );
+        if( state != LAYER_STATE_OK ) { return 0; }
+
+        xi_connection_data_t conn_data = { XI_HOST, XI_PORT };
+
+        state = CALL_ON_SELF_CONNECT( io_layer, ( void *) &conn_data, LAYER_HINT_NONE );
+        if( state != LAYER_STATE_OK ) { return 0; }
+    }
+
+    // clean the response before writing to it
+    memset( ( ( csv_layer_data_t* ) input_layer->user_data )->response, 0, sizeof( xi_response_t ) );
+
+    // create the input parameter
+    http_layer_input_t http_layer_input =
+    {
+          HTTP_LAYER_INPUT_DATAPOINT_DELETE_RANGE
+        , ( xi_context_t* ) xi
+        , 0
+        , { .xi_delete_datapoint_range = { ( char* ) datastream_id, ( xi_timestamp_t* ) start, ( xi_timestamp_t* ) end } }
+    };
+
+    state = CALL_ON_SELF_DATA_READY( input_layer, ( void *) &http_layer_input, LAYER_HINT_NONE );
+
+    if( state == LAYER_STATE_OK )
+    {
+        CALL_ON_SELF_ON_DATA_READY( io_layer, ( void *) 0, LAYER_HINT_NONE );
+    }
+    
+    CALL_ON_SELF_CLOSE( input_layer );
+
+    return ( ( csv_layer_data_t* ) input_layer->user_data )->response;
+}
+#else
+extern const xi_context_t* xi_nob_feed_update(
+         xi_context_t* xi
+       , const xi_feed_t* value )
+{
+    // we shall need it later
+    layer_state_t state = LAYER_STATE_OK;
+
+    // extract the input layer
+    layer_t* input_layer    = xi->layer_chain.top;
+    layer_t* io_layer       = xi->layer_chain.bottom;
+
+    state = CALL_ON_SELF_INIT( io_layer, 0, LAYER_HINT_NONE );
+    if( state != LAYER_STATE_OK ) { return 0; }
+
+    // clean the response before writing to it
+    memset( ( ( csv_layer_data_t* ) input_layer->user_data )->response, 0, sizeof( xi_response_t ) );
+
+    // create the input parameter
+    static http_layer_input_t http_layer_input;
+    memset( &http_layer_input, 0, sizeof( http_layer_input_t ) );
+
+    // set the layer input
+    http_layer_input.query_type = HTTP_LAYER_INPUT_FEED_UPDATE;
+    http_layer_input.xi_context = xi;
+    http_layer_input.http_union_data.xi_update_feed.feed = value;
+
+    // assign the input parameter so that can be used via the runner
+    xi->input = &http_layer_input;
+
+    return xi;
 }
 
+extern const xi_context_t* xi_nob_feed_get(
+         xi_context_t* xi
+       , xi_feed_t* value )
+{
+    layer_state_t state = LAYER_STATE_OK;
+
+    // extract the input layer
+    layer_t* input_layer    = xi->layer_chain.top;
+    layer_t* io_layer       = xi->layer_chain.bottom;
+
+    state = CALL_ON_SELF_INIT( io_layer, 0, LAYER_HINT_NONE );
+    if( state != LAYER_STATE_OK ) { return 0; }
+    // clean the response before writing to it
+    memset( ( ( csv_layer_data_t* ) input_layer->user_data )->response, 0, sizeof( xi_response_t ) );
+
+    // create the input parameter
+    static http_layer_input_t http_layer_input;
+    memset( &http_layer_input, 0, sizeof( http_layer_input_t ) );
+
+    // set the layer input
+    http_layer_input.query_type = HTTP_LAYER_INPUT_FEED_GET;
+    http_layer_input.xi_context = xi;
+    http_layer_input.http_union_data.xi_get_feed.feed = value;
+
+    // assign the input parameter so that can be used via the runner
+    xi->input = &http_layer_input;
+
+    return xi;
+}
+
+extern const xi_context_t* xi_nob_feed_get_all(
+          xi_context_t* xi
+        , xi_feed_t* value )
+{
+    layer_state_t state = LAYER_STATE_OK;
+
+    // extract the input layer
+    layer_t* input_layer    = xi->layer_chain.top;
+    layer_t* io_layer       = xi->layer_chain.bottom;
+
+    state = CALL_ON_SELF_INIT( io_layer, 0, LAYER_HINT_NONE );
+    if( state != LAYER_STATE_OK ) { return 0; }
+
+    // clean the response before writing to it
+    memset( ( ( csv_layer_data_t* ) input_layer->user_data )->response, 0, sizeof( xi_response_t ) );
+
+    // create the input parameter
+    static http_layer_input_t http_layer_input;
+    memset( &http_layer_input, 0, sizeof( http_layer_input_t ) );
+
+    // set the layer input
+    http_layer_input.query_type = HTTP_LAYER_INPUT_FEED_GET_ALL;
+    http_layer_input.xi_context = xi;
+    http_layer_input.http_union_data.xi_get_feed.feed = value;
+
+    // assign the input parameter so that can be used via the runner
+    xi->input = &http_layer_input;
+
+    return xi;    
+}
+
+
+extern const xi_context_t* xi_nob_datastream_create(
+         xi_context_t* xi, xi_feed_id_t feed_id
+       , const char * datastream_id
+       , const xi_datapoint_t* value )
+{
+    XI_UNUSED( feed_id );
+
+    layer_state_t state = LAYER_STATE_OK;
+
+    // extract the input layer
+    layer_t* input_layer    = xi->layer_chain.top;
+    layer_t* io_layer       = xi->layer_chain.bottom;
+
+    state = CALL_ON_SELF_INIT( io_layer, 0, LAYER_HINT_NONE );
+    if( state != LAYER_STATE_OK ) { return 0; }
+
+    // clean the response before writing to it
+    memset( ( ( csv_layer_data_t* ) input_layer->user_data )->response, 0, sizeof( xi_response_t ) );
+
+    // create the input parameter
+    static http_layer_input_t http_layer_input;
+    memset( &http_layer_input, 0, sizeof( http_layer_input_t ) );
+
+    // set the layer input
+    http_layer_input.query_type                                         = HTTP_LAYER_INPUT_DATASTREAM_CREATE;
+    http_layer_input.xi_context                                         = xi;
+    http_layer_input.http_union_data.xi_create_datastream.datastream    = datastream_id;
+    http_layer_input.http_union_data.xi_create_datastream.value         = value;
+
+    // assign the input parameter so that can be used via the runner
+    xi->input = &http_layer_input;
+
+    return xi;
+}
+
+extern const xi_context_t* xi_nob_datastream_update(
+         xi_context_t* xi, xi_feed_id_t feed_id
+       , const char * datastream_id
+       , const xi_datapoint_t* value )
+{
+    XI_UNUSED( feed_id );
+
+    layer_state_t state = LAYER_STATE_OK;
+
+    // extract the input layer
+    layer_t* input_layer    = xi->layer_chain.top;
+    layer_t* io_layer       = xi->layer_chain.bottom;
+
+    state = CALL_ON_SELF_INIT( io_layer, 0, LAYER_HINT_NONE );
+    if( state != LAYER_STATE_OK ) { return 0; }
+
+    // clean the response before writing to it
+    memset( ( ( csv_layer_data_t* ) input_layer->user_data )->response, 0, sizeof( xi_response_t ) );
+
+    // create the input parameter
+    static http_layer_input_t http_layer_input;
+    memset( &http_layer_input, 0, sizeof( http_layer_input_t ) );
+
+    // set the layer input
+    http_layer_input.query_type                                         = HTTP_LAYER_INPUT_DATASTREAM_UPDATE;
+    http_layer_input.xi_context                                         = xi;
+    http_layer_input.http_union_data.xi_update_datastream.datastream    = datastream_id;
+    http_layer_input.http_union_data.xi_update_datastream.value         = value;
+
+    // assign the input parameter so that can be used via the runner
+    xi->input = &http_layer_input;
+
+    return xi;
+}
+
+const xi_context_t* xi_nob_datastream_get(
+         xi_context_t* xi, xi_feed_id_t feed_id
+       , const char * datastream_id, xi_datapoint_t* dp )
+{
+    XI_UNUSED( feed_id );
+
+    layer_state_t state = LAYER_STATE_OK;
+
+    // extract the input layer
+    layer_t* input_layer    = xi->layer_chain.top;
+    layer_t* io_layer       = xi->layer_chain.bottom;
+
+    state = CALL_ON_SELF_INIT( io_layer, 0, LAYER_HINT_NONE );
+    if( state != LAYER_STATE_OK ) { return 0; }
+
+    // clean the response before writing to it
+    memset( ( ( csv_layer_data_t* ) input_layer->user_data )->response, 0, sizeof( xi_response_t ) );
+
+    // create the input parameter
+    static http_layer_input_t http_layer_input;
+    memset( &http_layer_input, 0, sizeof( http_layer_input_t ) );
+
+    // set the layer input
+    http_layer_input.query_type = HTTP_LAYER_INPUT_DATASTREAM_GET;
+    http_layer_input.xi_context = xi;
+    http_layer_input.http_union_data.xi_get_datastream.datastream = datastream_id;
+    http_layer_input.http_union_data.xi_get_datastream.value = dp;
+
+    // assign the input parameter so that can be used via the runner
+    xi->input = &http_layer_input;
+
+    return xi;
+}
+
+const xi_context_t* xi_nob_datastream_delete(
+         xi_context_t* xi, xi_feed_id_t feed_id
+       , const char* datastream_id )
+{
+    XI_UNUSED( feed_id );
+
+    layer_state_t state = LAYER_STATE_OK;
+
+    // extract the input layer
+    layer_t* input_layer    = xi->layer_chain.top;
+    layer_t* io_layer       = xi->layer_chain.bottom;
+
+    state = CALL_ON_SELF_INIT( io_layer, 0, LAYER_HINT_NONE );
+    if( state != LAYER_STATE_OK ) { return 0; }
+
+    // clean the response before writing to it
+    memset( ( ( csv_layer_data_t* ) input_layer->user_data )->response, 0, sizeof( xi_response_t ) );
+
+    // create the input parameter
+    static http_layer_input_t http_layer_input;
+    memset( &http_layer_input, 0, sizeof( http_layer_input_t ) );
+
+    // set the layer input
+    http_layer_input.query_type                                         = HTTP_LAYER_INPUT_DATASTREAM_DELETE;
+    http_layer_input.xi_context                                         = xi;
+    http_layer_input.http_union_data.xi_delete_datastream.datastream    = datastream_id;
+
+    // assign the input parameter so that can be used via the runner
+    xi->input = &http_layer_input;
+
+    return xi;
+}
+
+const xi_context_t* xi_nob_datapoint_delete(
+         xi_context_t* xi, xi_feed_id_t feed_id
+       , const char * datastream_id
+       , const xi_datapoint_t* dp )
+{
+    XI_UNUSED( feed_id );
+
+    layer_state_t state = LAYER_STATE_OK;
+
+    // extract the input layer
+    layer_t* input_layer    = xi->layer_chain.top;
+    layer_t* io_layer       = xi->layer_chain.bottom;
+
+    state = CALL_ON_SELF_INIT( io_layer, 0, LAYER_HINT_NONE );
+    if( state != LAYER_STATE_OK ) { return 0; }
+
+    // clean the response before writing to it
+    memset( ( ( csv_layer_data_t* ) input_layer->user_data )->response, 0, sizeof( xi_response_t ) );
+
+    // create the input parameter
+    static http_layer_input_t http_layer_input;
+    memset( &http_layer_input, 0, sizeof( http_layer_input_t ) );
+
+    // set the layer input
+    http_layer_input.query_type                                         = HTTP_LAYER_INPUT_DATAPOINT_DELETE;
+    http_layer_input.xi_context                                         = xi;
+    http_layer_input.http_union_data.xi_delete_datapoint.datastream     = datastream_id;
+    http_layer_input.http_union_data.xi_delete_datapoint.value          = dp;
+
+    // assign the input parameter so that can be used via the runner
+    xi->input = &http_layer_input;
+
+    return xi;
+}
+
+const xi_context_t* xi_nob_datapoint_delete_range(
+        xi_context_t* xi, xi_feed_id_t feed_id, const char * datastream_id
+      , const xi_timestamp_t* start, const xi_timestamp_t* end )
+{
+    XI_UNUSED( feed_id );
+
+    layer_state_t state = LAYER_STATE_OK;
+
+    // extract the input layer
+    layer_t* input_layer    = xi->layer_chain.top;
+    layer_t* io_layer       = xi->layer_chain.bottom;
+
+    state = CALL_ON_SELF_INIT( io_layer, 0, LAYER_HINT_NONE );
+    if( state != LAYER_STATE_OK ) { return 0; }
+
+    // clean the response before writing to it
+    memset( ( ( csv_layer_data_t* ) input_layer->user_data )->response, 0, sizeof( xi_response_t ) );
+
+    // create the input parameter
+    static http_layer_input_t http_layer_input;
+    memset( &http_layer_input, 0, sizeof( http_layer_input_t ) );
+
+    // set the layer input
+    http_layer_input.query_type                                             = HTTP_LAYER_INPUT_DATAPOINT_DELETE_RANGE;
+    http_layer_input.xi_context                                             = xi;
+    http_layer_input.http_union_data.xi_delete_datapoint_range.datastream   = datastream_id;
+    http_layer_input.http_union_data.xi_delete_datapoint_range.value_start  = start;
+    http_layer_input.http_union_data.xi_delete_datapoint_range.value_end    = end;
+
+    // assign the input parameter so that can be used via the runner
+    xi->input = &http_layer_input;
+
+    return xi;
+}
+#endif // XI_NOB_ENABLED
 
 #ifdef __cplusplus
 }
