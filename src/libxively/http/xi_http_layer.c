@@ -916,6 +916,21 @@ layer_state_t http_layer_on_data_ready(
     END_CORO()
 }
 
+layer_state_t http_layer_init(
+      void* context
+    , void* data
+    , layer_state_t state )
+{
+    return CALL_ON_PREV_INIT( context, data, state );
+}
+
+layer_state_t http_layer_connect(
+      void* context
+    , void* data
+    , layer_state_t state )
+{
+    return CALL_ON_NEXT_CONNECT( context, data, state );
+}
 
 layer_state_t http_layer_close(
       void* context

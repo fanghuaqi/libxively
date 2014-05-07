@@ -241,9 +241,11 @@ DEFINE_CONNECTION_SCHEME( CONNECTION_SCHEME_2, CONNECTION_SCHEME_2_DATA );
                                 , &posix_io_layer_close, &posix_io_layer_on_close
                                 , &posix_io_layer_init, &posix_io_layer_connect )
         , LAYER_TYPE( HTTP_LAYER, &http_layer_data_ready, &http_layer_on_data_ready
-                                , &http_layer_close, &http_layer_on_close, 0, 0 )
+                                , &http_layer_close, &http_layer_on_close
+                                , &http_layer_init, &http_layer_connect )
         , LAYER_TYPE( CSV_LAYER, &csv_layer_data_ready, &csv_layer_on_data_ready
-                            , &csv_layer_close, &csv_layer_on_close, 0, 0 )
+                            , &csv_layer_close, &csv_layer_on_close
+                            , &csv_layer_init, &csv_layer_connect )
     END_LAYER_TYPES_CONF()
     #endif
 
@@ -286,9 +288,11 @@ DEFINE_CONNECTION_SCHEME( CONNECTION_SCHEME_2, CONNECTION_SCHEME_2_DATA );
                               , &mbed_io_layer_close, &mbed_io_layer_on_close
                               , &mbed_io_layer_init, &mbed_io_layer_connect )
         , LAYER_TYPE( HTTP_LAYER, &http_layer_data_ready, &http_layer_on_data_ready
-                                , &http_layer_close, &http_layer_on_close, 0, 0 )
+                                , &http_layer_close, &http_layer_on_close
+                                , &http_layer_init, &http_layer_connect )
         , LAYER_TYPE( CSV_LAYER, &csv_layer_data_ready, &csv_layer_on_data_ready
-                            , &csv_layer_close, &csv_layer_on_close, 0, 0 )
+                            , &csv_layer_close, &csv_layer_on_close
+                            , &csv_layer_init, &csv_layer_connect )
     END_LAYER_TYPES_CONF()
     #endif
 
@@ -316,15 +320,18 @@ DEFINE_CONNECTION_SCHEME( CONNECTION_SCHEME_2, CONNECTION_SCHEME_2_DATA );
                                 , &xi_mqtt_logic_layer_init, &xi_mqtt_logic_layer_connect )
     END_LAYER_TYPES_CONF()
     #else
-    BEGIN_LAYER_TYPES_CONF()
+    // temporarly disabled because it won't work against the new asynchronious posix layer
+    /*BEGIN_LAYER_TYPES_CONF()
           LAYER_TYPE( IO_LAYER, &posix_asynch_io_layer_data_ready, &posix_asynch_io_layer_on_data_ready
                               , &posix_asynch_io_layer_close, &posix_asynch_io_layer_on_close
                               , &posix_asynch_io_layer_init, &posix_asynch_io_layer_connect )
         , LAYER_TYPE( HTTP_LAYER, &http_layer_data_ready, &http_layer_on_data_ready
-                                , &http_layer_close, &http_layer_on_close, 0, 0 )
+                                , &http_layer_close, &http_layer_on_close
+                                , &http_layer_init, &http_layer_connect )
         , LAYER_TYPE( CSV_LAYER, &csv_layer_data_ready, &csv_layer_on_data_ready
-                            , &csv_layer_close, &csv_layer_on_close, 0, 0 )
-    END_LAYER_TYPES_CONF()
+                            , &csv_layer_close, &csv_layer_on_close
+                            , &csv_layer_init, &csv_layer_connect )
+    END_LAYER_TYPES_CONF()*/
     #endif
 #endif
 
@@ -507,7 +514,7 @@ const xi_response_t* xi_feed_get(
     layer_t* io_layer       = xi->layer_chain.bottom;
 
     { // init & connect
-        state = CALL_ON_SELF_INIT( &io_layer->layer_connection, 0, LAYER_STATE_OK );
+        state = CALL_ON_SELF_INIT( &input_layer->layer_connection, 0, LAYER_STATE_OK );
         if( state != LAYER_STATE_OK ) { return 0; }
 
         xi_connection_data_t conn_data = { XI_HOST, XI_PORT, 0, 0, 0 };
@@ -552,7 +559,7 @@ const xi_response_t* xi_feed_get_all(
     layer_t* io_layer       = xi->layer_chain.bottom;
 
     { // init & connect
-        state = CALL_ON_SELF_INIT( &io_layer->layer_connection, 0, LAYER_STATE_OK );
+        state = CALL_ON_SELF_INIT( &input_layer->layer_connection, 0, LAYER_STATE_OK );
         if( state != LAYER_STATE_OK ) { return 0; }
 
         xi_connection_data_t conn_data = { XI_HOST, XI_PORT, 0, 0, 0 };
@@ -598,7 +605,7 @@ const xi_response_t* xi_feed_update(
     layer_t* io_layer       = xi->layer_chain.bottom;
 
     { // init & connect
-        state = CALL_ON_SELF_INIT( &io_layer->layer_connection, 0, LAYER_STATE_OK );
+        state = CALL_ON_SELF_INIT( &input_layer->layer_connection, 0, LAYER_STATE_OK );
         if( state != LAYER_STATE_OK ) { return 0; }
 
         xi_connection_data_t conn_data = { XI_HOST, XI_PORT, 0, 0, 0 };
@@ -645,7 +652,7 @@ const xi_response_t* xi_datastream_get(
     layer_t* io_layer       = xi->layer_chain.bottom;
 
     { // init & connect
-        state = CALL_ON_SELF_INIT( &io_layer->layer_connection, 0, LAYER_STATE_OK );
+        state = CALL_ON_SELF_INIT( &input_layer->layer_connection, 0, LAYER_STATE_OK );
         if( state != LAYER_STATE_OK ) { return 0; }
 
         xi_connection_data_t conn_data = { XI_HOST, XI_PORT, 0, 0, 0 };
@@ -694,7 +701,7 @@ const xi_response_t* xi_datastream_create(
     layer_t* io_layer       = xi->layer_chain.bottom;
 
     { // init & connect
-        state = CALL_ON_SELF_INIT( &io_layer->layer_connection, 0, LAYER_STATE_OK );
+        state = CALL_ON_SELF_INIT( &input_layer->layer_connection, 0, LAYER_STATE_OK );
         if( state != LAYER_STATE_OK ) { return 0; }
 
         xi_connection_data_t conn_data = { XI_HOST, XI_PORT, 0, 0, 0 };
@@ -742,7 +749,7 @@ const xi_response_t* xi_datastream_update(
     layer_t* io_layer       = xi->layer_chain.bottom;
 
     { // init & connect
-        state = CALL_ON_SELF_INIT( &io_layer->layer_connection, 0, LAYER_STATE_OK );
+        state = CALL_ON_SELF_INIT( &input_layer->layer_connection, 0, LAYER_STATE_OK );
         if( state != LAYER_STATE_OK ) { return 0; }
 
         xi_connection_data_t conn_data = { XI_HOST, XI_PORT, 0, 0, 0 };
@@ -789,7 +796,7 @@ const xi_response_t* xi_datastream_delete(
     layer_t* io_layer       = xi->layer_chain.bottom;
 
     { // init & connect
-        state = CALL_ON_SELF_INIT( &io_layer->layer_connection, 0, LAYER_STATE_OK );
+        state = CALL_ON_SELF_INIT( &input_layer->layer_connection, 0, LAYER_STATE_OK );
         if( state != LAYER_STATE_OK ) { return 0; }
 
         xi_connection_data_t conn_data = { XI_HOST, XI_PORT, 0, 0, 0 };
@@ -837,7 +844,7 @@ const xi_response_t* xi_datapoint_delete(
     layer_t* io_layer       = xi->layer_chain.bottom;
 
     { // init & connect
-        state = CALL_ON_SELF_INIT( &io_layer->layer_connection, 0, LAYER_STATE_OK );
+        state = CALL_ON_SELF_INIT( &input_layer->layer_connection, 0, LAYER_STATE_OK );
         if( state != LAYER_STATE_OK ) { return 0; }
 
         xi_connection_data_t conn_data = { XI_HOST, XI_PORT, 0, 0, 0 };
@@ -886,7 +893,7 @@ extern const xi_response_t* xi_datapoint_delete_range(
     layer_t* io_layer       = xi->layer_chain.bottom;
 
     { // init & connect
-        state = CALL_ON_SELF_INIT( &io_layer->layer_connection, 0, LAYER_STATE_OK );
+        state = CALL_ON_SELF_INIT( &input_layer->layer_connection, 0, LAYER_STATE_OK );
         if( state != LAYER_STATE_OK ) { return 0; }
 
         xi_connection_data_t conn_data = { XI_HOST, XI_PORT, 0, 0, 0 };

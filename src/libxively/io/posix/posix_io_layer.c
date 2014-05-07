@@ -108,7 +108,7 @@ layer_state_t posix_io_layer_on_data_ready(
         buffer->real_size = len;
         buffer->data_ptr[ buffer->real_size ] = '\0'; // put guard
         buffer->curr_pos = 0;
-        CALL_ON_NEXT_ON_DATA_READY( context, ( void* ) buffer, LAYER_STATE_OK );
+        state = CALL_ON_NEXT_ON_DATA_READY( context, ( void* ) buffer, LAYER_STATE_OK );
     } while( state == LAYER_STATE_WANT_READ );
 
     return LAYER_STATE_OK;
@@ -209,14 +209,14 @@ layer_state_t posix_io_layer_init(
     assert( layer->user_data != 0 );
     assert( posix_data->socket_fd != -1 );
 
-    return CALL_ON_NEXT_INIT( context, data, LAYER_STATE_OK );
+    return LAYER_STATE_OK;
 
 err_handling:
     // cleanup the memory
     if( posix_data )        { close( posix_data->socket_fd ); }
     if( layer->user_data )  { XI_SAFE_FREE( layer->user_data ); }
 
-    return CALL_ON_NEXT_INIT( context, data, LAYER_STATE_ERROR );
+    return LAYER_STATE_ERROR;
 }
 
 layer_state_t posix_io_layer_connect(
@@ -272,14 +272,14 @@ layer_state_t posix_io_layer_connect(
 
     xi_debug_logger( "Connecting to the endpoint [ok]" );
 
-    return LAYER_STATE_OK;
+    return CALL_ON_NEXT_CONNECT( context, data, LAYER_STATE_OK );
 
 err_handling:
     // cleanup the memory
     if( posix_data )        { close( posix_data->socket_fd ); }
     if( layer->user_data )  { XI_SAFE_FREE( layer->user_data ); }
 
-    return LAYER_STATE_ERROR;
+    return CALL_ON_NEXT_CONNECT( context, data, LAYER_STATE_ERROR );
 }
 
 #ifdef __cplusplus
