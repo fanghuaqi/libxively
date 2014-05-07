@@ -81,8 +81,6 @@ layer_state_t posix_asynch_io_layer_data_ready(
                     xi_debug_logger( "EAGAIN...." );
                     MAKE_HANDLE_H3( &posix_asynch_io_layer_data_ready, context, data, LAYER_STATE_OK );
 
-                    XI_SAFE_FREE( buffer->data_ptr );
-                    XI_SAFE_FREE( buffer );
                     EXIT( layer_data->cs, xi_evtd_continue_when_evt( xi_evtd_instance
                         , XI_EVENT_WANT_WRITE, handle, posix_asynch_data->socket_fd ) );
                 }
