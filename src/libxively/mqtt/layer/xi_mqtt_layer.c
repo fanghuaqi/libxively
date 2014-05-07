@@ -39,11 +39,12 @@ layer_state_t xi_mqtt_layer_data_ready(
     size_t msg_contents_size = mqtt_serialiser_size(NULL, msg);
     
     uint8_t* buffer = NULL;
+    data_descriptor_t* data_descriptor = NULL;
+    
     buffer = xi_alloc( msg_contents_size );
     XI_CHECK_MEMORY( msg_contents_size );
     memset( buffer, 0, msg_contents_size );
 
-    data_descriptor_t* data_descriptor = NULL;
     data_descriptor = xi_alloc( sizeof( data_descriptor_t ) );
     XI_CHECK_MEMORY( data_descriptor );
     memset( data_descriptor, 0, sizeof( data_descriptor_t ) );
@@ -91,8 +92,18 @@ layer_state_t xi_mqtt_layer_data_ready(
     //No return statement before handler on purpose.
 err_handling:
     xi_debug_logger( "Something went wrong." );
-    buffer = NULL;
-    data_descriptor = NULL;
+    
+    if( buffer != NULL )
+    {
+        XI_SAFE_FREE( buffer );
+        buffer = NULL;
+    }
+    if( data_descriptor != NULL )
+    {
+        XI_SAFE_FREE( data_descriptor );
+        data_descriptor = NULL;
+    }
+    
     END_CORO();
 
     return LAYER_STATE_ERROR;
