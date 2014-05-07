@@ -48,7 +48,15 @@ layer_state_t posix_asynch_io_layer_data_ready(
     if( posix_asynch_data == 0 )
     {
         xi_debug_logger( "layer_data == 0" );
-        return CALL_ON_NEXT_DATA_READY( context, 0, LAYER_STATE_ERROR );
+        
+        // if connection has been broken we have to remember about releasing the memory
+        if( buffer != 0 )
+        {
+            XI_SAFE_FREE( buffer->data_ptr );
+            XI_SAFE_FREE( buffer );
+        }
+        
+        return CALL_ON_NEXT_DATA_READY( context, data, LAYER_STATE_ERROR );
     }
 
     posix_asynch_data_t* layer_data
