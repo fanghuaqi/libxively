@@ -60,6 +60,8 @@ layer_state_t xi_mqtt_layer_data_ready(
 
     if( rc == MQTT_SERIALISER_RC_ERROR )
     {
+        XI_SAFE_FREE( buffer );
+        XI_SAFE_FREE( data_descriptor );
         buffer = NULL;
         data_descriptor = NULL;
         EXIT( layer_data->cs
