@@ -72,6 +72,16 @@ static inline signed char safe_until_copier(
         , const const_data_descriptor_t* src
         , accept_char_t* fun )
 {
+    if( *dst_i == dst->real_size )
+    {
+        return -1;
+    }
+
+    if( *src_i == src->real_size )
+    {
+        return 0; // more data needed
+    }
+
     while( fun( src->data_ptr[ *src_i ] ) )
     {
         dst->data_ptr[ (*dst_i)++ ] = src->data_ptr[ (*src_i)++ ];

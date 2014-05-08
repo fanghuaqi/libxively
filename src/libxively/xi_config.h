@@ -4,7 +4,7 @@
 #ifndef __XI_CONFIG_H__
 #define __XI_CONFIG_H__
 
-#ifdef MBED_USERNAME
+#ifdef __MBED__
 #include "xi_config_mbed.h"
 #ifndef XI_IO_LAYER
 #define XI_IO_LAYER XI_IO_MBED
@@ -65,6 +65,10 @@
 
 #ifndef XI_CSV_BUFFER_SIZE
 #define XI_CSV_BUFFER_SIZE                 128
+#endif
+
+#ifndef XI_IO_BUFFER_SIZE
+#define XI_IO_BUFFER_SIZE                   32
 #endif
 
 #ifndef XI_HOST

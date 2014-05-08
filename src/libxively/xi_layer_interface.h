@@ -26,19 +26,12 @@ typedef enum
     LAYER_STATE_ERROR       // something went terribly wrong, most probably it's not possible to recover, please refer to the errno value or xi_error
 } layer_state_t;
 
-// the hints that are used to provide additional information to the layers that are going to precess the query
-typedef enum
-{
-    LAYER_HINT_NONE = 0,    // no hint, default behaviour
-    LAYER_HINT_MORE_DATA    // more data will come in the future do not change the mode (that will happen on default)
-} layer_hint_t;
-
-typedef layer_state_t ( data_ready_t )      ( layer_connectivity_t* context, const void* data, const layer_hint_t hint );
-typedef layer_state_t ( on_data_ready_t )   ( layer_connectivity_t* context, const void* data, const layer_hint_t hint );
-typedef layer_state_t ( connect_t )         ( layer_connectivity_t* context, const void* data, const layer_hint_t hint );
-typedef layer_state_t ( init_t )            ( layer_connectivity_t* context, const void* data, const layer_hint_t hint );
-typedef layer_state_t ( close_t )           ( layer_connectivity_t* context );
-typedef layer_state_t ( on_close_t )        ( layer_connectivity_t* context );
+typedef layer_state_t ( data_ready_t )      ( void* context, void* data, layer_state_t state );
+typedef layer_state_t ( on_data_ready_t )   ( void* context, void* data, layer_state_t state );
+typedef layer_state_t ( connect_t )         ( void* context, void* data, layer_state_t state );
+typedef layer_state_t ( init_t )            ( void* context, void* data, layer_state_t state );
+typedef layer_state_t ( close_t )           ( void* context, void* data, layer_state_t state );
+typedef layer_state_t ( on_close_t )        ( void* context, void* data, layer_state_t state );
 
 /* The raw interface of the purly raw layer that combines both: simplicity and functionality
  * of the 'on demand processing' idea.

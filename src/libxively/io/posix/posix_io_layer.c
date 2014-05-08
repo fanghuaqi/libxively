@@ -33,16 +33,16 @@ extern "C" {
 #endif
 
 layer_state_t posix_io_layer_data_ready(
-      layer_connectivity_t* context
-    , const void* data
-    , const layer_hint_t hint )
+      void* context
+    , void* data
+    , layer_state_t state )
 {
     xi_debug_logger( "[posix_io_layer_data_ready]" );
 
-    posix_data_t* posix_data                = ( posix_data_t* ) context->self->user_data;
+    posix_data_t* posix_data                = ( posix_data_t* ) CON_SELF( context )->user_data;
     const const_data_descriptor_t* buffer   = ( const const_data_descriptor_t* ) data;
 
-    XI_UNUSED( hint );
+    XI_UNUSED( state );
 
     if( buffer != 0 && buffer->data_size > 0 )
     {
@@ -64,15 +64,15 @@ layer_state_t posix_io_layer_data_ready(
 }
 
 layer_state_t posix_io_layer_on_data_ready(
-      layer_connectivity_t* context
-    , const void* data
-    , const layer_hint_t hint )
+      void* context
+    , void* data
+    , layer_state_t state )
 {
     xi_debug_logger( "[posix_io_layer_on_data_ready]" );
 
-    posix_data_t* posix_data = ( posix_data_t* ) context->self->user_data;
+    posix_data_t* posix_data = ( posix_data_t* ) CON_SELF( context )->user_data;
 
-    XI_UNUSED( hint );
+    XI_UNUSED( state );
 
     data_descriptor_t* buffer = 0;
 
@@ -87,8 +87,6 @@ layer_state_t posix_io_layer_on_data_ready(
         static data_descriptor_t buffer_descriptor = { data_buffer, sizeof( data_buffer ), 0, 0 };
         buffer = &buffer_descriptor;
     }
-
-    layer_state_t state = LAYER_STATE_OK;
 
     do
     {
@@ -110,24 +108,32 @@ layer_state_t posix_io_layer_on_data_ready(
         buffer->real_size = len;
         buffer->data_ptr[ buffer->real_size ] = '\0'; // put guard
         buffer->curr_pos = 0;
-        state = CALL_ON_NEXT_ON_DATA_READY( context->self, ( void* ) buffer, LAYER_HINT_MORE_DATA );
+        state = CALL_ON_NEXT_ON_DATA_READY( context, ( void* ) buffer, LAYER_STATE_OK );
     } while( state == LAYER_STATE_WANT_READ );
 
     return LAYER_STATE_OK;
 }
 
-layer_state_t posix_io_layer_close( layer_connectivity_t* context )
+layer_state_t posix_io_layer_close(
+      void* context
+    , void* data
+    , layer_state_t state )
 {
-    posix_data_t* posix_data = ( posix_data_t* ) context->self->user_data;
+    posix_data_t* posix_data = ( posix_data_t* ) CON_SELF( context )->user_data;
 
     XI_UNUSED( posix_data );
 
-    return CALL_ON_SELF_ON_CLOSE( context->self );
+    return CALL_ON_SELF_ON_CLOSE( context, data, state );
 }
 
-layer_state_t posix_io_layer_on_close( layer_connectivity_t* context )
+layer_state_t posix_io_layer_on_close(
+      void* context
+    , void* data
+    , layer_state_t state )
 {
-    posix_data_t* posix_data = ( posix_data_t* ) context->self->user_data;
+    XI_UNUSED( state );
+
+    posix_data_t* posix_data = ( posix_data_t* ) CON_SELF( context )->user_data;
 
     // shutdown the communication
     if( shutdown( posix_data->socket_fd, SHUT_RDWR ) == -1 )
@@ -144,35 +150,34 @@ layer_state_t posix_io_layer_on_close( layer_connectivity_t* context )
     }
 
     // cleanup the memory
-    if( context->self->user_data )
+    if( CON_SELF( context )->user_data )
     {
         xi_debug_logger( "Freeing posix_data memory... \n" );
-        XI_SAFE_FREE( context->self->user_data );
+        XI_SAFE_FREE( CON_SELF( context )->user_data );
     }
 
-    return CALL_ON_NEXT_ON_CLOSE( context->self );
+    return CALL_ON_NEXT_ON_CLOSE( context, data, LAYER_STATE_OK );
 
 err_handling:
     close( posix_data->socket_fd );
 
-    if( context->self->user_data )
+    if( CON_SELF( context )->user_data )
     {
         xi_debug_logger( "Freeing posix_data memory... \n" );
-        XI_SAFE_FREE( context->self->user_data );
+        XI_SAFE_FREE( CON_SELF( context )->user_data );
     }
 
-    CALL_ON_NEXT_ON_CLOSE( context->self );
-    return LAYER_STATE_ERROR;
+    return CALL_ON_NEXT_ON_CLOSE( context, data, LAYER_STATE_ERROR );
 }
 
 // here we are going to allocate the space for the posix data, and we are going to create the socket
 // and store it in the data module so it's we can use it later on
 layer_state_t posix_io_layer_init(
-      layer_connectivity_t* context
-    , const void* data
-    , const layer_hint_t hint )
+      void* context
+    , void* data
+    , layer_state_t state )
 {
-    XI_UNUSED( hint );
+    XI_UNUSED( state );
     XI_UNUSED( data );
 
     // PRECONDITIONS
@@ -180,7 +185,7 @@ layer_state_t posix_io_layer_init(
 
     xi_debug_logger( "[posix_io_layer_init]" );
 
-    layer_t* layer              = ( layer_t* ) context->self;
+    layer_t* layer              = ( layer_t* ) CON_SELF( context );
     posix_data_t* posix_data    = xi_alloc( sizeof( posix_data_t ) );
 
     XI_CHECK_MEMORY( posix_data );
@@ -214,15 +219,18 @@ err_handling:
     return LAYER_STATE_ERROR;
 }
 
-layer_state_t posix_io_layer_connect( layer_connectivity_t* context, const void* data, const layer_hint_t hint )
+layer_state_t posix_io_layer_connect(
+      void* context
+    , void* data
+    , layer_state_t state )
 {
-    XI_UNUSED( hint );
+    XI_UNUSED( state );
 
     // PRECONDITIONS
     assert( context != 0 );
 
     xi_connection_data_t* connection_data   = ( xi_connection_data_t* ) data;
-    layer_t* layer                          = ( layer_t* ) context->self;
+    layer_t* layer                          = ( layer_t* ) CON_SELF( context );
     posix_data_t* posix_data                = ( posix_data_t* ) layer->user_data;
 
     xi_debug_format( "Connecting layer [%d] to the endpoint", layer->layer_type_id );
@@ -234,7 +242,7 @@ layer_state_t posix_io_layer_connect( layer_connectivity_t* context, const void*
     xi_debug_logger( "Getting host by name..." );
 
     // get the hostaddress
-    hostinfo = gethostbyname( connection_data->address );
+    hostinfo = gethostbyname( connection_data->host );
 
     // if null it means that the address has not been founded
     if( hostinfo == NULL )
@@ -264,14 +272,14 @@ layer_state_t posix_io_layer_connect( layer_connectivity_t* context, const void*
 
     xi_debug_logger( "Connecting to the endpoint [ok]" );
 
-    return LAYER_STATE_OK;
+    return CALL_ON_NEXT_CONNECT( context, data, LAYER_STATE_OK );
 
 err_handling:
     // cleanup the memory
     if( posix_data )        { close( posix_data->socket_fd ); }
     if( layer->user_data )  { XI_SAFE_FREE( layer->user_data ); }
 
-    return LAYER_STATE_ERROR;
+    return CALL_ON_NEXT_CONNECT( context, data, LAYER_STATE_ERROR );
 }
 
 #ifdef __cplusplus

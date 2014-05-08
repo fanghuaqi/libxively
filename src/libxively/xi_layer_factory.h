@@ -12,19 +12,19 @@
 extern "C" {
 #endif
 
-extern const layer_factory_interface_t FACTORY_ENTRIES[ ];
-extern const layer_type_t LAYER_TYPES[];
+extern layer_factory_interface_t FACTORY_ENTRIES[ ];
+extern layer_type_t LAYER_TYPES[];
 
-static inline layer_t* alloc_layer( const layer_type_id_t layer_type_id )
+static inline layer_t* alloc_layer( layer_type_id_t layer_type_id )
 {
-    const layer_type_t* layer_type = &LAYER_TYPES[ layer_type_id ];
+    layer_type_t* layer_type = &LAYER_TYPES[ layer_type_id ];
     return FACTORY_ENTRIES[ layer_type_id ].alloc( layer_type );
 }
 
 static inline void free_layer( layer_t* layer )
 {
-    const layer_type_t* layer_type = &LAYER_TYPES[ layer->layer_type_id ];
-    return FACTORY_ENTRIES[ layer->layer_type_id ].free( layer_type, layer );
+    layer_type_t* layer_type = &LAYER_TYPES[ layer->layer_type_id ];
+    FACTORY_ENTRIES[ layer->layer_type_id ].free( layer_type, layer );
 }
 
 static inline layer_t* create_layer( layer_t* layer, void* user_data )

@@ -570,7 +570,7 @@ const void* http_layer_data_generator_datapoint_delete_range(
 }
 
 static inline layer_state_t http_layer_data_ready_gen(
-      layer_connectivity_t* context
+      void* context
     , const http_layer_input_t* input
     , xi_generator_t* gen )
 {
@@ -592,9 +592,9 @@ static inline layer_state_t http_layer_data_ready_gen(
                         = ( const const_data_descriptor_t* ) ( *gen )( input, &gstate );
 
                 state = CALL_ON_PREV_DATA_READY(
-                              context->self
-                            , ( const void* ) ret
-                            , LAYER_HINT_NONE );
+                              context
+                            , ( void* ) ret
+                            , LAYER_STATE_OK );
             }
 
             if( state != LAYER_STATE_OK )
@@ -609,13 +609,13 @@ static inline layer_state_t http_layer_data_ready_gen(
 }
 
 layer_state_t http_layer_data_ready(
-      layer_connectivity_t* context
-    , const void* data
-    , const layer_hint_t hint )
+      void* context
+    , void* data
+    , layer_state_t state )
 {
     XI_UNUSED( context );
     XI_UNUSED( data );
-    XI_UNUSED( hint );
+    XI_UNUSED( state );
     //xi_debug_function_entered();
 
     // unpack the data
@@ -674,15 +674,16 @@ layer_state_t http_layer_data_ready(
 }
 
 layer_state_t http_layer_on_data_ready(
-      layer_connectivity_t* context
-    , const void* data
-    , const layer_hint_t hint )
+      void* context
+    , void* data
+    , layer_state_t in_state )
 {
-    XI_UNUSED( hint );
+    XI_UNUSED( in_state );
     static uint16_t cs = 0; // coroutine state
 
     // unpack http_layer_data so unpack it
-    http_layer_data_t* http_layer_data = ( http_layer_data_t* ) context->self->user_data;
+    http_layer_data_t* http_layer_data
+        = ( http_layer_data_t* ) CON_SELF( context )->user_data;
 
     // some tmp variables
     short sscanf_state      = 0;
@@ -821,6 +822,16 @@ layer_state_t http_layer_on_data_ready(
 
                 http_layer_data->response->http.http_headers_checklist[ header_type ]
                         = &http_layer_data->response->http.http_headers[ header_type ];
+
+                memset(
+                          http_layer_data->response->http.http_headers[ XI_HTTP_HEADER_UNKNOWN ].name
+                        , 0
+                        , sizeof( http_layer_data->response->http.http_headers[ XI_HTTP_HEADER_UNKNOWN ].name ) );
+
+                memset(
+                          http_layer_data->response->http.http_headers[ XI_HTTP_HEADER_UNKNOWN ].value
+                        , 0
+                        , sizeof( http_layer_data->response->http.http_headers[ XI_HTTP_HEADER_UNKNOWN ].value) );
             }
 
         } while( sscanf_state == 1 );
@@ -878,9 +889,9 @@ layer_state_t http_layer_on_data_ready(
 
             if( http_layer_data->response->http.http_status == 200 )
             {
-                state = CALL_ON_NEXT_ON_DATA_READY( context->self
-                                            , ( const void* ) data
-                                            , ( http_layer_data->counter < http_layer_data->content_length ) ? LAYER_HINT_MORE_DATA : LAYER_HINT_NONE );
+                state = CALL_ON_NEXT_ON_DATA_READY( context
+                                            , ( void* ) data
+                                            , LAYER_STATE_OK );
 
                 if( state == LAYER_STATE_WANT_READ && http_layer_data->counter < http_layer_data->content_length )
                 {
@@ -915,17 +926,36 @@ layer_state_t http_layer_on_data_ready(
     END_CORO()
 }
 
+layer_state_t http_layer_init(
+      void* context
+    , void* data
+    , layer_state_t state )
+{
+    return CALL_ON_PREV_INIT( context, data, state );
+}
+
+layer_state_t http_layer_connect(
+      void* context
+    , void* data
+    , layer_state_t state )
+{
+    return CALL_ON_NEXT_CONNECT( context, data, state );
+}
 
 layer_state_t http_layer_close(
-    layer_connectivity_t* context )
+      void* context
+    , void* data
+    , layer_state_t state )
 {
-    return CALL_ON_PREV_CLOSE( context->self );
+    return CALL_ON_PREV_CLOSE( context, data, state );
 }
 
 layer_state_t http_layer_on_close(
-    layer_connectivity_t* context )
+      void* context
+    , void* data
+    , layer_state_t state )
 {
-    return  CALL_ON_NEXT_ON_CLOSE( context->self );
+    return  CALL_ON_NEXT_ON_CLOSE( context, data, state );
 }
 
 #ifdef __cplusplus

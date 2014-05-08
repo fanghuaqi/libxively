@@ -135,12 +135,8 @@ static const short states[][6][2] =
 signed char xi_stated_csv_decode_value(
           xi_stated_csv_decode_value_state_t* st
         , const_data_descriptor_t* source
-        , xi_datapoint_t* p
-        , layer_hint_t hint )
+        , xi_datapoint_t* p )
 {
-    // unused
-    XI_UNUSED( hint );
-
     // PRECONDITION
     assert( st != 0 );
     assert( source != 0 );
@@ -197,7 +193,8 @@ signed char xi_stated_csv_decode_value(
         // this is where we shall need to jump for more data
         if( source->curr_pos == source->real_size )
         {
-            if( hint == LAYER_HINT_MORE_DATA )
+            // @TODO fix it later
+            /*if( hint == LAYER_HINT_MORE_DATA )
             {
                 // need more data
                 return 0;
@@ -207,7 +204,7 @@ signed char xi_stated_csv_decode_value(
             {
                 ++( st->counter );
                 break;
-            }
+            }*/
 data_ready:
             source->curr_pos = 0; // reset the counter
         }
@@ -364,10 +361,8 @@ const void* csv_layer_data_generator_feed(
 layer_state_t csv_layer_parse_datastream(
         csv_layer_data_t* csv_layer_data
       , const_data_descriptor_t* data
-      , const layer_hint_t hint
       , xi_datapoint_t* dp )
 {
-    XI_UNUSED( hint );
     XI_UNUSED( dp );
 
     // some tmp variables
@@ -443,7 +438,7 @@ layer_state_t csv_layer_parse_datastream(
     {
         do
         {
-            ret_state = xi_stated_csv_decode_value( &( csv_layer_data->csv_decode_value_state ), data, dp, hint );
+            ret_state = xi_stated_csv_decode_value( &( csv_layer_data->csv_decode_value_state ), data, dp );
 
             if( ret_state == 0 )
             {
@@ -465,10 +460,8 @@ layer_state_t csv_layer_parse_datastream(
 layer_state_t csv_layer_parse_feed(
         csv_layer_data_t* csv_layer_data
       , const_data_descriptor_t* data
-      , const layer_hint_t hint
       , xi_feed_t* dp )
 {
-    XI_UNUSED( hint );
     XI_UNUSED( dp );
 
     // some tmp variables
@@ -519,7 +512,7 @@ layer_state_t csv_layer_parse_feed(
             //
             do
             {
-                state = csv_layer_parse_datastream( csv_layer_data, data, hint, &( dp->datastreams[ dp->datastream_count ].datapoints[ 0 ] ) );
+                state = csv_layer_parse_datastream( csv_layer_data, data, &( dp->datastreams[ dp->datastream_count ].datapoints[ 0 ] ) );
 
                 if( state == LAYER_STATE_WANT_READ )
                 {
@@ -538,7 +531,7 @@ layer_state_t csv_layer_parse_feed(
             dp->datastreams[ dp->datastream_count ].datapoint_count     = 1;
             dp->datastream_count                                       += 1;
         }
-    } while( hint == LAYER_HINT_MORE_DATA ); // continuation condition
+    } while( /** @TODO fix it later */ 1 ); // continuation condition
 
     EXIT( csv_layer_data->feed_decode_state, LAYER_STATE_OK );
 
@@ -548,13 +541,12 @@ layer_state_t csv_layer_parse_feed(
 }
 
 layer_state_t csv_layer_data_ready(
-      layer_connectivity_t* context
-    , const void* data
-    , const layer_hint_t hint )
+      void* context
+    , void* data
+    , layer_state_t in_state )
 {
     XI_UNUSED( context );
     XI_UNUSED( data );
-    XI_UNUSED( hint );
     //xi_debug_function_entered();
 
     // unpack the data, changing the constiness to avoid copying cause
@@ -564,7 +556,7 @@ layer_state_t csv_layer_data_ready(
 
     // store the layer input in custom data will need that later
     // during the response parsing
-    ( ( csv_layer_data_t* ) context->self->user_data )->http_layer_input = ( void* ) http_layer_input;
+    ( ( csv_layer_data_t* ) CON_SELF( context )->user_data )->http_layer_input = ( void* ) http_layer_input;
 
     switch( http_layer_input->query_type )
     {
@@ -589,20 +581,20 @@ layer_state_t csv_layer_data_ready(
             return LAYER_STATE_ERROR;
     };
 
-    return CALL_ON_PREV_DATA_READY( context->self, ( void* ) http_layer_input, hint );
+    return CALL_ON_PREV_DATA_READY( context, ( void* ) http_layer_input, in_state );
 }
 
 layer_state_t csv_layer_on_data_ready(
-      layer_connectivity_t* context
-    , const void* data
-    , const layer_hint_t hint )
+      void* context
+    , void* data
+    , layer_state_t in_state )
 {
     XI_UNUSED( context );
     XI_UNUSED( data );
-    XI_UNUSED( hint );
+    XI_UNUSED( in_state );
 
     // unpack the layer data
-    csv_layer_data_t* csv_layer_data = ( csv_layer_data_t* ) context->self->user_data;
+    csv_layer_data_t* csv_layer_data = ( csv_layer_data_t* ) CON_SELF( context )->user_data;
 
     //
     switch( csv_layer_data->http_layer_input->query_type )
@@ -611,13 +603,12 @@ layer_state_t csv_layer_on_data_ready(
                 return csv_layer_parse_datastream(
                               csv_layer_data
                             , ( void* ) data
-                            , hint
                             , ( xi_datapoint_t* ) csv_layer_data->http_layer_input->http_union_data.xi_get_datastream.value );
         case HTTP_LAYER_INPUT_FEED_GET_ALL:
         case HTTP_LAYER_INPUT_FEED_GET:
             return csv_layer_parse_feed(
                               csv_layer_data
-                            , ( void* ) data, hint
+                            , ( void* ) data
                             , ( xi_feed_t* ) csv_layer_data->http_layer_input->http_union_data.xi_get_feed.feed );
         default:
             break;
@@ -630,16 +621,42 @@ layer_state_t csv_layer_on_data_ready(
     // return LAYER_STATE_OK;
 }
 
-layer_state_t csv_layer_close(
-    layer_connectivity_t* context )
+layer_state_t csv_layer_init(
+      void* context
+    , void* data
+    , layer_state_t in_state )
 {
-    return CALL_ON_PREV_CLOSE( context->self );
+    return CALL_ON_PREV_INIT( context, data, in_state );
+}
+
+layer_state_t csv_layer_connect(
+      void* context
+    , void* data
+    , layer_state_t in_state )
+{
+    XI_UNUSED( context );
+    XI_UNUSED( data );
+    XI_UNUSED( in_state );
+
+    return LAYER_STATE_OK;
+}
+
+layer_state_t csv_layer_close(
+      void* context
+    , void* data
+    , layer_state_t in_state )
+{
+    return CALL_ON_PREV_CLOSE( context, data, in_state );
 }
 
 layer_state_t csv_layer_on_close(
-    layer_connectivity_t* context )
+      void* context
+    , void* data
+    , layer_state_t in_state )
 {
     XI_UNUSED( context );
+    XI_UNUSED( data );
+    XI_UNUSED( in_state );
 
     return LAYER_STATE_OK;
 }

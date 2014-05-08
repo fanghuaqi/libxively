@@ -1,18 +1,22 @@
 #include <string.h>
 
+#include "xi_debug.h"
 #include "message.h"
-
 #include "serialiser.h"
 
-#define WRITE_STRING(name) { \
-  buffer[offset++] = name.length / 0xff; \
-  buffer[offset++] = name.length & 0xff; \
-  memcpy(&(buffer[offset]), name.data, name.length); \
-  offset += name.length; \
+#define WRITE_16( length ) { \
+    buffer[offset++] = length >> 8; \
+    buffer[offset++] = length & 0xff; \
 }
 
-#define WRITE_DATA(name) { \
-    memcpy(&(buffer[offset]), name.data, name.length); \
+#define WRITE_STRING( name ) { \
+    WRITE_16( name.length ); \
+    memcpy( &( buffer[ offset ] ), name.data, name.length); \
+    offset += name.length; \
+}
+
+#define WRITE_DATA( name ) { \
+    memcpy( &( buffer[ offset ] ), name.data, name.length ); \
     offset += name.length; \
 }
 
@@ -78,6 +82,24 @@ size_t mqtt_serialiser_size(
     {
         // empty
     }
+    else if ( message->common.common_u.common_bits.type == MQTT_TYPE_SUBSCRIBE )
+    {
+        len += 2; // size msgid
+        len += 2; // size of topic
+
+        // @TODO add support for multiple topics per request
+        len += message->subscribe.topics.name.length;
+        len += 1; // qos
+    }
+    else if ( message->common.common_u.common_bits.type == MQTT_TYPE_PINGREQ )
+    {
+        // just a fixed header
+    }
+    else
+    {
+        xi_debug_logger( "unknown type of message to serialize!" );
+        assert( 0 == 1 );
+    }
 
     int32_t remaining_length = len - 1;
 
@@ -111,7 +133,7 @@ mqtt_serialiser_rc_t mqtt_serialiser_write(
 
     buffer[ offset++ ] = message->common.common_u.common_value;
 
-    uint32_t remaining_length = len - 2;//message->common.remaining_length;
+    uint32_t remaining_length = len - 2;
 
     do
     {
@@ -127,9 +149,8 @@ mqtt_serialiser_rc_t mqtt_serialiser_write(
 
             buffer[ offset++ ] = message->connect.protocol_version;
             buffer[ offset++ ] = message->connect.flags_u.flags_value;
-            buffer[ offset++ ] = message->connect.keep_alive >> 8;
-            buffer[ offset++ ] = message->connect.keep_alive & 0xff;
 
+            WRITE_16( message->connect.keep_alive );
             WRITE_STRING( message->connect.client_id );
 
             if ( message->connect.flags_u.flags_bits.will )
@@ -165,8 +186,7 @@ mqtt_serialiser_rc_t mqtt_serialiser_write(
 
             if( message->common.common_u.common_bits.qos > 0 )
             {
-                buffer[ offset++ ] = message->publish.message_id >> 8;
-                buffer[ offset++ ] = message->publish.message_id & 0xff;
+                WRITE_16( message->publish.message_id );
             }
 
             WRITE_DATA( message->publish.content );
@@ -174,7 +194,28 @@ mqtt_serialiser_rc_t mqtt_serialiser_write(
             break;
         }
 
+        case MQTT_TYPE_SUBSCRIBE:
+        {
+            // write the message identifier the subscribe is using
+            // the QoS 1 anyway
+
+            WRITE_16( message->subscribe.message_id );
+
+            WRITE_STRING( message->subscribe.topics.name );
+
+            buffer[ offset++ ] = message->subscribe.topics.qos & 0xff;
+
+            break;
+        }
+
+
         case MQTT_TYPE_DISCONNECT:
+        {
+            // empty
+            break;
+        }
+
+        case MQTT_TYPE_PINGREQ:
         {
             // empty
             break;

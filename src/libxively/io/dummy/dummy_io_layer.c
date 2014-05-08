@@ -16,63 +16,73 @@
 #include "xi_common.h"
 
 layer_state_t dummy_io_layer_data_ready(
-      layer_connectivity_t* context
-    , const void* data
-    , const layer_hint_t hint )
+      void* context
+    , void* data
+    , layer_state_t in_state )
 {
     XI_UNUSED( context );
     XI_UNUSED( data );
-    XI_UNUSED( hint );
+    XI_UNUSED( in_state );
 
     return LAYER_STATE_OK;
 }
 
 layer_state_t dummy_io_layer_on_data_ready(
-      layer_connectivity_t* context
-    , const void* data
-    , const layer_hint_t hint )
+      void* context
+    , void* data
+    , layer_state_t in_state )
 {
     XI_UNUSED( context );
     XI_UNUSED( data );
-    XI_UNUSED( hint );
+    XI_UNUSED( in_state );
 
     return LAYER_STATE_OK;
 }
 
-layer_state_t dummy_io_layer_close( layer_connectivity_t* context )
+layer_state_t dummy_io_layer_close(
+      void* context
+    , void* data
+    , layer_state_t in_state )
 {
     XI_UNUSED( context );
+    XI_UNUSED( data );
+    XI_UNUSED( in_state );
 
     return LAYER_STATE_OK;
 }
 
-layer_state_t dummy_io_layer_on_close( layer_connectivity_t* context )
+layer_state_t dummy_io_layer_on_close(
+      void* context
+    , void* data
+    , layer_state_t in_state )
 {
     XI_UNUSED( context );
+    XI_UNUSED( data );
+    XI_UNUSED( in_state );
 
     return LAYER_STATE_OK;
 }
 
 layer_state_t dummy_io_layer_init(
-      layer_connectivity_t* context
-    , const void* data
-    , const layer_hint_t hint )
+      void* context
+    , void* data
+    , layer_state_t in_state )
 {
     XI_UNUSED( context );
     XI_UNUSED( data );
-    XI_UNUSED( hint );
+    XI_UNUSED( in_state );
 
     return LAYER_STATE_OK;
 }
 
 layer_state_t dummy_io_layer_connect(
-      layer_connectivity_t* context
-    , const void* data
-    , const layer_hint_t hint )
+      void* context
+    , void* data
+    , layer_state_t in_state )
 {
     XI_UNUSED( context );
     XI_UNUSED( data );
-    XI_UNUSED( hint );
+    XI_UNUSED( in_state );
 
     return LAYER_STATE_OK;
 }

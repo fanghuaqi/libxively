@@ -54,8 +54,8 @@ typedef struct mqtt_topicpair_s {
 struct { \
     union { \
         struct { \
-            unsigned int qos    : 2; \
             unsigned int retain : 1; \
+            unsigned int qos    : 2; \
             unsigned int dup    : 1; \
             unsigned int type   : 4; \
         } common_bits; \
@@ -141,21 +141,21 @@ typedef union mqtt_message_u {
     MQTT_MESSAGE_COMMON_FIELDS
 
     uint16_t message_id;
-    mqtt_topicpair_t* topics;
+    mqtt_topicpair_t topics;
   } subscribe;
 
   struct {
     MQTT_MESSAGE_COMMON_FIELDS
 
     uint16_t message_id;
-    mqtt_topicpair_t* topics;
+    mqtt_topicpair_t topics;
   } suback;
 
   struct {
     MQTT_MESSAGE_COMMON_FIELDS
 
     uint16_t message_id;
-    mqtt_topic_t* topics;
+    mqtt_topic_t topics;
   } unsubscribe;
 
   struct {

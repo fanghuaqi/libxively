@@ -1,3 +1,7 @@
+#ifndef XI_MQTT_ENABLED
+#define XI_MQTT_ENABLED // for my llvm auto build system
+#endif
+
 #include <xively.h>
 #include <xi_helpers.h>
 
@@ -40,7 +44,7 @@ int main( int argc, char* argv[] )
         return -1;
     }
 
-    const xi_response_t* response = xi_nob_mqtt_publish( xi_context, argv[ 1 ], argv[ 2 ] );
+    const xi_response_t* response = xi_mqtt_publish( xi_context, argv[ 1 ], argv[ 2 ] );
 
     xi_delete_context( xi_context );
 

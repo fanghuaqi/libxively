@@ -11,7 +11,7 @@ extern "C" {
 #include "xi_layer_factory_interface.h"
 
 #define BEGIN_FACTORY_CONF() \
-const layer_factory_interface_t FACTORY_ENTRIES[] = {
+layer_factory_interface_t FACTORY_ENTRIES[] = {
 
 #define FACTORY_ENTRY( ttc, pc, pd, a, f ) \
     { ttc, pc, pd, a, f }

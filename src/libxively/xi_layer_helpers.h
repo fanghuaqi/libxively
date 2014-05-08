@@ -4,7 +4,10 @@
 #ifndef __XI_LAYER_HELPERS_H__
 #define __XI_LAYER_HELPERS_H__
 
+#include <string.h>
+
 #include "xi_common.h"
+#include "xi_layer_api.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -12,13 +15,13 @@ extern "C" {
 
 // little helper to encapsulate error handling
 static inline layer_state_t layer_sender(
-          layer_connectivity_t* context
-        , const char* const data
-        , const layer_hint_t hint )
+          void* context
+        , char* const data
+        , layer_state_t state )
 {
     const int len = strlen( (data) );
-    const const_data_descriptor_t tmp_data = { (data), len, len, 0 };
-    return CALL_ON_PREV_DATA_READY( context->self, ( const void* ) &tmp_data, hint );
+    const_data_descriptor_t tmp_data = { (data), len, len, 0 };
+    return CALL_ON_PREV_DATA_READY( context, ( void* ) &tmp_data, state );
 }
 
 // wrapper around layer_sender() to add some syntactic sugar

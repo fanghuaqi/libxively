@@ -8,7 +8,8 @@
 
 layer_state_t process_xively_nob_step( xi_context_t* xi )
 {
-    // PRECONDITION
+    XI_UNUSED( xi );
+/*    // PRECONDITION
     assert( xi != 0 );
 
     static int16_t state                = 0;
@@ -66,6 +67,6 @@ layer_state_t process_xively_nob_step( xi_context_t* xi )
 
     END_CORO()
 
-    state = 0;
+    state = 0;*/
     return 0;
 }

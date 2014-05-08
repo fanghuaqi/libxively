@@ -10,7 +10,7 @@ extern "C" {
 
 struct layer;
 
-typedef struct layer_connectivity
+typedef struct layer_connectivity_s
 {
     struct layer* self;
     struct layer* next;

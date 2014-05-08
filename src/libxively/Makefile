@@ -7,10 +7,11 @@ XI_LAYER_DIRS := io/$(XI_IO_LAYER)
 
 ifeq ($(XI_NOB_ENABLED),true)
     XI_LAYER_DIRS += nob
+    XI_LAYER_DIRS += xi_event_dispatcher xi_datastructures
 endif
 
 ifeq ($(XI_MQTT_ENABLED),true)
-    XI_LAYER_DIRS += mqtt/layer mqtt/codec
+    XI_LAYER_DIRS += mqtt/layer mqtt/logic_layer mqtt/codec
 else
     XI_LAYER_DIRS += csv http
 endif

@@ -15,17 +15,26 @@
 #include "xi_config.h"
 #include "xi_time.h"
 #include "xi_layer_connection.h"
+#include "xi_connection_data.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#if 0
+#if 0 && !defined( XI_NOB_ENABLED )
 #define XI_NOB_ENABLED 1
 #endif
 
-#if 0
+#if 0 && !defined( XI_MQTT_ENABLED )
 #define XI_MQTT_ENABLED 1
+#endif
+
+#if 0 && !defined( XI_IO_LAYER )
+#define XI_IO_LAYER XI_IO_POSIX_ASYNCH
+#endif
+
+#if defined( XI_MQTT_ENABLED ) && defined( XI_NOB_ENABLED )
+    #include "xi_event_dispatcher_api.h"
 #endif
 
 //-----------------------------------------------------------------------
@@ -58,12 +67,15 @@ typedef uint32_t xi_feed_id_t;
  * \brief   _The context structure_ - it's the first agument for all functions
  *          that communicate with Xively API (_i.e. not helpers or utilities_)
  */
-typedef struct {
-    char *api_key;              /** Xively API key */
-    xi_protocol_t protocol;     /** Xively protocol */
-    xi_feed_id_t feed_id;       /** Xively feed ID */
-    layer_chain_t layer_chain;  /** Xively reference of layers */
-    void*         input;        /** Xively ptr to the input data */
+typedef struct xi_context_s {
+    xi_protocol_t protocol;             /** Xively protocol */
+    layer_chain_t layer_chain;          /** Xively reference of layers */
+    xi_connection_data_t* conn_data;    /** Xively connection data */
+    #if !defined( XI_MQTT_ENABLED )
+        char *api_key;                  /** Xively API key */
+        xi_feed_id_t feed_id;           /** Xively feed ID */
+    #endif
+    void*         input;                /** Xively ptr to the input data */
 } xi_context_t;
 
 
@@ -125,6 +137,7 @@ typedef struct {
 } http_response_t;
 
 #else   // XI_MQTT_ENABLED
+
 #include "message.h"
 #include "xi_mqtt_layer_data.h"
 typedef struct {
@@ -132,6 +145,7 @@ typedef struct {
 } mqtt_response_t;
 
 #endif  // XI_MQTT_ENABLED
+
 /**
  * \brief   _The response structure_ - it's the return type for all functions
  *          that communicate with Xively API (_i.e. not helpers or utilities_)
@@ -336,8 +350,8 @@ extern xi_context_t* xi_create_context(
  */
 extern void xi_delete_context( xi_context_t* context );
 
-#ifndef XI_MQTT_ENABLED
-#ifndef XI_NOB_ENABLED
+#if !defined( XI_MQTT_ENABLED ) && !defined( XI_NOB_ENABLED )
+
 /**
  * \brief   Update Xively feed
  */
@@ -411,7 +425,8 @@ extern const xi_response_t* xi_datapoint_delete_range(
           const xi_context_t* xi, xi_feed_id_t feed_id, const char * datastream_id
         , const xi_timestamp_t* start, const xi_timestamp_t* end );
 
-#else
+#elif !defined( XI_MQTT_ENABLED ) && defined( XI_NOB_ENABLED )
+
 //-----------------------------------------------------------------------
 // MAIN LIBRARY NON BLOCKING FUNCTIONS
 //-----------------------------------------------------------------------
@@ -487,25 +502,47 @@ extern const xi_context_t* xi_nob_datapoint_delete(
 extern const xi_context_t* xi_nob_datapoint_delete_range(
           xi_context_t* xi, xi_feed_id_t feed_id, const char * datastream_id
         , const xi_timestamp_t* start, const xi_timestamp_t* end );
-#endif  // XI_NOB_ENABLED
-#else   // XI_MQTT_ENABLED
 
-#ifndef XI_NOB_ENABLED // blocking version
+#elif defined( XI_MQTT_ENABLED ) && !defined( XI_NOB_ENABLED )
+
+extern const xi_response_t* xi_mqtt_publish(
+      xi_context_t* xi
+    , const char* topic
+    , const char* msg );
+
+#elif defined( XI_MQTT_ENABLED ) && defined( XI_NOB_ENABLED )
+
+/**
+ * \brief   Initialzes the connection
+ */
+extern layer_state_t xi_nob_mqtt_connect(
+      xi_context_t* xi
+    , const char* host
+    , int port
+    , uint16_t keepalive_timeout
+    , const char* username
+    , const char* password
+    , xi_evtd_handle_t on_connected );
 
 /**
  * \brief   Connects to the given server and publishes the msg under choosed topic
  * \note    This version disconnects immidiately
  */
-extern const xi_response_t* xi_nob_mqtt_publish(
+extern layer_state_t xi_nob_mqtt_publish(
       xi_context_t* xi
     , const char* topic
     , const char* msg );
 
-#else // XI_NOB_ENABLED
+/**
+ * \brief   Subscribes for notification of given topic
+ * \note    The handle shall be called upon the proper message of given topic
+ */
+extern layer_state_t xi_nob_mqtt_subscribe(
+      xi_context_t* xi
+    , const char* topic
+    , xi_evtd_handle_t handler );
 
-#endif // XI_NOB_ENABLED
-
-#endif  // XI_MQTT_ENABLED
+#endif // XI_MQTT_ENABLED && XI_NOB_ENABLED
 
 #ifdef __cplusplus
 }

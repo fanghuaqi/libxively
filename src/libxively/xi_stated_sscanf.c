@@ -18,7 +18,7 @@ signed char xi_stated_sscanf(
     // internal tmp variables
     signed char res     = 0;
     data_descriptor_t dst_desc;
-    
+
     BEGIN_CORO( s->state )
 
     s->vi = 0;
@@ -71,10 +71,10 @@ signed char xi_stated_sscanf(
 
                 {
                     dst_desc.data_ptr   = s->buffer;
-                    dst_desc.data_size  = sizeof( s->buffer ); 
+                    dst_desc.data_size  = sizeof( s->buffer );
                     dst_desc.real_size  = sizeof( s->buffer );
                     dst_desc.curr_pos   = 0;
-                    
+
                     res = safe_until_copier( &s->buff_len, &s->p, &dst_desc, pattern, &is_digit );
                 }
 
@@ -97,11 +97,11 @@ signed char xi_stated_sscanf(
                 do
                 {
                     dst_desc.data_ptr   = s->buffer;
-                    dst_desc.data_size  = sizeof( s->buffer ); 
+                    dst_desc.data_size  = sizeof( s->buffer );
                     dst_desc.real_size  = sizeof( s->buffer );
                     dst_desc.curr_pos   = 0;
-                    
-                    
+
+
                     res = safe_until_copier( &s->buff_len, &source->curr_pos, &dst_desc, source, &is_digit );
                     if( res == 0 )
                     {
@@ -123,12 +123,11 @@ signed char xi_stated_sscanf(
                 s->tmp_i = 0;
 
                 do
-                {                    
+                {
                     dst_desc.data_ptr   = ( char* ) variables[ s->vi ];
-                    dst_desc.data_size  = s->max_len; 
-                    dst_desc.real_size  = s->max_len - 1;
+                    dst_desc.data_size  = s->max_len;
+                    dst_desc.real_size  = s->max_len;
                     dst_desc.curr_pos   = 0;
-
 
                     switch( pattern->data_ptr[ s->p ] )
                     {
@@ -152,8 +151,6 @@ signed char xi_stated_sscanf(
                         source->curr_pos = 0;
                     }
                 } while( res == 0 );
-
-                ( ( char* ) variables[ s->vi ] )[ s->tmp_i ] = '\0'; // put guard
 
                 s->p++;     // move on, finished with parsing
                 s->vi++;    // switch to the next variable

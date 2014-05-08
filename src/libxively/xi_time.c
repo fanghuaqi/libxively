@@ -2,6 +2,7 @@
 // This is part of Xively C library, it is under the BSD 3-Clause license.
 
 #include "xi_time.h"
+#include <time.h>
 
 #ifdef __cplusplus
 extern "C" {
