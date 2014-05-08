@@ -621,6 +621,26 @@ layer_state_t csv_layer_on_data_ready(
     // return LAYER_STATE_OK;
 }
 
+layer_state_t csv_layer_init(
+      void* context
+    , void* data
+    , layer_state_t in_state )
+{
+    return CALL_ON_PREV_INIT( context, data, in_state );
+}
+
+layer_state_t csv_layer_connect(
+      void* context
+    , void* data
+    , layer_state_t in_state )
+{
+    XI_UNUSED( context );
+    XI_UNUSED( data );
+    XI_UNUSED( in_state );
+
+    return LAYER_STATE_OK;
+}
+
 layer_state_t csv_layer_close(
       void* context
     , void* data

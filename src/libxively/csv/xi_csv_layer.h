@@ -23,6 +23,16 @@ layer_state_t csv_layer_on_data_ready(
     , void* data
     , layer_state_t in_state );
 
+layer_state_t csv_layer_init(
+      void* context
+    , void* data
+    , layer_state_t in_state );
+
+layer_state_t csv_layer_connect(
+      void* context
+    , void* data
+    , layer_state_t in_state );
+
 layer_state_t csv_layer_close(
       void* context
     , void* data

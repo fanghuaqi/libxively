@@ -822,6 +822,16 @@ layer_state_t http_layer_on_data_ready(
 
                 http_layer_data->response->http.http_headers_checklist[ header_type ]
                         = &http_layer_data->response->http.http_headers[ header_type ];
+
+                memset(
+                          http_layer_data->response->http.http_headers[ XI_HTTP_HEADER_UNKNOWN ].name
+                        , 0
+                        , sizeof( http_layer_data->response->http.http_headers[ XI_HTTP_HEADER_UNKNOWN ].name ) );
+
+                memset(
+                          http_layer_data->response->http.http_headers[ XI_HTTP_HEADER_UNKNOWN ].value
+                        , 0
+                        , sizeof( http_layer_data->response->http.http_headers[ XI_HTTP_HEADER_UNKNOWN ].value) );
             }
 
         } while( sscanf_state == 1 );
@@ -916,6 +926,21 @@ layer_state_t http_layer_on_data_ready(
     END_CORO()
 }
 
+layer_state_t http_layer_init(
+      void* context
+    , void* data
+    , layer_state_t state )
+{
+    return CALL_ON_PREV_INIT( context, data, state );
+}
+
+layer_state_t http_layer_connect(
+      void* context
+    , void* data
+    , layer_state_t state )
+{
+    return CALL_ON_NEXT_CONNECT( context, data, state );
+}
 
 layer_state_t http_layer_close(
       void* context
