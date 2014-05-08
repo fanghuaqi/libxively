@@ -48,7 +48,15 @@ layer_state_t posix_asynch_io_layer_data_ready(
     if( posix_asynch_data == 0 )
     {
         xi_debug_logger( "layer_data == 0" );
-        return CALL_ON_NEXT_DATA_READY( context, 0, LAYER_STATE_ERROR );
+        
+        // if connection has been broken we have to remember about releasing the memory
+        if( buffer != 0 )
+        {
+            XI_SAFE_FREE( buffer->data_ptr );
+            XI_SAFE_FREE( buffer );
+        }
+        
+        return CALL_ON_NEXT_DATA_READY( context, data, LAYER_STATE_ERROR );
     }
 
     posix_asynch_data_t* layer_data
@@ -80,11 +88,15 @@ layer_state_t posix_asynch_io_layer_data_ready(
                 {
                     xi_debug_logger( "EAGAIN...." );
                     MAKE_HANDLE_H3( &posix_asynch_io_layer_data_ready, context, data, LAYER_STATE_OK );
+
                     EXIT( layer_data->cs, xi_evtd_continue_when_evt( xi_evtd_instance
                         , XI_EVENT_WANT_WRITE, handle, posix_asynch_data->socket_fd ) );
                 }
 
                 xi_debug_printf( "error writing: errno = %d", errval );
+
+                XI_SAFE_FREE( buffer->data_ptr );
+                XI_SAFE_FREE( buffer );
                 EXIT( layer_data->cs
                     , CALL_ON_NEXT_DATA_READY( context, data, LAYER_STATE_ERROR ) );
             }
@@ -101,6 +113,10 @@ layer_state_t posix_asynch_io_layer_data_ready(
     }
 
     xi_debug_logger( "exit...." );
+
+    XI_SAFE_FREE( buffer->data_ptr );
+    XI_SAFE_FREE( buffer );
+
     EXIT( layer_data->cs, CALL_ON_NEXT_DATA_READY( context, data, LAYER_STATE_OK ) );
 
     END_CORO();

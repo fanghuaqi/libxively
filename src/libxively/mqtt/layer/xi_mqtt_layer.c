@@ -34,24 +34,37 @@ layer_state_t xi_mqtt_layer_data_ready(
     mqtt_serialiser_t serializer;
     mqtt_serialiser_init( & serializer );
 
-    // @TODO change to use dynamic allocation
-    static uint8_t buffer[ 256 ];
-    static data_descriptor_t data_descriptor = { ( char* ) buffer, 0, 0, 0 };
-
     BEGIN_CORO( layer_data->cs );
 
-    int len = mqtt_serialiser_size( &serializer, msg );
+    size_t msg_contents_size = mqtt_serialiser_size(NULL, msg);
+    
+    uint8_t* buffer = NULL;
+    data_descriptor_t* data_descriptor = NULL;
+    
+    buffer = xi_alloc( msg_contents_size );
+    XI_CHECK_MEMORY( msg_contents_size );
+    memset( buffer, 0, msg_contents_size );
 
-    data_descriptor.data_size = len;
-    data_descriptor.real_size = len;
-    data_descriptor.curr_pos  = 0;
+    data_descriptor = xi_alloc( sizeof( data_descriptor_t ) );
+    XI_CHECK_MEMORY( data_descriptor );
+    memset( data_descriptor, 0, sizeof( data_descriptor_t ) );
+    
+    data_descriptor->data_ptr  = (char*) buffer;
+    data_descriptor->data_size = (unsigned short) msg_contents_size;
+    data_descriptor->real_size = (unsigned short) msg_contents_size;
+    data_descriptor->curr_pos  = 0;
 
-    mqtt_serialiser_rc_t rc = mqtt_serialiser_write( &serializer, msg, buffer, len );
+    mqtt_serialiser_rc_t rc = mqtt_serialiser_write( &serializer, msg,
+                                            buffer, msg_contents_size );
 
     XI_SAFE_FREE( msg ); // msg no longer needed
 
     if( rc == MQTT_SERIALISER_RC_ERROR )
     {
+        XI_SAFE_FREE( buffer );
+        XI_SAFE_FREE( data_descriptor );
+        buffer = NULL;
+        data_descriptor = NULL;
         EXIT( layer_data->cs
             , CALL_ON_NEXT_DATA_READY( context, 0, LAYER_STATE_ERROR ) );
     }
@@ -59,7 +72,7 @@ layer_state_t xi_mqtt_layer_data_ready(
     xi_debug_logger( "sending message... " );
 
     YIELD( layer_data->cs
-        , CALL_ON_PREV_DATA_READY( context, ( void* ) &data_descriptor, state ) );
+        , CALL_ON_PREV_DATA_READY( context, ( void* ) data_descriptor, state ) );
 
     if( state == LAYER_STATE_ERROR )
     {
@@ -70,11 +83,27 @@ layer_state_t xi_mqtt_layer_data_ready(
         xi_debug_logger( "message sent... " );
     }
 
+    buffer = NULL;
+    data_descriptor = NULL;
     EXIT( layer_data->cs
         , CALL_ON_NEXT_ON_DATA_READY( context, 0, state ) );
 
-    xi_debug_logger( "I'm not suppose to be here!" );
-
+    //Normal execution should never get here.
+    //No return statement before handler on purpose.
+err_handling:
+    xi_debug_logger( "Something went wrong." );
+    
+    if( buffer != NULL )
+    {
+        XI_SAFE_FREE( buffer );
+        buffer = NULL;
+    }
+    if( data_descriptor != NULL )
+    {
+        XI_SAFE_FREE( data_descriptor );
+        data_descriptor = NULL;
+    }
+    
     END_CORO();
 
     return LAYER_STATE_ERROR;
