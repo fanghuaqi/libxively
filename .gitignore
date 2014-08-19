@@ -9,3 +9,8 @@ obj/
 bin/
 doc/html
 libxively.*
+
+# TAGS
+*.tags*
+*TAGS*
+*tags*
