@@ -22,6 +22,8 @@ static inline void xi_free( void* p );
 #include "xi_allocator_stdlib.h"
 #elif XI_ALLOCATOR == 1
 #include "xi_allocator_wmsdk.h"
+#elif XI_ALLOCATOR == 2
+#include "xi_allocator_lwip.h"
 #endif
 
 #endif // __XI_ALLOCATOR_H__

@@ -17,6 +17,19 @@
 extern "C" {
 #endif
 
+static int
+strncasecmp(const char *s1, const char *s2, size_t n)
+{
+  /* TODO: Add case support! */
+  return strncmp(s1, s2, n);
+}
+static int
+strcasecmp(const char *s1, const char *s2)
+{
+  /* TODO: Add case support! */
+  return strcmp(s1, s2);
+}
+
 // static array of recognizable http headers
 static const char* XI_HTTP_TOKEN_NAMES[ XI_HTTP_HEADERS_COUNT ] =
     {

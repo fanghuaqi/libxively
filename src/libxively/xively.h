@@ -106,7 +106,7 @@ typedef struct {
 typedef struct {
     unsigned char   http_version1;
     unsigned char   http_version2;
-    unsigned short  http_status;
+    unsigned int    http_status;
     char            http_status_string[ XI_HTTP_STATUS_STRING_SIZE ];
     http_header_t*  http_headers_checklist[ XI_HTTP_HEADERS_COUNT ];
     http_header_t   http_headers[ XI_HTTP_MAX_HEADERS ];

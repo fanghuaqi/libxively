@@ -43,7 +43,8 @@ extern "C" {
     #ifdef NDEBUG
         #undef NDEBUG
     #endif
-    #include <assert.h>
+    //#include <assert.h>
+    #define assert(e)
 #else
     /* The actual header is missing in some toolchains, so we wrap it here. */
     #define assert(e) ((void)0)
