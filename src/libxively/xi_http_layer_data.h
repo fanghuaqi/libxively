@@ -16,8 +16,8 @@ typedef struct
     char                        parser_state;
     unsigned char               last_char_marker;
     xi_stated_sscanf_state_t    xi_stated_sscanf_state;
-    short                       counter;
-    short                       content_length;
+    int                			counter;
+    int                			content_length;
     xi_response_t*              response;
 } http_layer_data_t;
 

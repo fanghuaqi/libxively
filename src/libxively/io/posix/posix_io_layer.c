@@ -91,29 +91,35 @@ layer_state_t posix_io_layer_on_data_ready(
 
     layer_state_t state = LAYER_STATE_OK;
 
+   /// __xi_printf("\n");
     do
     {
         memset( buffer->data_ptr, 0, buffer->data_size );
 
         int len = read( posix_data->socket_fd, buffer->data_ptr, buffer->data_size - 1 );
+        //__xi_printf("Rlen:%d\n", len);
 
         if( len == 0 )
         {
+            //__xi_printf("\n++LEN 0++\n");
             // socket has been closed
             return LAYER_STATE_ERROR;
         }
 
         if( len < 0 )
         {
+            //__xi_printf("\n++LEN <0++\n");
             return LAYER_STATE_ERROR;
         }
 
         buffer->real_size = len;
         buffer->data_ptr[ buffer->real_size ] = '\0'; // put guard
         buffer->curr_pos = 0;
+        //__xi_printf("%s", buffer->data_ptr);
         state = CALL_ON_NEXT_ON_DATA_READY( context->self, ( void* ) buffer, LAYER_HINT_MORE_DATA );
     } while( state == LAYER_STATE_WANT_READ );
-
+    //__xi_printf("\n");
+    //__xi_printf("State:%d\n", state);
     return LAYER_STATE_OK;
 }
 

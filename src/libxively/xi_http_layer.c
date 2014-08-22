@@ -819,6 +819,7 @@ layer_state_t http_layer_on_data_ready(
                     {
                         EXIT( cs, LAYER_STATE_ERROR );
                     }
+                    __xi_printf("content_length:%d\n", http_layer_data->content_length);
                 }
 
                 if( header_type != XI_HTTP_HEADER_UNKNOWN )
