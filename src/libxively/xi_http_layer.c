@@ -1,6 +1,6 @@
 // Copyright (c) 2003-2014, LogMeIn, Inc. All rights reserved.
 // This is part of Xively C library, it is under the BSD 3-Clause license.
-
+#include <string.h>
 #include "xi_layer_api.h"
 #include "xi_common.h"
 #include "xi_http_layer.h"
@@ -16,18 +16,20 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
+/**
+ * @note
+ * in windows: compare ignore case funcs is stricmp & strnicmp
+ * in linux: ignore case funcs is strcasecmp & strncasecmp
+ */
 static int
 strncasecmp(const char *s1, const char *s2, size_t n)
 {
-  /* TODO: Add case support! */
-  return strncmp(s1, s2, n);
+  return _strnicmp(s1, s2, n);
 }
 static int
 strcasecmp(const char *s1, const char *s2)
 {
-  /* TODO: Add case support! */
-  return strcmp(s1, s2);
+  return _stricmp(s1, s2);
 }
 
 // static array of recognizable http headers
@@ -810,6 +812,7 @@ layer_state_t http_layer_on_data_ready(
                                  , http_layer_data->response->http.http_headers[ XI_HTTP_HEADER_UNKNOWN ].value );
 
                 http_header_type_t header_type = classify_header( http_layer_data->response->http.http_headers[ XI_HTTP_HEADER_UNKNOWN ].name );
+                //__xi_printf("%s:%d\n", http_layer_data->response->http.http_headers[ XI_HTTP_HEADER_UNKNOWN ].name, header_type);
 
                 if( header_type == XI_HTTP_HEADER_CONTENT_LENGTH )
                 {
@@ -819,7 +822,6 @@ layer_state_t http_layer_on_data_ready(
                     {
                         EXIT( cs, LAYER_STATE_ERROR );
                     }
-                    __xi_printf("content_length:%d\n", http_layer_data->content_length);
                 }
 
                 if( header_type != XI_HTTP_HEADER_UNKNOWN )
@@ -881,6 +883,7 @@ layer_state_t http_layer_on_data_ready(
 
         http_layer_data->counter    = 0;
         sscanf_state                = 0;
+        //__xi_printf("content_length:%d\n", http_layer_data->content_length);
 
         while( http_layer_data->counter < http_layer_data->content_length )
         {
