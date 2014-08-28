@@ -21,16 +21,16 @@ extern "C" {
  * in windows: compare ignore case funcs is stricmp & strnicmp
  * in linux: ignore case funcs is strcasecmp & strncasecmp
  */
-static int
-strncasecmp(const char *s1, const char *s2, size_t n)
+#ifdef __MW__
+static int strncasecmp(const char *s1, const char *s2, size_t n)
 {
   return _strnicmp(s1, s2, n);
 }
-static int
-strcasecmp(const char *s1, const char *s2)
+static int strcasecmp(const char *s1, const char *s2)
 {
   return _stricmp(s1, s2);
 }
+#endif
 
 // static array of recognizable http headers
 static const char* XI_HTTP_TOKEN_NAMES[ XI_HTTP_HEADERS_COUNT ] =
