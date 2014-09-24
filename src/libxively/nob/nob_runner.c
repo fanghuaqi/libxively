@@ -62,6 +62,16 @@ layer_state_t process_xively_nob_step( xi_context_t* xi )
 
     } while( layer_state != LAYER_STATE_OK );
 
+    // now close the connection
+    do{
+        layer_state = CALL_ON_SELF_CLOSE(xi->layer_chain.bottom);
+        if( layer_state != LAYER_STATE_OK )
+        {
+            YIELD( state, layer_state );
+        }
+
+    } while( layer_state != LAYER_STATE_OK );
+
     EXIT( state, layer_state );
 
     END_CORO()

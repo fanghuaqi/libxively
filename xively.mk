@@ -7,7 +7,7 @@ XI_IO_LAYER ?= posix
 XI_NOB_ENABLED ?= false
 XI_IO_LAYER_POSIX_COMPAT ?= 1
 XI_DEBUG_PRINTF ?= xprintf
-XI_ALLOCATOR_USE = lwip
+XI_ALLOCATOR_USE ?= lwip
 
 ## include xively makefile config
 include $(MID_XIVELY_C_API_DIR)/Makefile.include
@@ -71,6 +71,15 @@ $(MID_XIVELY_C_API_OBJDIR):
 
 # Middleware Definitions
 ifndef XI_USER_CONFIG
+
+ifeq ($(XI_IO_LAYER),posix)
+  XI_DEFINES += -DXI_IO_LAYER=0
+endif
+
+ifeq ($(XI_IO_LAYER),contiki)
+  XI_DEFINES += -DXI_IO_LAYER=4
+endif
+
   XI_DEFINES += $(foreach constant,$(XI_CONFIG),-D$(constant))
   XI_DEFINES += -DXI_USER_AGENT=$(XI_USER_AGENT)
   XI_DEFINES += -DXI_IO_LAYER_POSIX_COMPAT=$(XI_IO_LAYER_POSIX_COMPAT)

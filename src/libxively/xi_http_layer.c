@@ -596,6 +596,7 @@ static inline layer_state_t http_layer_data_ready_gen(
 
     BEGIN_CORO( local_state )
 
+        state = LAYER_STATE_OK;
         gstate = 0;
 
         // send the data through the next layer
@@ -614,7 +615,11 @@ static inline layer_state_t http_layer_data_ready_gen(
 
             if( state != LAYER_STATE_OK )
             {
+                if (state == LAYER_STATE_ERROR) {
+                    EXIT( local_state, LAYER_STATE_ERROR );
+                }
                 YIELD( local_state, state );
+                state = CALL_ON_PREV_DATA_READY(context->self, NULL, LAYER_HINT_NONE);
             }
         }
 

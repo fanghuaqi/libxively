@@ -178,6 +178,7 @@ uint32_t xi_get_network_timeout( void )
 #define XI_IO_DUMMY           1
 #define XI_IO_MBED            2
 #define XI_IO_POSIX_ASYNCH    3
+#define XI_IO_CONTIKI         4
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// \brief The LAYERS_ID enum
@@ -257,6 +258,22 @@ DEFINE_CONNECTION_SCHEME( CONNECTION_SCHEME_1, CONNECTION_SCHEME_1_DATA );
         , LAYER_TYPE( CSV_LAYER, &csv_layer_data_ready, &csv_layer_on_data_ready
                             , &csv_layer_close, &csv_layer_on_close, 0, 0 )
     END_LAYER_TYPES_CONF()
+#elif XI_IO_LAYER == XI_IO_CONTIKI
+    // contiki io layer
+    #include "contiki_io_layer.h"
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    BEGIN_LAYER_TYPES_CONF()
+          LAYER_TYPE( IO_LAYER, &contiki_io_layer_data_ready, &contiki_io_layer_on_data_ready
+                              , &contiki_io_layer_close, &contiki_io_layer_on_close
+                              , &contiki_io_layer_init, &contiki_io_layer_connect)
+        , LAYER_TYPE( HTTP_LAYER, &http_layer_data_ready, &http_layer_on_data_ready
+                                , &http_layer_close, &http_layer_on_close, 0, 0 )
+        , LAYER_TYPE( CSV_LAYER, &csv_layer_data_ready, &csv_layer_on_data_ready
+                            , &csv_layer_close, &csv_layer_on_close, 0, 0 )
+    END_LAYER_TYPES_CONF()
+
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
