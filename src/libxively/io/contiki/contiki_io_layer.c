@@ -1,6 +1,18 @@
+/* ------------------------------------------
+ * Copyright (C) 2014 by Synopsys, Inc.
+ * \version 0.1
+ * \date 2014-09-30
+ * \author Wayne Ren
+----------------------------------------------*/
+
+/**
+ * \file contiki_io_layer.c
+ * \brief contiki io layer for xively library
+ */
 
 #include "contiki.h"
 #include "contiki_io_layer.h"
+#include "xively_contiki_data.h"
 #include "net/ip/psock.h"
 
 #include "xi_allocator.h"
@@ -93,7 +105,9 @@ layer_state_t contiki_io_layer_data_ready(
 	const const_data_descriptor_t* buffer   = ( const const_data_descriptor_t* ) data;
 
 	XI_UNUSED(hint);
+
 	s->process = PROCESS_CURRENT();
+
 	if (s->state == WRITTING) {
 		return LAYER_STATE_WANT_WRITE;
 	} else if (s->state == WRITE_END) {
@@ -129,11 +143,13 @@ layer_state_t contiki_io_layer_on_data_ready(
 	XI_UNUSED(hint);
 
 	s->process = PROCESS_CURRENT();
+
 	if (data) {
 		buffer  = ( data_descriptor_t* ) data;
 	} else {
         buffer = &s->buffer_descriptor;
 	}
+
 	if (s->state == READ_END) {
 		buffer->data_ptr = (char *)uip_appdata;
 		buffer->real_size = uip_datalen();
@@ -141,6 +157,7 @@ layer_state_t contiki_io_layer_on_data_ready(
     	buffer->data_ptr[buffer->real_size] = '\0'; // put guard
     	buffer->curr_pos = 0;
 	 	state = CALL_ON_NEXT_ON_DATA_READY( context->self, ( void* ) buffer, LAYER_HINT_MORE_DATA );
+
 	 	if (state == LAYER_STATE_WANT_READ) {
 	 		s->state = READING;
 	 		return LAYER_STATE_WANT_READ;

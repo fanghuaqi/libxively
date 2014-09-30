@@ -27,7 +27,7 @@ layer_state_t http_layer_close(
 layer_state_t http_layer_on_close(
       layer_connectivity_t* context );
 
-layer_t* init_http_layer(
+layer_state_t init_http_layer(
       layer_t* layer );
 
 const void* http_layer_data_generator_datastream_get(
