@@ -48,26 +48,28 @@ ifneq ($(MAKECMDGOALS),clean)
 endif
 
 # genearte library
-MID_LIBS += libmidxively.a
+MID_LIB_XIVELY = $(OUT_DIR)$(PS)libmidxively.a
+MID_LIBS += $(MID_LIB_XIVELY)
 
-libmidxively.a: $(MID_XIVELY_C_API_OBJDIR) $(MID_XIVELY_C_API_COBJS) $(MID_XIVELY_C_API_ASMOBJS)
-	@$(ECHO) "Generating $@"
-	$(AR) $(AR_OPT) $@ $(MID_XIVELY_C_API_COBJS) $(MID_XIVELY_C_API_ASMOBJS)
+$(MID_LIB_XIVELY): $(MID_XIVELY_C_API_OBJDIR) $(MID_XIVELY_C_API_COBJS) $(MID_XIVELY_C_API_ASMOBJS)
+	$(TRACE_ARCHIVE)
+	$(Q)$(AR) $(AR_OPT) $@ $(MID_XIVELY_C_API_COBJS) $(MID_XIVELY_C_API_ASMOBJS)
 
 # specific compile rules
 .SECONDEXPANSION:
 $(MID_XIVELY_C_API_COBJS): $(MID_XIVELY_C_API_OBJDIR)/%.o :$(call get_c_prerequisite, $(MID_XIVELY_C_API_CSRCDIR)) $(COMMON_COMPILE_PREREQUISITES)
-	@$(ECHO) "Compiling xively(c api) middleware : $<"
+	$(TRACE_COMPILE)
 	$(Q)$(CC) -c $(COMPILE_OPT) $(MID_XIVELY_C_API_COMPILE_OPT) $< -o $@
 
 .SECONDEXPANSION:
 $(MID_XIVELY_C_API_ASMOBJS): $(MID_XIVELY_C_API_OBJDIR)/%.o :$(call get_asm_prerequisite, $(MID_XIVELY_C_API_ASMSRCDIR)) $(COMMON_COMPILE_PREREQUISITES)
-	@$(ECHO) "Assembling xively(c api) middleware : $<"
+	$(TRACE_ASSEMBLE)
 	$(Q)$(CC) -c $(COMPILE_OPT) $(MID_XIVELY_C_API_COMPILE_OPT) $< -o $@
 
 # generate obj dir
 $(MID_XIVELY_C_API_OBJDIR):
-	$(MKD) $@
+	$(TRACE_CREATE_DIR)
+	@$(MKD) $@
 
 # Middleware Definitions
 ifndef XI_USER_CONFIG
