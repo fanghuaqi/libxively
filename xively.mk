@@ -8,6 +8,7 @@ XI_NOB_ENABLED ?= false
 XI_IO_LAYER_POSIX_COMPAT ?= 1
 XI_DEBUG_PRINTF ?= xprintf
 XI_ALLOCATOR_USE ?= lwip
+XI_USER_AGENT ?= '"libxively-$(XI_IO_LAYER)"'
 
 ## include xively makefile config
 include $(MID_XIVELY_C_API_DIR)/Makefile.include
