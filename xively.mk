@@ -3,6 +3,7 @@ MID_XIVELY_C_API_DIR 		= $(OSP_ROOT)/middleware/xively
 
 XI_BUILD_TYPE ?= release
 #XI_BUILD_TYPE ?= debug
+XI_DEBUG_ASSERT ?= 1
 XI_IO_LAYER ?= posix
 XI_NOB_ENABLED ?= false
 XI_IO_LAYER_POSIX_COMPAT ?= 1

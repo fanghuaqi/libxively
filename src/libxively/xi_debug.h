@@ -43,8 +43,17 @@ extern "C" {
     #ifdef NDEBUG
         #undef NDEBUG
     #endif
-    //#include <assert.h>
-    #define assert(e)
+    #ifdef __GNU__
+        #include <assert.h>
+    #else
+        #ifdef MID_COMMON
+            extern void embARC_assert(const char *exptext, const char *file, unsigned int line);
+        	#define assert(E) 	((E)? (void)0 : embARC_assert(#E, __FILE__, __LINE__))
+
+        #else
+            #define assert(e) 	((void)0)
+        #endif
+    #endif
 #else
     /* The actual header is missing in some toolchains, so we wrap it here. */
     #define assert(e) ((void)0)
