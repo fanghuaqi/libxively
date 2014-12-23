@@ -1,5 +1,5 @@
 # dir declaration
-MID_XIVELY_C_API_DIR 		= $(OSP_ROOT)/middleware/xively
+MID_XIVELY_C_API_DIR 		= $(EMBARC_ROOT)/middleware/xively
 
 XI_BUILD_TYPE ?= release
 #XI_BUILD_TYPE ?= debug
