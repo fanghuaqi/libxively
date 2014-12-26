@@ -27,7 +27,7 @@
 
 #define DBG_LESS
 #define DEBUG
-#include "debug.h"
+#include "embARC_debug.h"
 
 #define CONNECTING	(0)
 #define CONNECTED	(1)
