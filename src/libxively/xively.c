@@ -30,6 +30,14 @@
 #include "xi_csv_layer.h"
 #include "xi_connection_data.h"
 
+#include "embARC_debug.h"
+
+#if XI_DEBUG_OUTPUT
+    #define XIVELY_DEBUG_PRINTF(...)
+#else
+    #define XIVELY_DEBUG_PRINTF(...)	EMBARC_PRINTF(__VA_ARGS__)
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -426,7 +434,7 @@ const xi_response_t* xi_feed_get(
     {
         CALL_ON_SELF_ON_DATA_READY( io_layer, ( void *) 0, LAYER_HINT_NONE );
     }
-    
+
     CALL_ON_SELF_CLOSE( input_layer );
 
     return ( ( csv_layer_data_t* ) input_layer->user_data )->response;
@@ -471,7 +479,7 @@ const xi_response_t* xi_feed_get_all(
     {
         CALL_ON_SELF_ON_DATA_READY( io_layer, ( void *) 0, LAYER_HINT_NONE );
     }
-    
+
     CALL_ON_SELF_CLOSE( input_layer );
 
     return ( ( csv_layer_data_t* ) input_layer->user_data )->response;
@@ -489,12 +497,14 @@ const xi_response_t* xi_feed_update(
     layer_t* input_layer    = xi->layer_chain.top;
     layer_t* io_layer       = xi->layer_chain.bottom;
 
+	XIVELY_DEBUG_PRINTF("XIVELY FEED UPDATE:");
     { // init & connect
+		XIVELY_DEBUG_PRINTF("INIT-> ");
         state = CALL_ON_SELF_INIT( io_layer, 0, LAYER_HINT_NONE );
         if( state != LAYER_STATE_OK ) { return 0; }
-
         xi_connection_data_t conn_data = { XI_HOST, XI_PORT };
 
+		XIVELY_DEBUG_PRINTF("CONNECT-> ");
         state = CALL_ON_SELF_CONNECT( io_layer, ( void *) &conn_data, LAYER_HINT_NONE );
         if( state != LAYER_STATE_OK ) { return 0; }
     }
@@ -511,15 +521,19 @@ const xi_response_t* xi_feed_update(
         , { .xi_update_feed = { ( xi_feed_t * ) feed } }
     };
 
+	XIVELY_DEBUG_PRINTF("SEND-> ");
     state = CALL_ON_SELF_DATA_READY( input_layer, ( void *) &http_layer_input, LAYER_HINT_NONE );
 
     if( state == LAYER_STATE_OK )
     {
+		XIVELY_DEBUG_PRINTF("RESPONSE-> ");
         CALL_ON_SELF_ON_DATA_READY( io_layer, ( void *) 0, LAYER_HINT_NONE );
     }
-    
+
+	XIVELY_DEBUG_PRINTF("CLOSE-> ");
     CALL_ON_SELF_CLOSE( input_layer );
 
+	XIVELY_DEBUG_PRINTF("DONE\r\n");
     return ( ( csv_layer_data_t* ) input_layer->user_data )->response;
 }
 
@@ -564,7 +578,7 @@ const xi_response_t* xi_datastream_get(
     {
         CALL_ON_SELF_ON_DATA_READY( io_layer, ( void *) 0, LAYER_HINT_NONE );
     }
-    
+
     CALL_ON_SELF_CLOSE( input_layer );
 
     return ( ( csv_layer_data_t* ) input_layer->user_data )->response;
@@ -613,7 +627,7 @@ const xi_response_t* xi_datastream_create(
     {
         CALL_ON_SELF_ON_DATA_READY( io_layer, ( void *) 0, LAYER_HINT_NONE );
     }
-    
+
     CALL_ON_SELF_CLOSE( input_layer );
 
     return ( ( csv_layer_data_t* ) input_layer->user_data )->response;
@@ -661,7 +675,7 @@ const xi_response_t* xi_datastream_update(
     {
         CALL_ON_SELF_ON_DATA_READY( io_layer, ( void *) 0, LAYER_HINT_NONE );
     }
-    
+
     CALL_ON_SELF_CLOSE( input_layer );
 
     return ( ( csv_layer_data_t* ) input_layer->user_data )->response;
@@ -708,7 +722,7 @@ const xi_response_t* xi_datastream_delete(
     {
         CALL_ON_SELF_ON_DATA_READY( io_layer, ( void *) 0, LAYER_HINT_NONE );
     }
-    
+
     CALL_ON_SELF_CLOSE( input_layer );
 
     return ( ( csv_layer_data_t* ) input_layer->user_data )->response;
@@ -756,7 +770,7 @@ const xi_response_t* xi_datapoint_delete(
     {
         CALL_ON_SELF_ON_DATA_READY( io_layer, ( void *) 0, LAYER_HINT_NONE );
     }
-    
+
     CALL_ON_SELF_CLOSE( input_layer );
 
     return ( ( csv_layer_data_t* ) input_layer->user_data )->response;
@@ -805,7 +819,7 @@ extern const xi_response_t* xi_datapoint_delete_range(
     {
         CALL_ON_SELF_ON_DATA_READY( io_layer, ( void *) 0, LAYER_HINT_NONE );
     }
-    
+
     CALL_ON_SELF_CLOSE( input_layer );
 
     return ( ( csv_layer_data_t* ) input_layer->user_data )->response;
@@ -901,7 +915,7 @@ extern const xi_context_t* xi_nob_feed_get_all(
     // assign the input parameter so that can be used via the runner
     xi->input = &http_layer_input;
 
-    return xi;    
+    return xi;
 }
 
 
