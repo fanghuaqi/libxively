@@ -1,5 +1,5 @@
 # dir declaration
-MID_XIVELY_C_API_DIR 		= $(EMBARC_ROOT)/middleware/xively
+MID_XIVELY_C_API_DIR = $(EMBARC_ROOT)/middleware/xively
 
 XI_BUILD_TYPE ?= release
 #XI_BUILD_TYPE ?= debug
@@ -15,18 +15,18 @@ XI_USER_AGENT ?= '"libxively-$(XI_IO_LAYER)"'
 include $(MID_XIVELY_C_API_DIR)/Makefile.include
 
 
-MID_XIVELY_C_API_ASMSRCDIR 	=
+MID_XIVELY_C_API_ASMSRCDIR	=
 
-MID_XIVELY_C_API_CSRCDIR	=	$(MID_XIVELY_C_API_DIR)/src/libxively 	\
-								$(MID_XIVELY_C_API_DIR)/src/libxively/io/$(XI_IO_LAYER)
+MID_XIVELY_C_API_CSRCDIR	= $(MID_XIVELY_C_API_DIR)/src/libxively 	\
+					$(MID_XIVELY_C_API_DIR)/src/libxively/io/$(XI_IO_LAYER)
 
 
-MID_XIVELY_C_API_INCDIR		=	$(MID_XIVELY_C_API_DIR)/src/libxively 	\
-								$(MID_XIVELY_C_API_DIR)/src/libxively/io/$(XI_IO_LAYER)
+MID_XIVELY_C_API_INCDIR		= $(MID_XIVELY_C_API_DIR)/src/libxively 	\
+					$(MID_XIVELY_C_API_DIR)/src/libxively/io/$(XI_IO_LAYER)
 
 ifeq ($(XI_NOB_ENABLED),true)
-MID_XIVELY_C_API_CSRCDIR 	+= 	$(MID_XIVELY_C_API_DIR)/src/libxively/nob
-MID_XIVELY_C_API_INCDIR 	+= 	$(MID_XIVELY_C_API_DIR)/src/libxively/nob
+MID_XIVELY_C_API_CSRCDIR	+= $(MID_XIVELY_C_API_DIR)/src/libxively/nob
+MID_XIVELY_C_API_INCDIR		+= $(MID_XIVELY_C_API_DIR)/src/libxively/nob
 endif
 
 MID_INCDIR += $(MID_XIVELY_C_API_INCDIR)
@@ -34,7 +34,7 @@ MID_CSRCDIR += $(MID_XIVELY_C_API_CSRCDIR)
 MID_ASMSRCDIR += $(MID_XIVELY_C_API_ASMSRCDIR)
 
 # the dir to generate objs
-MID_XIVELY_C_API_OBJDIR	= $(OUT_DIR)$(PS)middleware$(PS)xively
+MID_XIVELY_C_API_OBJDIR = $(OUT_DIR)$(PS)middleware$(PS)xively
 
 # find all the srcs in the target dirs
 MID_XIVELY_C_API_CSRCS = $(call get_csrcs, $(MID_XIVELY_C_API_CSRCDIR))
