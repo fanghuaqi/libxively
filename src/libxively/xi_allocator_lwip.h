@@ -1,10 +1,9 @@
+// Copyright (c) 2003-2014, LogMeIn, Inc. All rights reserved.
+// This is part of Xively C library, it is under the BSD 3-Clause license.
 /**
  * Modified for port to ARC processor
  * by Huaqi Fang huaqi.fang@synopsys.com, Synopsys, Inc.
  */
-// Copyright (c) 2003-2014, LogMeIn, Inc. All rights reserved.
-// This is part of Xively C library, it is under the BSD 3-Clause license.
-
 #ifndef __XI_ALLOCATOR_LWIP_H__
 #define __XI_ALLOCATOR_LWIP_H__
 
