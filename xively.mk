@@ -50,7 +50,7 @@ ifneq ($(MAKECMDGOALS),clean)
 endif
 
 # genearte library
-MID_LIB_XIVELY = $(OUT_DIR)$(PS)libmidxively.a
+MID_LIB_XIVELY = $(OUT_DIR)/libmidxively.a
 MID_LIBS += $(MID_LIB_XIVELY)
 
 $(MID_LIB_XIVELY): $(MID_XIVELY_C_API_OBJDIR) $(MID_XIVELY_C_API_COBJS) $(MID_XIVELY_C_API_ASMOBJS)
