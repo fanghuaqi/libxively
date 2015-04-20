@@ -34,7 +34,7 @@ MID_CSRCDIR += $(MID_XIVELY_C_API_CSRCDIR)
 MID_ASMSRCDIR += $(MID_XIVELY_C_API_ASMSRCDIR)
 
 # the dir to generate objs
-MID_XIVELY_C_API_OBJDIR = $(OUT_DIR)$(PS)middleware$(PS)xively
+MID_XIVELY_C_API_OBJDIR = $(OUT_DIR)/middleware/xively
 
 # find all the srcs in the target dirs
 MID_XIVELY_C_API_CSRCS = $(call get_csrcs, $(MID_XIVELY_C_API_CSRCDIR))
