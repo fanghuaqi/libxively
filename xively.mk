@@ -71,7 +71,7 @@ $(MID_XIVELY_C_API_ASMOBJS): $(MID_XIVELY_C_API_OBJDIR)/%.o :$(call get_asm_prer
 # generate obj dir
 $(MID_XIVELY_C_API_OBJDIR):
 	$(TRACE_CREATE_DIR)
-	@$(MKD) $@
+	$(Q)$(MKD) $(subst /,$(PS),$@)
 
 # Middleware Definitions
 ifndef XI_USER_CONFIG
