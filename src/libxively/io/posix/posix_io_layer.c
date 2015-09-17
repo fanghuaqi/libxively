@@ -32,6 +32,8 @@
 extern "C" {
 #endif
 
+static int xively_socket_tmout = 3000;
+
 layer_state_t posix_io_layer_data_ready(
       layer_connectivity_t* context
     , const void* data
@@ -191,6 +193,11 @@ layer_state_t posix_io_layer_init(
 
     posix_data->socket_fd       = socket( AF_INET, SOCK_STREAM, 0 );
 
+#if LWIP_SO_RCVTIMEO && LWIP_SO_RCVTIMEO && LWIP_SO_SNDRCVTIMEO_NONSTANDARD
+    setsockopt(posix_data->socket_fd, SOL_SOCKET, SO_SNDTIMEO, (char *)&xively_socket_tmout,sizeof(int));
+    setsockopt(posix_data->socket_fd, SOL_SOCKET, SO_RCVTIMEO, (char *)&xively_socket_tmout,sizeof(int));
+#endif
+
     if( posix_data->socket_fd == -1 )
     {
         xi_debug_logger( "Socket creation [failed]" );
@@ -254,7 +261,7 @@ layer_state_t posix_io_layer_connect( layer_connectivity_t* context, const void*
 
     xi_debug_logger( "Connecting to the endpoint..." );
 
-    if( connect( posix_data->socket_fd, ( struct sockaddr* ) &name, sizeof( struct sockaddr ) ) == -1 )
+    if( connect( posix_data->socket_fd, ( struct sockaddr* ) &name, sizeof( struct sockaddr ) ) != 0 )
     {
         xi_debug_format( "errno: %d", errno );
         xi_debug_logger( "Connecting to the endpoint [failed]" );
