@@ -23,6 +23,7 @@
 #include "xi_err.h"
 #include "xi_macros.h"
 #include "xi_debug.h"
+#include "xi_globals.h"
 
 #include "xi_layer_api.h"
 #include "xi_common.h"
@@ -32,7 +33,30 @@
 extern "C" {
 #endif
 
-static int xively_socket_tmout = 3000;
+#if LWIP_SO_SNDRCVTIMEO_NONSTANDARD
+typedef int SOCKET_TIMEOUT;
+#define SOCKET_TIMEOUT_SET(tmout, ms_val)	(*(int *)(tmout) = (ms_val))
+#else
+typedef struct timeval SOCKET_TIMEOUT;
+#define SOCKET_TIMEOUT_SET(tmout, ms_val)	{							\
+				((struct timeval *)(tmout))->tv_sec = (long)(ms_val) / 1000; 		\
+				((struct timeval *)(tmout))->tv_usec = ((long)(ms_val) % 1000) * 1000;	\
+			}
+#endif
+
+static SOCKET_TIMEOUT xively_socket_tmout;
+
+/* Set timeout for xively network */
+static void posix_io_set_network_timeout(int fd, uint32_t ms)
+{
+    SOCKET_TIMEOUT_SET(&xively_socket_tmout, ms);
+#if LWIP_SO_SNDTIMEO
+    setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, (char *)(&xively_socket_tmout), sizeof(SOCKET_TIMEOUT));
+#endif
+#if LWIP_SO_RCVTIMEO
+    setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (char *)(&xively_socket_tmout), sizeof(SOCKET_TIMEOUT));
+#endif
+}
 
 layer_state_t posix_io_layer_data_ready(
       layer_connectivity_t* context
@@ -193,17 +217,14 @@ layer_state_t posix_io_layer_init(
 
     posix_data->socket_fd       = socket( AF_INET, SOCK_STREAM, 0 );
 
-#if LWIP_SO_RCVTIMEO && LWIP_SO_RCVTIMEO && LWIP_SO_SNDRCVTIMEO_NONSTANDARD
-    setsockopt(posix_data->socket_fd, SOL_SOCKET, SO_SNDTIMEO, (char *)&xively_socket_tmout,sizeof(int));
-    setsockopt(posix_data->socket_fd, SOL_SOCKET, SO_RCVTIMEO, (char *)&xively_socket_tmout,sizeof(int));
-#endif
-
     if( posix_data->socket_fd == -1 )
     {
         xi_debug_logger( "Socket creation [failed]" );
         xi_set_err( XI_SOCKET_INITIALIZATION_ERROR );
         return 0;
     }
+
+    posix_io_set_network_timeout(posix_data->socket_fd, xi_globals.network_timeout);
 
     xi_debug_logger( "Socket creation [ok]" );
 
