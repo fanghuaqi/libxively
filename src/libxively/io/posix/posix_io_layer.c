@@ -15,7 +15,6 @@
 #endif
 #include <string.h>
 #include <stdint.h>
-#include <errno.h>
 
 #include "posix_io_layer.h"
 #include "posix_data.h"

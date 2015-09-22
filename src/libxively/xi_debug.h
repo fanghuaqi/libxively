@@ -50,8 +50,7 @@ extern "C" {
     #ifdef __GNU__
         #include <assert.h>
     #else
-        #include "embARC_assert.h"
-        #define assert(E) 	((E)? (void)0 : embARC_assert(#E, __FILE__, __LINE__))
+        #define assert(E)
     #endif
 #else
     /* The actual header is missing in some toolchains, so we wrap it here. */

@@ -34,7 +34,8 @@
 #include "xi_csv_layer.h"
 #include "xi_connection_data.h"
 
-#include "embARC_debug.h"
+#include "xprintf.h"
+#define EMBARC_PRINTF	xprintf
 
 #if XI_DEBUG_OUTPUT
     #define XIVELY_DEBUG_PRINTF(...)
