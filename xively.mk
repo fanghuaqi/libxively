@@ -1,5 +1,5 @@
 # dir declaration
-MID_XIVELY_C_API_DIR = $(MIDDLEWARES_ROOT)/xively
+MID_XIVELY_DIR = $(MIDDLEWARES_ROOT)/xively
 
 XI_BUILD_TYPE ?= release
 #XI_BUILD_TYPE ?= debug
@@ -12,7 +12,7 @@ XI_ALLOCATOR_USE ?= lwip
 XI_USER_AGENT ?= \"libxively-$(XI_IO_LAYER)\"
 
 ## include xively makefile config
-include $(MID_XIVELY_C_API_DIR)/Makefile.include
+include $(MID_XIVELY_DIR)/Makefile.include
 
 # Middleware Definitions
 ifndef XI_USER_CONFIG
@@ -40,49 +40,59 @@ else
   endif
 endif
 
-MID_XIVELY_C_API_ASMSRCDIR	=
-MID_XIVELY_C_API_CSRCDIR	= $(MID_XIVELY_C_API_DIR)/src/libxively \
-					$(MID_XIVELY_C_API_DIR)/src/libxively/io/$(XI_IO_LAYER)
-MID_XIVELY_C_API_INCDIR		= $(MID_XIVELY_C_API_DIR)/src/libxively \
-					$(MID_XIVELY_C_API_DIR)/src/libxively/io/$(XI_IO_LAYER)
+MID_XIVELY_ASMSRCDIR	=
+MID_XIVELY_CSRCDIR	= $(MID_XIVELY_DIR)/src/libxively \
+				$(MID_XIVELY_DIR)/src/libxively/io/$(XI_IO_LAYER)
+MID_XIVELY_INCDIR	= $(MID_XIVELY_DIR)/src/libxively \
+				$(MID_XIVELY_DIR)/src/libxively/io/$(XI_IO_LAYER)
 
 ifeq ($(XI_NOB_ENABLED),true)
-MID_XIVELY_C_API_CSRCDIR	+= $(MID_XIVELY_C_API_DIR)/src/libxively/nob
-MID_XIVELY_C_API_INCDIR		+= $(MID_XIVELY_C_API_DIR)/src/libxively/nob
+MID_XIVELY_CSRCDIR	+= $(MID_XIVELY_DIR)/src/libxively/nob
+MID_XIVELY_INCDIR	+= $(MID_XIVELY_DIR)/src/libxively/nob
 endif
 
 # find all the source files in the target directories
-MID_XIVELY_C_API_CSRCS = $(call get_csrcs, $(MID_XIVELY_C_API_CSRCDIR))
-MID_XIVELY_C_API_ASMSRCS = $(call get_asmsrcs, $(MID_XIVELY_C_API_ASMSRCDIR))
+MID_XIVELY_CSRCS = $(call get_csrcs, $(MID_XIVELY_CSRCDIR))
+MID_XIVELY_ASMSRCS = $(call get_asmsrcs, $(MID_XIVELY_ASMSRCDIR))
 
 # get object files
-MID_XIVELY_C_API_COBJS = $(call get_relobjs, $(MID_XIVELY_C_API_CSRCS))
-MID_XIVELY_C_API_ASMOBJS = $(call get_relobjs, $(MID_XIVELY_C_API_ASMSRCS))
-MID_XIVELY_C_API_OBJS = $(MID_XIVELY_C_API_COBJS) $(MID_XIVELY_C_API_ASMOBJS)
+MID_XIVELY_COBJS = $(call get_relobjs, $(MID_XIVELY_CSRCS))
+MID_XIVELY_ASMOBJS = $(call get_relobjs, $(MID_XIVELY_ASMSRCS))
+MID_XIVELY_OBJS = $(MID_XIVELY_COBJS) $(MID_XIVELY_ASMOBJS)
 
 # get dependency files
-MID_XIVELY_C_API_DEPS = $(call get_deps, $(MID_XIVELY_C_API_OBJS))
+MID_XIVELY_DEPS = $(call get_deps, $(MID_XIVELY_OBJS))
 
 # extra macros to be defined
-MID_XIVELY_C_API_DEFINES = -DMID_XIVELY_C_API $(XI_DEFINES)
+MID_XIVELY_DEFINES = -DMID_XIVELY $(XI_DEFINES)
 
 # genearte library
-MID_LIB_XIVELY_C_API = $(OUT_DIR)/libmidxively.a
+MID_LIB_XIVELY = $(OUT_DIR)/libmidxively.a
 
 # library generation rule
-$(MID_LIB_XIVELY_C_API): $(MID_XIVELY_C_API_OBJS)
+$(MID_LIB_XIVELY): $(MID_XIVELY_OBJS)
 	$(TRACE_ARCHIVE)
-	$(Q)$(AR) $(AR_OPT) $@ $(MID_XIVELY_C_API_OBJS)
+	$(Q)$(AR) $(AR_OPT) $@ $(MID_XIVELY_OBJS)
 
 # specific compile rules
 # user can add rules to compile this middleware
 # if not rules specified to this middleware, it will use default compiling rules
 
 # Middleware Definitions
-MID_INCDIR += $(MID_XIVELY_C_API_INCDIR)
-MID_CSRCDIR += $(MID_XIVELY_C_API_CSRCDIR)
-MID_ASMSRCDIR += $(MID_XIVELY_C_API_ASMSRCDIR)
+MID_INCDIR += $(MID_XIVELY_INCDIR)
+MID_CSRCDIR += $(MID_XIVELY_CSRCDIR)
+MID_ASMSRCDIR += $(MID_XIVELY_ASMSRCDIR)
 
-MID_DEFINES += $(MID_XIVELY_C_API_DEFINES)
-MID_DEPS += $(MID_XIVELY_C_API_DEPS)
-MID_LIBS += $(MID_LIB_XIVELY_C_API)
+MID_CSRCS += $(MID_XIVELY_CSRCS)
+MID_CXXSRCS +=
+MID_ASMSRCS += $(MID_XIVELY_ASMSRCS)
+MID_ALLSRCS += $(MID_XIVELY_CSRCS) $(MID_XIVELY_ASMSRCS)
+
+MID_COBJS += $(MID_XIVELY_COBJS)
+MID_CXXOBJS +=
+MID_ASMOBJS += $(MID_XIVELY_ASMOBJS)
+MID_ALLOBJS += $(MID_XIVELY_OBJS)
+
+MID_DEFINES += $(MID_XIVELY_DEFINES)
+MID_DEPS += $(MID_XIVELY_DEPS)
+MID_LIBS += $(MID_LIB_XIVELY)
